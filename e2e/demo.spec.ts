@@ -5,6 +5,9 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await expect(page.getByText('Synthetic cases only.',{exact:false}).first()).toBeVisible();
   await page.screenshot({path:'../../work/flowpilot-overview.png',fullPage:true});
+  const priorityQueue=page.locator('section.panel').filter({has:page.getByRole('heading',{name:'Priority queue',exact:true})});
+  await expect(priorityQueue).toBeVisible();
+  await expect(priorityQueue.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
   await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();

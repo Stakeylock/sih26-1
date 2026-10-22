@@ -37,7 +37,7 @@ export default function App(){
       <div className="demo-banner"><ShieldEllipsis size={17}/><span><strong>{repo.mode==='demo'?'Isolated demo workspace':'Connected demo workspace'}</strong> · Synthetic cases only. No real AICTE data or regulatory decisions.</span><span className="demo-tag">DEMO</span></div>
       {error&&<div className="error-banner" role="alert"><TriangleAlert size={18}/><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={()=>setError('')}><X size={16}/></button></div>}
       {data?<>
-        {page==='overview'&&<Overview data={data} open={open} navigate={navigate}/>}
+        {page==='overview'&&<Overview data={data} identity={identity} open={open} navigate={navigate}/>}
         {page==='applications'&&<Applications data={data} query={query} setQuery={setQuery} open={open} create={()=>navigate('new')} identity={identity}/>}
         {page==='new'&&identity.roles.some(r=>r.role==='institution')&&<NewApplication data={data} identity={identity} repo={repo} run={run} open={open} back={()=>navigate('applications')} busy={busy}/>}
         {page==='case'&&(application?<CaseWorkspace key={caseId} app={application} data={data} identity={identity} repo={repo} run={run} busy={busy} back={()=>navigate('applications')}/>:<div className="empty"><h2>Application unavailable</h2><p>This case may be outside your permitted scope.</p><button className="button outline" onClick={()=>navigate('applications')}>Back to applications</button></div>)}
