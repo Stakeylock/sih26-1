@@ -1,0 +1,53 @@
+import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+test.beforeEach(async({page})=>{await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{name:'Operations overview',exact:true})).toBeVisible();});
+test('overview uses calculated metrics, search opens a case, all views render',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await expect(page.getByText('Synthetic cases only.',{exact:false}).first()).toBeVisible();
+  await page.screenshot({path:'../test-results/clauseway-overview.png',fullPage:true});
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Documents & evidence'})).toBeVisible();
+  await page.screenshot({path:'../test-results/clauseway-case.png',fullPage:true});
+  for(const name of ['Workflow builder','Verification visits','Compliance','Alerts & escalations','Reports','Audit logs','Settings']) {await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();await expect(page.locator('main h1')).toBeVisible();}
+  expect(errors).toEqual([]);
+});
+test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await page.getByRole('button',{name:'New application',exact:true}).first().click();
+  await page.getByRole('textbox',{name:'Application title'}).fill('Demo robotics programme request');
+  await page.getByRole('button',{name:'Continue to institution details'}).click();
+  await page.getByRole('button',{name:'Save draft & continue to evidence'}).click();
+  await expect(page.getByRole('heading',{name:'Demo robotics programme request'})).toBeVisible();
+  await page.getByRole('textbox',{name:'Programme name',exact:true}).fill('Demo robotics');
+  await page.getByRole('textbox',{name:'Level',exact:true}).fill('Undergraduate');
+  await page.getByRole('textbox',{name:'Proposed intake',exact:true}).fill('60');
+  await page.getByRole('textbox',{name:'Laboratory infrastructure',exact:true}).fill('Synthetic laboratory inventory');
+  await page.getByRole('button',{name:'Save draft',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Draft saved');
+  await expect(page.getByRole('button',{name:'Submit application',exact:true})).toBeDisabled();
+  await page.getByLabel('Upload Building Plan').setInputFiles({name:'active.html',mimeType:'text/html',buffer:Buffer.from('<script>alert(1)</script>')});
+  await expect(page.getByRole('alert')).toContainText('PDF, PNG, or JPEG');
+});
+test('scrutiny verifies a checklist and records a reasoned deficiency',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await page.getByRole('button',{name:'Verify Affidavit notarised'}).click();
+  await expect(page.getByRole('status')).toContainText('Checklist updated');
+  await page.getByRole('button',{name:'Return for deficiency',exact:true}).click();
+  await page.getByRole('textbox',{name:'Reason',exact:true}).fill('Please update the synthetic fire certificate for this demonstration.');
+  await page.getByRole('button',{name:'Confirm return for deficiency'}).click();
+  await expect(page.getByText('Clarification required',{exact:true})).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+test('mobile navigation and primary screens have no serious automated accessibility violations',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.getByRole('button',{name:'Open navigation'}).click();
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Applications',exact:true})).toBeVisible();
+  await page.screenshot({path:'../test-results/clauseway-mobile.png',fullPage:true,animations:'disabled'});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
+  expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical')).toEqual([]);
+});

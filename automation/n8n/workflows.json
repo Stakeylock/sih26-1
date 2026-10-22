@@ -1,0 +1,312 @@
+[
+  {
+    "id": "clausewayAdvisoryWebhook",
+    "name": "Clauseway · sanitized advisory follow-ups",
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "saveDataSuccessExecution": "none",
+      "saveDataErrorExecution": "none",
+      "saveManualExecutions": false
+    },
+    "nodes": [
+      {
+        "id": "intake",
+        "name": "Authenticated demo event",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ],
+        "webhookId": "clauseway-advisory",
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "clauseway-advisory",
+          "authentication": "headerAuth",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "clausewayAutomationHeader",
+            "name": "Clauseway automation header"
+          }
+        }
+      },
+      {
+        "id": "validate",
+        "name": "Only sanitized demo events",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          240,
+          0
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "demo-contract",
+                "leftValue": "={{ $json.body.demo === true && $json.body.schema === 1 && $json.body.kind === 'demo.case.advisory' && typeof $json.body.id === 'string' }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "followup",
+        "name": "Record human follow-up",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          490,
+          -80
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:8787/internal/followups",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { id: $json.body.id } }}",
+          "options": {
+            "timeout": 10000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "clausewayAutomationHeader",
+            "name": "Clauseway automation header"
+          }
+        }
+      },
+      {
+        "id": "reject",
+        "name": "Reject other events",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          490,
+          100
+        ],
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "{\"error\":\"Invalid demo event\"}",
+          "options": {
+            "responseCode": 400
+          }
+        }
+      },
+      {
+        "id": "success",
+        "name": "Acknowledge follow-up",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          730,
+          -80
+        ],
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ JSON.stringify({accepted:true,id: $json.id}) }}",
+          "options": {
+            "responseCode": 200
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Authenticated demo event": {
+        "main": [
+          [
+            {
+              "node": "Only sanitized demo events",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Only sanitized demo events": {
+        "main": [
+          [
+            {
+              "node": "Record human follow-up",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Reject other events",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Record human follow-up": {
+        "main": [
+          [
+            {
+              "node": "Acknowledge follow-up",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "id": "clausewayDemoReminders",
+    "name": "Clauseway · due demo reminder queue",
+    "active": false,
+    "settings": {
+      "executionOrder": "v1",
+      "timezone": "Asia/Kolkata",
+      "saveDataSuccessExecution": "none",
+      "saveDataErrorExecution": "none",
+      "saveManualExecutions": false
+    },
+    "nodes": [
+      {
+        "id": "schedule",
+        "name": "Every 15 minutes",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          0,
+          0
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 15
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "due",
+        "name": "Read due demo follow-ups",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          230,
+          0
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://127.0.0.1:8787/internal/due",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "options": {
+            "timeout": 10000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "clausewayAutomationHeader",
+            "name": "Clauseway automation header"
+          }
+        }
+      },
+      {
+        "id": "split",
+        "name": "Each due item",
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          460,
+          0
+        ],
+        "parameters": {
+          "fieldToSplitOut": "items",
+          "options": {}
+        }
+      },
+      {
+        "id": "record",
+        "name": "Prepare in-app reminder",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          690,
+          0
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:8787/internal/reminders",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { id: $json.id } }}",
+          "options": {
+            "timeout": 10000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "clausewayAutomationHeader",
+            "name": "Clauseway automation header"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Every 15 minutes": {
+        "main": [
+          [
+            {
+              "node": "Read due demo follow-ups",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read due demo follow-ups": {
+        "main": [
+          [
+            {
+              "node": "Each due item",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Each due item": {
+        "main": [
+          [
+            {
+              "node": "Prepare in-app reminder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+]

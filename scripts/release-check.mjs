@@ -1,0 +1,11 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+const audit=JSON.parse(readFileSync('docs/dependency audit','utf8'));
+const n8n=JSON.parse(readFileSync('docs/automation dependency audit','utf8'));
+const blockers=[];
+if(audit.metadata.vulnerabilities.high||audit.metadata.vulnerabilities.critical)blockers.push('Application dependency vulnerabilities');
+if(n8n.metadata.vulnerabilities.high||n8n.metadata.vulnerabilities.critical)blockers.push('n8n dependency vulnerabilities; runtime disabled');
+blockers.push('A production malware-scanning provider has not been integrated or validated.');
+blockers.push('Backup restore, formal accessibility review, and regulatory sign-off are unverified.');
+const report={deployAllowed:blockers.length===0,environment:'synthetic demo only',blockers};
+writeFileSync('docs/release-gates.json',JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify(report));process.exitCode=blockers.length?1:0;

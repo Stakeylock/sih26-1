@@ -1,0 +1,193 @@
+[
+  {
+    "id": "demo-template-0",
+    "app_type": "extension_self_disclosure",
+    "version": 1,
+    "status": "published",
+    "name": "Extension of Approval — Self Disclosure",
+    "definition": {
+      "evc_mode": "none",
+      "disclaimer": "Prototype route modelled on APH 2024-27; exemplary only, to be verified by AICTE.",
+      "stages": [
+        {
+          "key": "submission",
+          "label": "Self-disclosure submission",
+          "role": "institution",
+          "sla_days": 0
+        },
+        {
+          "key": "scrutiny",
+          "label": "Disclosure verification",
+          "role": "scrutiny_officer",
+          "sla_days": 7
+        },
+        {
+          "key": "decision",
+          "label": "Regional decision",
+          "role": "regional_officer",
+          "sla_days": 7
+        }
+      ],
+      "required_fields": [
+        {
+          "key": "academic_year",
+          "label": "Academic year"
+        },
+        {
+          "key": "intake",
+          "label": "Sanctioned intake"
+        },
+        {
+          "key": "faculty_count",
+          "label": "Faculty count"
+        },
+        {
+          "key": "declaration",
+          "label": "Self-disclosure declaration"
+        }
+      ],
+      "required_documents": [
+        "Affidavit",
+        "Fire Safety Certificate"
+      ],
+      "checklist": [
+        "Affidavit notarised",
+        "Intake matches previous approval",
+        "Faculty ratio within norms",
+        "Fire certificate valid"
+      ],
+      "undertakings": [
+        "Maintain faculty ratio for academic year"
+      ]
+    }
+  },
+  {
+    "id": "demo-template-1",
+    "app_type": "name_change",
+    "version": 1,
+    "status": "published",
+    "name": "Change in Name of Institution",
+    "definition": {
+      "evc_mode": "none",
+      "disclaimer": "Prototype route modelled on APH 2024-27; exemplary only, to be verified by AICTE.",
+      "stages": [
+        {
+          "key": "submission",
+          "label": "Submission",
+          "role": "institution",
+          "sla_days": 0
+        },
+        {
+          "key": "scrutiny",
+          "label": "Document scrutiny",
+          "role": "scrutiny_officer",
+          "sla_days": 15
+        },
+        {
+          "key": "decision",
+          "label": "Regional decision",
+          "role": "regional_officer",
+          "sla_days": 10
+        }
+      ],
+      "required_fields": [
+        {
+          "key": "current_name",
+          "label": "Current name"
+        },
+        {
+          "key": "proposed_name",
+          "label": "Proposed name"
+        },
+        {
+          "key": "justification",
+          "label": "Justification"
+        }
+      ],
+      "required_documents": [
+        "Board Resolution",
+        "University NOC",
+        "Trust Deed Amendment"
+      ],
+      "checklist": [
+        "Board resolution authentic",
+        "University NOC attached",
+        "No conflicting name in registry",
+        "Trust deed amended"
+      ],
+      "undertakings": [
+        "Update name on all certificates and website within 60 days"
+      ]
+    }
+  },
+  {
+    "id": "demo-template-2",
+    "app_type": "new_programme",
+    "version": 1,
+    "status": "published",
+    "name": "Introduction of New Programme",
+    "definition": {
+      "evc_mode": "conditional",
+      "disclaimer": "Prototype route modelled on APH 2024-27; exemplary only, to be verified by AICTE.",
+      "stages": [
+        {
+          "key": "submission",
+          "label": "Submission",
+          "role": "institution",
+          "sla_days": 0
+        },
+        {
+          "key": "scrutiny",
+          "label": "Scrutiny",
+          "role": "scrutiny_officer",
+          "sla_days": 15
+        },
+        {
+          "key": "evc",
+          "label": "Expert Visit Committee",
+          "role": "evc_coordinator",
+          "sla_days": 21
+        },
+        {
+          "key": "decision",
+          "label": "Regional decision",
+          "role": "regional_officer",
+          "sla_days": 10
+        }
+      ],
+      "required_fields": [
+        {
+          "key": "programme_name",
+          "label": "Programme name"
+        },
+        {
+          "key": "level",
+          "label": "Level"
+        },
+        {
+          "key": "intake",
+          "label": "Proposed intake"
+        },
+        {
+          "key": "lab_details",
+          "label": "Laboratory infrastructure"
+        }
+      ],
+      "required_documents": [
+        "Building Plan",
+        "Faculty List",
+        "Lab Equipment Inventory"
+      ],
+      "checklist": [
+        "Built-up area adequate",
+        "Faculty qualified for programme",
+        "Lab inventory meets norms",
+        "Library resources adequate"
+      ],
+      "undertakings": [
+        "Recruit remaining faculty before commencement",
+        "Submit lab commissioning report"
+      ]
+    }
+  }
+]

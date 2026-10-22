@@ -1,0 +1,26 @@
+import {test,expect} from '@playwright/test';
+process.loadEnvFile('.env.integration.local');
+const accounts=JSON.parse(process.env.FP_TEST_ACCOUNTS??'{}') as Record<string,{email:string;password:string}>;
+test('real Supabase login, persisted draft editing, scoped LangGraph advisory and logout',async({page})=>{
+  await page.goto('/');await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
+  await expect(page.getByRole('combobox',{name:'Demo role'})).toHaveCount(0);
+  await page.getByRole('textbox',{name:'Email address'}).fill(accounts.institution.email);
+  await page.getByLabel('Password',{exact:true}).fill(accounts.institution.password);
+  await page.getByRole('button',{name:'Sign in securely'}).click();
+  await expect(page.getByRole('heading',{name:'Operations overview',exact:true})).toBeVisible({timeout:30000});
+  await page.getByRole('button',{name:'New application',exact:true}).first().click();
+  const title=`Demo browser persistence ${Date.now()}`;
+  await page.getByRole('textbox',{name:'Application title'}).fill(title);
+  await page.getByRole('button',{name:'Continue to institution details'}).click();
+  await page.getByRole('button',{name:'Save draft & continue to evidence'}).click();
+  await expect(page.getByRole('heading',{name:title,exact:true})).toBeVisible({timeout:30000});
+  await page.getByRole('textbox',{name:'Programme name',exact:true}).fill('Demo browser robotics');
+  await page.getByRole('button',{name:'Save draft',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('Draft saved',{timeout:30000});
+  await page.reload();await expect(page.getByRole('textbox',{name:'Programme name',exact:true})).toHaveValue('Demo browser robotics',{timeout:30000});
+  await page.getByRole('button',{name:'Run advisory',exact:true}).click();
+  await expect(page.getByText('Advisory only',{exact:true})).toBeVisible({timeout:30000});
+  await page.screenshot({path:'../test-results/clauseway-connected.png',fullPage:true});
+  await page.getByRole('button',{name:'Sign out',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible({timeout:30000});
+});

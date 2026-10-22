@@ -1,0 +1,63 @@
+import templatesJson from './templates.json';
+import type { Advisory,Application, AuditEvent, Identity, Repository, Role, Status, Template, Transition, Workspace } from '../domain/model';
+import { allowedActions, missingInputs } from '../domain/model';
+import { titleSchema, validateFile } from '../domain/validation';
+const templates = templatesJson as Template[];
+const STORAGE = 'clauseway-isolated-demo-v3';
+export const demoIdentities: Identity[] = [
+  {id:'demo-national',name:'Aarav Mehta',email:'national@demo.invalid',roles:[{role:'national_admin',region:null}]},
+  {id:'demo-institution',name:'Maya Patel',email:'institution@demo.invalid',roles:[{role:'institution',region:null}]},
+  {id:'demo-scrutiny',name:'Kavya Rao',email:'scrutiny@demo.invalid',roles:[{role:'scrutiny_officer',region:'South'}]},
+  {id:'demo-evc',name:'Ishaan Sen',email:'evc@demo.invalid',roles:[{role:'evc_coordinator',region:'South'}]},
+  {id:'demo-regional',name:'Ananya Das',email:'regional@demo.invalid',roles:[{role:'regional_officer',region:'South'}]},
+];
+const iso = (days=0) => new Date(Date.now()+days*86400000).toISOString();
+function seed(): Workspace {
+  const institutions = ['Cedar Technical Institute','Meridian College of Engineering','Sunrise School of Technology','Eastern Polytechnic','Horizon Institute','Northbridge College'].map((name,i)=>({id:`demo-inst-${i}`,owner_id:i===0?'demo-institution':`demo-owner-${i}`,name:`${name} · Demo`,aicte_ref:`DEMO-INST-${i+1}`,region:i===0||i===2||i===4?'South':i===1?'West':i===3?'East':'North',state:i===0?'Telangana':'Synthetic state'}));
+  const states: Status[]=['under_scrutiny','deficiency_raised','evc_pending','pending_decision','submitted','approved','resubmitted','evc_scheduled','approved','approved','rejected','draft'];
+  const applications: Application[]=states.map((status,i)=>{
+    const inst=institutions[i%institutions.length]; const t=templates[i%3];
+    return {id:`demo-app-${i}`,ref_no:`DEMO-2026-${String(1001+i)}`,title:i===0?'Self-disclosure extension · 2026–27':i===1?'Institution name change':i===2?'New programme · Computer science':`${t.name} · Demo`,owner_id:inst.owner_id,institution_id:inst.id,app_type:t.app_type,status,region:inst.region,version:1,template_version:1,template_snapshot:t.definition,form_data:Object.fromEntries(t.definition.required_fields.map(f=>[f.key,`Synthetic ${f.label.toLowerCase()}`])),evc_required:['evc_pending','evc_scheduled'].includes(status),assigned_officer:status==='under_scrutiny'?'demo-scrutiny':null,sla_due_at:['approved','rejected','draft'].includes(status)?null:iso(i===0?2:i===4?-1:4+i),submitted_at:status==='draft'?null:iso(-6-i),created_at:iso(-8-i),updated_at:iso(-i),decision_reason:status==='approved'?'Synthetic evidence accepted for demonstration only.':null,decision_evidence:null,is_demo:true};
+  });
+  const documents=applications.flatMap(a=>a.template_snapshot.required_documents.map((type,i)=>({id:`demo-doc-${a.id}-${i}`,application_id:a.id,doc_type:type,file_name:type.toLowerCase().replaceAll(' ','_')+'.pdf',file_path:'demo-only',size_bytes:120000+i*45300,mime_type:'application/pdf',scan_status:'clean' as const,sha256:'a'.repeat(64),uploaded_at:a.created_at})));
+  const events:AuditEvent[]=applications.flatMap((a,i)=>[
+    {id:i*3+1,application_id:a.id,actor_id:a.owner_id,actor_role:'institution',action:'created',from_status:null,to_status:'draft' as const,reason:'Synthetic case created.',created_at:a.created_at,payload:{demo:true}},
+    ...(a.status==='draft'?[]:[{id:i*3+2,application_id:a.id,actor_id:a.owner_id,actor_role:'institution',action:'submit',from_status:'draft' as const,to_status:'submitted' as const,reason:'Synthetic evidence attached.',created_at:a.submitted_at!,payload:{demo:true}}]),
+  ]);
+  return {applications,institutions,templates,documents,events,checklist:[],visits:[{id:'demo-visit',application_id:'demo-app-7',coordinator_id:'demo-evc',scheduled_for:iso(3),completed_at:null,report:null,recommendation:null}],obligations:[{id:'demo-obligation',application_id:'demo-app-5',institution_id:'demo-inst-5',title:'Demo annual compliance disclosure',due_date:iso(15).slice(0,10),status:'open',deadline_source:'demo_sla',region:'North'}],notifications:[{id:'demo-notification-1',title:'Two cases need attention',body:'Demo deadlines are approaching in the scrutiny queue.',read_at:null,created_at:iso()},{id:'demo-notification-2',title:'Workflow version 1 is published',body:'Active demo cases retain their original workflow snapshot.',read_at:null,created_at:iso(-1)}]};
+}
+export function createDemoRepository(role:Role='national_admin'): Repository {
+  const actor=demoIdentities.find(i=>i.roles[0].role===role)!;
+  let state=seed();
+  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===3 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) state=saved.workspace; } catch { /* Corrupt demo storage is discarded. */ }
+  const persist=()=>localStorage.setItem(STORAGE,JSON.stringify({format:3,workspace:state}));
+  const visible=(a:Application)=>a.owner_id===actor.id || (a.status!=='draft' && actor.roles.some(r=>r.role==='national_admin'||(r.role!=='institution'&&r.region===a.region)));
+  const find=(id:string)=>{const a=state.applications.find(x=>x.id===id);if(!a||!visible(a))throw new Error('Demo application is unavailable.');return a;};
+  function log(a:Application,action:string,old:Status|null,reason:string|null=null){state.events.unshift({id:Date.now(),application_id:a.id,actor_id:actor.id,actor_role:role,action,from_status:old,to_status:a.status,reason,created_at:iso(),payload:{demo:true}});}
+  function editable(a:Application){if(a.owner_id!==actor.id||!['draft','deficiency_raised'].includes(a.status))throw new Error('This demo case is locked.');}
+  const receipts=new Map<string,string>();
+  return {
+    mode:'demo',async identity(){return actor;},subscribeAuth(){return ()=>{};},async signIn(){throw new Error('Use the separate connected workspace for sign-in.');},async signOut(){},
+    async workspace(){const apps=state.applications.filter(visible);const keys=new Set(apps.map(a=>a.id)); return structuredClone({...state,applications:apps,documents:state.documents.filter(d=>keys.has(d.application_id)),events:state.events.filter(e=>keys.has(e.application_id)),checklist:state.checklist.filter(c=>keys.has(c.application_id)),visits:state.visits.filter(v=>keys.has(v.application_id)),obligations:state.obligations.filter(o=>keys.has(o.application_id))});},
+    async createInstitution(){throw new Error('The demo institution profile is already configured.');},
+    async createApplication(type,title){if(role!=='institution')throw new Error('Institution role required.');const t=templates.find(x=>x.app_type===type)!;const a:Application={...state.applications[0],id:'demo-'+crypto.randomUUID(),ref_no:'DEMO-2026-'+(1013+state.applications.length),title:titleSchema.parse(title),institution_id:'demo-inst-0',owner_id:actor.id,region:'South',app_type:type,status:'draft',version:1,template_version:t.version,template_snapshot:t.definition,form_data:{},evc_required:false,assigned_officer:null,sla_due_at:null,submitted_at:null,created_at:iso(),updated_at:iso(),decision_reason:null,decision_evidence:null};state.applications.unshift(a);log(a,'created',null);persist();return a.id;},
+    async saveDraft(application,title,form){const a=find(application.id);editable(a);if(a.version!==application.version)throw new Error('Reload this case before saving.');a.title=titleSchema.parse(title);a.form_data=form;a.version++;log(a,'draft_saved',a.status);persist();},
+    async transition(input:Transition){const a=find(input.application.id);const body=JSON.stringify(input);if(receipts.has(input.requestId)){if(receipts.get(input.requestId)!==body)throw new Error('Request ID already used.');return;}if(a.version!==input.application.version)throw new Error('Reload this case before acting.');if(!allowedActions(a,actor).includes(input.action))throw new Error('This action is unavailable for the current role and case.');const {action,reason,payload}=input;const old=a.status;
+      if(['submit','resubmit'].includes(action)&&missingInputs(a,state.documents).length)throw new Error('Complete the required fields and documents first.');
+      if(['resubmit','raise_deficiency','pass_scrutiny','approve','reject'].includes(action)&&reason.trim().length<10)throw new Error('Give a reason of at least 10 characters.');
+      if(action==='pass_scrutiny'&&a.template_snapshot.checklist.some(item=>!state.checklist.some(c=>c.application_id===a.id&&c.item===item&&c.passed)))throw new Error('Complete every checklist item first.');
+      if(['approve','reject'].includes(action)&&!state.documents.some(d=>d.id===payload.evidence&&d.application_id===a.id&&d.scan_status==='clean'))throw new Error('Reference a clean case document.');
+      if(action==='schedule_evc'){const scheduled=String(payload.scheduled_for??'');if(!(Date.parse(scheduled)>Date.now()))throw new Error('Choose a future visit time.');state.visits.push({id:crypto.randomUUID(),application_id:a.id,coordinator_id:actor.id,scheduled_for:scheduled,completed_at:null,report:null,recommendation:null});}
+      if(action==='submit_evc_report'){const v=state.visits.find(v=>v.application_id===a.id&&!v.completed_at);if(!v||v.coordinator_id!==actor.id||Date.parse(v.scheduled_for)>Date.now())throw new Error('A report is available after your scheduled visit.');if(reason.trim().length<20)throw new Error('Provide a full visit report.');v.completed_at=iso();v.report=reason;v.recommendation=String(payload.recommendation);}
+      const target:Record<string,Status>={submit:'submitted',resubmit:'resubmitted',start_scrutiny:'under_scrutiny',raise_deficiency:'deficiency_raised',pass_scrutiny:payload.evc?'evc_pending':'pending_decision',schedule_evc:'evc_scheduled',submit_evc_report:'pending_decision',approve:'approved',reject:'rejected'};
+      a.status=target[action];a.version++;a.updated_at=iso();if(action==='start_scrutiny')a.assigned_officer=actor.id;if(action==='pass_scrutiny')a.evc_required=Boolean(payload.evc);if(['approve','reject'].includes(action)){a.decision_reason=reason;a.decision_evidence=String(payload.evidence);a.sla_due_at=null;}else a.sla_due_at=iso(15);log(a,action,old,reason);receipts.set(input.requestId,body);persist();
+    },
+    async checklist(application,item,passed,note){const a=find(application.id);if(a.status!=='under_scrutiny'||role!=='scrutiny_officer'||a.assigned_officer!==actor.id)throw new Error('Assigned scrutiny officer required.');state.checklist=state.checklist.filter(c=>!(c.application_id===a.id&&c.item===item));state.checklist.push({id:crypto.randomUUID(),application_id:a.id,item,passed,note});a.version++;log(a,'checklist',a.status,note);persist();},
+    async upload(application,type,file){validateFile(file);const a=find(application.id);editable(a);state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso()});log(a,'document_reserved',a.status,'Demo metadata only; bytes never leave this browser.');persist();},
+    async download(){throw new Error('Seeded demo documents are synthetic references. No document bytes are stored.');},
+    async markRead(id){const n=state.notifications.find(n=>n.id===id);if(n)n.read_at=iso();persist();},
+    async fulfil(id,reason){if(!['national_admin','regional_officer'].includes(role))throw new Error('Decision role required.');const o=state.obligations.find(o=>o.id===id);if(o){o.status='fulfilled';log(find(o.application_id),'obligation_fulfilled',null,reason);}persist();},
+    async advisory(application,documents){const safe={id:application.id,ref_no:application.ref_no,is_demo:true,status:application.status,version:application.version,form_data:Object.fromEntries(Object.entries(application.form_data).map(([key,value])=>[key,value.trim()?'provided':''])),template_snapshot:{required_fields:application.template_snapshot.required_fields,required_documents:application.template_snapshot.required_documents}};const response=await fetch('/api/advisories/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({application:safe,documents:documents.map(d=>({doc_type:d.doc_type,scan_status:d.scan_status}))})});if(!response.ok)throw new Error('Start the local automation service to run LangGraph and n8n.');return response.json() as Promise<Advisory>;},
+  };
+}
+export function resetDemo(){localStorage.removeItem(STORAGE);location.reload();}

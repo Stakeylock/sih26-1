@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env*
+!.env.example
+!.env.demo
+.vercel/
+playwright-report/
+test-results/
+supabase/.temp/
+supabase/.branches/
+*.log
+*.tsbuildinfo
+.n8n/
+automation/*.sqlite*
+automation/*.local.json
+automation/*.local.env

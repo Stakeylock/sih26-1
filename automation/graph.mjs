@@ -1,0 +1,15 @@
+import {Annotation,StateGraph,START,END} from '@langchain/langgraph';
+import {z} from 'zod';
+const SafeCase=z.object({id:z.string().min(1).max(100),ref_no:z.string().regex(/^DEMO-[A-Z0-9-]+$/),is_demo:z.literal(true),status:z.string().max(40),version:z.number().int().positive(),form_data:z.record(z.string(),z.string()),template_snapshot:z.object({required_fields:z.array(z.object({key:z.string().max(80),label:z.string().max(120)})).max(30),required_documents:z.array(z.string().max(120)).max(30)})});
+const State=Annotation.Root({input:Annotation(),safe:Annotation(),checks:Annotation(),summary:Annotation(),warnings:Annotation(),trace:Annotation({reducer:(a,b)=>[...a,...b],default:()=>[]})});
+function validate(state){
+  const app=SafeCase.parse(state.input.application);
+  const docs=z.array(z.object({doc_type:z.string().max(120),scan_status:z.enum(['pending','clean','rejected'])})).max(100).parse(state.input.documents);
+  // Only presence flags and controlled document types reach subsequent nodes.
+  // User prose, document bytes, personal details and instructions are discarded.
+  return {safe:{id:app.id,ref:app.ref_no,status:app.status,version:app.version,missingFields:app.template_snapshot.required_fields.filter(f=>!app.form_data[f.key]?.trim()).map(f=>f.label),required:app.template_snapshot.required_documents,documents:docs},trace:['validate_and_minimize']};
+}
+function evidence(state){const s=state.safe;return {checks:{missingDocuments:s.required.filter(type=>!s.documents.some(d=>d.doc_type===type&&d.scan_status==='clean')),pending:s.documents.filter(d=>d.scan_status==='pending').length,rejected:s.documents.filter(d=>d.scan_status==='rejected').length,missingFields:s.missingFields},trace:['check_evidence_metadata']};}
+function summarize(state){const {safe:s,checks:c}=state;const warnings=[...c.missingFields.map(f=>`Incomplete field: ${f}`),...c.missingDocuments.map(d=>`Clean evidence required: ${d}`),...(c.pending?[`${c.pending} document(s) remain quarantined.`]:[]),...(c.rejected?[`${c.rejected} document(s) were rejected by scanning.`]:[])];return {summary:`${s.ref} is ${s.status.replaceAll('_',' ')}. ${s.required.length-c.missingDocuments.length} of ${s.required.length} required evidence categories have clean documents. ${warnings.length?`${warnings.length} advisory item(s) need human attention.`:'Required metadata appears complete; a human must review the actual evidence.'}`,warnings,trace:['prepare_human_advisory']};}
+const graph=new StateGraph(State).addNode('validate',validate).addNode('evidence',evidence).addNode('summarize',summarize).addEdge(START,'validate').addEdge('validate','evidence').addEdge('evidence','summarize').addEdge('summarize',END).compile();
+export async function analyzeCase(input){const result=await graph.invoke({input},{recursionLimit:8});return {engine:'langgraph-rules-v1',advisoryOnly:true,model:'none',summary:result.summary,warnings:result.warnings,trace:result.trace,checks:result.checks,disclaimer:'Metadata checks only. No document authenticity assessment or regulatory decision. No external LLM receives case data.'};}
