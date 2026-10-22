@@ -1,0 +1,22 @@
+{
+  ".sidebar": {
+    "backgroundColor": "rgb(14, 25, 48)",
+    "width": "240px"
+  },
+  "body": {
+    "backgroundColor": "rgba(0, 0, 0, 0)"
+  },
+  ".page-heading h1": {
+    "fontSize": "32px"
+  },
+  ".panel": {
+    "borderRadius": "12px",
+    "backgroundColor": "rgb(255, 255, 255)"
+  },
+  ".button": {
+    "borderRadius": "7px"
+  },
+  ".nav-item": {
+    "fontSize": "13px"
+  }
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "file": "20261022160724_harden_flowpilot.sql",
+    "sha256": "d08c1052e256fe92c2251aa9939157ffa95feed8554cfa0166d4319f402218e3"
+  },
+  {
+    "file": "20261022164412_revoke_implicit_writes.sql",
+    "sha256": "d89c5ae7ac9f64aa33a6abda2f3fc379a58a71fc873ace6ef34915850cd9fc44"
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "phase": "integration",
+  "passed": 11,
+  "actualSupabaseAuth": true,
+  "roles": 8,
+  "concurrency": "one winner",
+  "auditEvents": 19,
+  "privateStorage": "upload and authorized download verified",
+  "malwareScan": "Trusted synthetic fixture only; production scanner NOT validated"
+}

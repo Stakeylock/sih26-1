@@ -1,0 +1,9 @@
+{
+  "deployAllowed": false,
+  "environment": "synthetic demo only",
+  "blockers": [
+    "n8n dependency vulnerabilities; runtime disabled",
+    "A production malware-scanning provider has not been integrated or validated.",
+    "Backup restore, formal accessibility review, and regulatory sign-off are unverified."
+  ]
+}

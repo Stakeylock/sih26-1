@@ -1,0 +1,8 @@
+{
+  "passed": 8,
+  "langgraph": "actual graph invoked",
+  "n8n": "actual authenticated webhook and HTTP callback executed",
+  "idempotency": "duplicate callback produces one follow-up",
+  "externalMessagesSent": 0,
+  "model": "none"
+}

@@ -1,0 +1,6 @@
+{
+  "name":"flowpilot-n8n-runtime",
+  "private":true,
+  "scripts":{"start":"n8n start"},
+  "dependencies":{"n8n":"2.44.6"}
+}

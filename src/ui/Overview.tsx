@@ -1,0 +1,25 @@
+import { ArrowRight, CircleCheck, Clock3, FileStack, ListChecks, TrendingUp } from 'lucide-react';
+import { daysUntil, type Application, type Workspace } from '../domain/model';
+import {Badge,Due,Empty,Panel} from './common';
+export function Overview({data,open,navigate}:{data:Workspace;open:(id:string)=>void;navigate:(page:string)=>void}){
+  const active=data.applications.filter(a=>!['draft','approved','rejected'].includes(a.status));
+  const atRisk=active.filter(a=>(daysUntil(a.sla_due_at)??99)<=3);
+  const waiting=data.applications.filter(a=>['submitted','resubmitted','under_scrutiny'].includes(a.status));
+  const onTime=active.filter(a=>(daysUntil(a.sla_due_at)??99)>=0).length;
+  const sla=active.length?`${Math.round(onTime/active.length*100)}%`:'—';
+  const metrics=[{label:'Applications in process',value:active.length,note:`${data.applications.length} total visible cases`,icon:FileStack,tone:'teal'},{label:'At-risk deadlines',value:atRisk.length,note:'Due within 3 days or overdue',icon:Clock3,tone:'amber'},{label:'Awaiting scrutiny',value:waiting.length,note:'Submitted, resubmitted & in review',icon:ListChecks,tone:'indigo'},{label:'SLA adherence',value:sla,note:'Open cases within their demo SLA',icon:TrendingUp,tone:'teal'}];
+  const stages=[{label:'Submitted',statuses:['submitted','resubmitted'],color:'indigo'},{label:'Scrutiny',statuses:['under_scrutiny','deficiency_raised'],color:'teal'},{label:'Expert visit',statuses:['evc_pending','evc_scheduled'],color:'amber'},{label:'Final review',statuses:['pending_decision'],color:'indigo'},{label:'Approved',statuses:['approved'],color:'teal'}];
+  const priority=active.slice().sort((a,b)=>Date.parse(a.sla_due_at??'9999')-Date.parse(b.sla_due_at??'9999')).slice(0,4);
+  return <>
+    <div className="metrics">{metrics.map(m=><section key={m.label} className="metric"><div className="spread"><span>{m.label}</span><m.icon size={18} className={m.tone}/></div><strong>{m.value}</strong><small><span className={`metric-point ${m.tone}`}/>{m.note}</small></section>)}</div>
+    <Panel title="Approval pipeline" subtitle="A clear view of every decision gate" action={<span className="quiet-label"><span className="live-dot"/>Visible cases only</span>}>
+      <div className="pipeline">{stages.map((s,i)=><div key={s.label} className="pipeline-stage"><div className="spread"><span>{s.label}</span>{i<stages.length-1?<ArrowRight size={15}/>:<CircleCheck size={16}/>}</div><div className={`pipeline-count ${s.color}`}><strong>{data.applications.filter(a=>s.statuses.includes(a.status)).length}</strong><span>cases</span></div></div>)}</div>
+      <div className="pipeline-note"><span className="live-dot"/>Human review at every critical stage<span>Workflow snapshots stay pinned to each case.</span></div>
+    </Panel>
+    <Panel title="Needs your attention" subtitle="Prioritized by the next demo deadline" action={<button className="text-button" onClick={()=>navigate('applications')}>View all applications <ArrowRight size={15}/></button>}>
+      {priority.length?<div className="table-wrap"><table><thead><tr><th>Application / institution</th><th>Region</th><th>Current stage</th><th>Next deadline</th><th><span className="sr-only">Open</span></th></tr></thead><tbody>{priority.map(a=><ApplicationRow key={a.id} app={a} institution={data.institutions.find(i=>i.id===a.institution_id)?.name??'Demo institution'} open={open}/>)}</tbody></table></div>:<Empty title="Your queue is clear">New applications will appear here when they are submitted.</Empty>}
+    </Panel>
+    <div className="overview-bottom"><div><span className="quiet-label">ACADEMIC YEAR 2026–27</span><p>Right process. Right authority. Right time.</p></div><span className="quiet-label">All metrics are calculated from your visible demo cases.</span></div>
+  </>;
+}
+export function ApplicationRow({app,institution,open}:{app:Application;institution:string;open:(id:string)=>void}){return <tr><td><button className="case-link" onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{app.title}</small></td><td>{app.region}</td><td><Badge status={app.status}/></td><td><Due app={app}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}
