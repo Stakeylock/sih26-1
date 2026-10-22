@@ -8,7 +8,7 @@ import {AutomationStore} from './store.mjs';
 const json=(res,code,value)=>{res.writeHead(code,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(value));};
 function equal(a,b){if(!a||!b)return false;const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);}
 export function createAutomationServer(config){
-  if(!config.url||!config.key)throw new Error('Supabase project URL and publishable key required');
+  if(!config.allowDemo&&(!config.url||!config.key))throw new Error('Supabase project URL and publishable key required');
   if(config.token&&config.token.length<32)throw new Error('Use a random automation token of at least 32 characters');
   const store=config.store??new AutomationStore(config.storePath??'automation/clauseway.sqlite');
   const limit=new Map();let delivering=false;
@@ -42,7 +42,7 @@ export function createAutomationServer(config){
   const timer=setInterval(()=>{void deliver();if(limit.size>1000)limit.clear();},10000);timer.unref();server.on('close',()=>{clearInterval(timer);store.close();});return {server,store,deliver};
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){
-  const url=process.env.VITE_SUPABASE_URL;const key=process.env.VITE_SUPABASE_PUBLISHABLE_KEY;const webhook=process.env.N8N_WEBHOOK_URL;
+  const url=process.env.VITE_SUPABASE_URL;const key=process.env.VITE_SUPABASE_PUBLISHABLE_KEY;const webhook=process.env.N8N_WEBHOOK_URL;const allowDemo=process.env.AUTOMATION_ALLOW_DEMO==='true'||process.env.VITE_APP_MODE==='demo';
   if(webhook){const parsed=new URL(webhook);if(parsed.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(parsed.hostname))throw new Error('Use HTTPS for remote n8n webhooks');}
-  const {server}=createAutomationServer({url,key,webhook,token:process.env.N8N_AUTOMATION_TOKEN,storePath:process.env.AUTOMATION_STORE_PATH,allowDemo:process.env.AUTOMATION_ALLOW_DEMO==='true'});server.listen(Number(process.env.AUTOMATION_PORT??8787),'127.0.0.1',()=>console.log('Clauseway advisory and automation service listening on 127.0.0.1:8787'));
+  const {server}=createAutomationServer({url,key,webhook,token:process.env.N8N_AUTOMATION_TOKEN,storePath:process.env.AUTOMATION_STORE_PATH,allowDemo});server.listen(Number(process.env.AUTOMATION_PORT??8787),'127.0.0.1',()=>console.log('Clauseway advisory and automation service listening on 127.0.0.1:8787'));
 }

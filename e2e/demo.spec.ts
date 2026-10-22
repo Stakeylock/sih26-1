@@ -4,16 +4,21 @@ test.beforeEach(async({page})=>{await page.goto('/');await page.evaluate(()=>loc
 test('overview uses calculated metrics, search opens a case, all views render',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await expect(page.getByText('Synthetic cases only.',{exact:false}).first()).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Approval operations',exact:true})).toBeVisible();
   await page.screenshot({path:'../test-results/clauseway-overview.png',fullPage:true});
-  const priorityQueue=page.locator('section.panel').filter({has:page.getByRole('heading',{name:'Priority queue',exact:true})});
-  await expect(priorityQueue).toBeVisible();
-  await expect(priorityQueue.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
+  const dispatchBoard=page.locator('section.dispatch-board');
+  await expect(dispatchBoard).toBeVisible();
+  await expect(dispatchBoard.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
+  await page.getByRole('navigation').getByRole('button',{name:'Approval routes',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Approval route registry',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Bottleneck heatmap',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Open Scrutiny stage',exact:true})).toBeVisible();
   await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Documents & evidence'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
   await page.screenshot({path:'../test-results/clauseway-case.png',fullPage:true});
-  for(const name of ['Workflow builder','Verification visits','Compliance','Alerts & escalations','Reports','Audit logs','Settings']) {await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();await expect(page.locator('main h1')).toBeVisible();}
+  for(const name of ['Approval routes','Verification visits','Compliance','Alerts & escalations','Reports','Audit logs','Settings']) {await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();await expect(page.locator('main h1')).toBeVisible();}
   expect(errors).toEqual([]);
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
@@ -22,7 +27,9 @@ test('institution creates and saves a synthetic draft; unsafe upload is rejected
   await page.getByRole('textbox',{name:'Application title'}).fill('Demo robotics programme request');
   await page.getByRole('button',{name:'Continue to institution details'}).click();
   await page.getByRole('button',{name:'Save draft & continue to evidence'}).click();
-  await expect(page.getByRole('heading',{name:'Demo robotics programme request'})).toBeVisible();
+  await expect(page.getByText('Demo robotics programme request',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
+  await expect(page.getByText(/blocker.*before this dossier can advance/, {exact:false})).toBeVisible();
   await page.getByRole('textbox',{name:'Programme name',exact:true}).fill('Demo robotics');
   await page.getByRole('textbox',{name:'Level',exact:true}).fill('Undergraduate');
   await page.getByRole('textbox',{name:'Proposed intake',exact:true}).fill('60');
