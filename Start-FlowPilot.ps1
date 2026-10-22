@@ -16,6 +16,8 @@ if (Test-Path (Join-Path $projectRoot '.env.local')) {
 }
 if (Test-Path (Join-Path $projectRoot '.env.automation.local')) {
   Start-LocalService 8787 @('--env-file=.env.local','--env-file=.env.automation.local','automation/server.mjs') 'advisory'
+} else {
+  Start-LocalService 8787 @('--env-file=.env.demo','automation/server.mjs') 'advisory-demo'
 }
 Write-Output 'Demo: http://127.0.0.1:5174'
 Write-Output 'Connected workspace: http://127.0.0.1:5173'

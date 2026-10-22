@@ -1,22 +1,22 @@
 {
   ".sidebar": {
-    "backgroundColor": "rgb(14, 25, 48)",
-    "width": "240px"
+    "backgroundColor": "rgb(24, 33, 38)",
+    "width": "220px"
   },
   "body": {
-    "backgroundColor": "rgba(0, 0, 0, 0)"
+    "backgroundColor": "rgb(236, 239, 241)"
   },
   ".page-heading h1": {
-    "fontSize": "32px"
+    "fontSize": "31px"
   },
-  ".panel": {
-    "borderRadius": "12px",
+  ".case-register": {
+    "borderRadius": "4px",
     "backgroundColor": "rgb(255, 255, 255)"
   },
   ".button": {
-    "borderRadius": "7px"
+    "borderRadius": "6px"
   },
   ".nav-item": {
-    "fontSize": "13px"
+    "fontSize": "12px"
   }
 }
