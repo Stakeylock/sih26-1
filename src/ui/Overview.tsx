@@ -1,7 +1,9 @@
-import { ArrowRight, CircleCheck, Clock3, FileStack, ListChecks, TrendingUp } from 'lucide-react';
-import { daysUntil, type Application, type Workspace } from '../domain/model';
+import { ArrowRight, CircleCheck, Clock3, FileStack, ListChecks, ShieldCheck, TrendingUp } from 'lucide-react';
+import { actionLabels, allowedActions, daysUntil, type Application, type Identity, type Workspace } from '../domain/model';
 import {Badge,Due,Empty,Panel} from './common';
-export function Overview({data,open,navigate}:{data:Workspace;open:(id:string)=>void;navigate:(page:string)=>void}){
+function priorityReason(app:Application){const days=daysUntil(app.sla_due_at);if(days!==null&&days<0)return `${Math.abs(days)}d overdue · SLA escalation`;if(days!==null&&days<=3)return `${days===0?'Due today':`Due in ${days}d`} · deadline at risk`;if(app.status==='pending_decision')return 'Human decision is waiting';if(app.status==='deficiency_raised')return 'Institution clarification is pending';return 'Next case in the active queue';}
+function nextAction(app:Application,identity:Identity){const action=allowedActions(app,identity)[0];return action?`Next permitted action: ${actionLabels[action]}`:app.status==='under_scrutiny'?'Waiting for assigned scrutiny':'Monitor case progress';}
+export function Overview({data,identity,open,navigate}:{data:Workspace;identity:Identity;open:(id:string)=>void;navigate:(page:string)=>void}){
   const active=data.applications.filter(a=>!['draft','approved','rejected'].includes(a.status));
   const atRisk=active.filter(a=>(daysUntil(a.sla_due_at)??99)<=3);
   const waiting=data.applications.filter(a=>['submitted','resubmitted','under_scrutiny'].includes(a.status));
@@ -15,6 +17,9 @@ export function Overview({data,open,navigate}:{data:Workspace;open:(id:string)=>
     <Panel title="Approval pipeline" subtitle="A clear view of every decision gate" action={<span className="quiet-label"><span className="live-dot"/>Visible cases only</span>}>
       <div className="pipeline">{stages.map((s,i)=><div key={s.label} className="pipeline-stage"><div className="spread"><span>{s.label}</span>{i<stages.length-1?<ArrowRight size={15}/>:<CircleCheck size={16}/>}</div><div className={`pipeline-count ${s.color}`}><strong>{data.applications.filter(a=>s.statuses.includes(a.status)).length}</strong><span>cases</span></div></div>)}</div>
       <div className="pipeline-note"><span className="live-dot"/>Human review at every critical stage<span>Workflow snapshots stay pinned to each case.</span></div>
+    </Panel>
+    <Panel title="Priority queue" subtitle="Explainable triage for your visible workload" action={<span className="quiet-label"><span className="live-dot"/>Role-aware</span>}>
+      {priority[0]?<div className="priority-queue"><div className="priority-summary"><span className="quiet-label">NEXT BEST CASE</span><div className="inline"><Badge status={priority[0].status}/><span className="mono">{priority[0].ref_no}</span></div><h3>{priority[0].title}</h3><p>{data.institutions.find(i=>i.id===priority[0].institution_id)?.name??'Demo institution'} · {priority[0].region}</p><div className="priority-reasons"><span><Clock3 size={13}/>{priorityReason(priority[0])}</span><span><ShieldCheck size={13}/>{nextAction(priority[0],identity)}</span></div></div><button className="button" onClick={()=>open(priority[0].id)} aria-label={`Open ${priority[0].ref_no}`}>Open case <ArrowRight size={15}/></button></div>:<Empty title="Your priority queue is clear">No active cases need attention right now.</Empty>}
     </Panel>
     <Panel title="Needs your attention" subtitle="Prioritized by the next demo deadline" action={<button className="text-button" onClick={()=>navigate('applications')}>View all applications <ArrowRight size={15}/></button>}>
       {priority.length?<div className="table-wrap"><table><thead><tr><th>Application / institution</th><th>Region</th><th>Current stage</th><th>Next deadline</th><th><span className="sr-only">Open</span></th></tr></thead><tbody>{priority.map(a=><ApplicationRow key={a.id} app={a} institution={data.institutions.find(i=>i.id===a.institution_id)?.name??'Demo institution'} open={open}/>)}</tbody></table></div>:<Empty title="Your queue is clear">New applications will appear here when they are submitted.</Empty>}
