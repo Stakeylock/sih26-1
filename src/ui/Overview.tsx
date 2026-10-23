@@ -1,5 +1,6 @@
 import { ArrowRight, BarChart3, Clock3, FileStack, GitBranch, ListChecks, MapPin, Plus, ShieldCheck, TrendingUp, Search } from 'lucide-react';
-import { actionLabels, allowedActions, daysUntil, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace } from '../domain/model';
+import { actionLabels, allowedActions, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace } from '../domain/model';
+import { workingDaysUntil } from '../domain/clock';
 // Station label for a status. Same facts as statusLabels, phrased as the work in progress at the station.
 const operationalStatus: { [key in Status]: string } = {
   draft: 'Draft in progress', submitted: 'Awaiting reviewer assignment', under_scrutiny: 'Officer reviewing',
@@ -11,16 +12,16 @@ import {Badge,Due,Empty} from './common';
 import {useState} from 'react';
 import {missingInputs} from '../domain/model';
 
-function priorityReason(app:Application){const days=daysUntil(app.sla_due_at);if(days!==null&&days<0)return `Overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return 'Due today';if(days!==null)return `Due in ${days} day${days===1?'':'s'}`;return 'No demo SLA recorded';}
+function priorityReason(app:Application){const days=workingDaysUntil(app.sla_due_at);if(days!==null&&days<0)return `Overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return 'Due today';if(days!==null)return `Due in ${days} day${days===1?'':'s'}`;return 'No demo SLA recorded';}
 function nextAction(app:Application,identity:Identity){const action=allowedActions(app,identity)[0];return action?`Your next action: ${actionLabels[action].toLowerCase()}`:'Next authority: '+nextAuthorityLabel(app.status);}
 function nextAuthorityLabel(status:Status){if(status==='deficiency_raised')return 'Institution';const byStage:{[key in Status]:string}={draft:'Institution',submitted:'Scrutiny officer',under_scrutiny:'Assigned scrutiny officer',deficiency_raised:'Institution',resubmitted:'Scrutiny officer',evc_pending:'EVC coordinator',evc_scheduled:'Assigned EVC coordinator',pending_decision:'Regional officer',approved:'Record closed',rejected:'Record closed'};return byStage[status];}
 function holdDays(app:Application){const updated=Date.parse(app.updated_at);return Number.isFinite(updated)?Math.max(0,Math.floor((Date.now()-updated)/86400000)):0;}
 
 export function Overview({data,identity,open,navigate}:{data:Workspace;identity:Identity;open:(id:string)=>void;navigate:(page:string)=>void}){
   const active=data.applications.filter(a=>!['draft','approved','rejected'].includes(a.status));
-  const atRisk=active.filter(a=>(daysUntil(a.sla_due_at)??99)<=3);
+  const atRisk=active.filter(a=>(workingDaysUntil(a.sla_due_at)??99)<=3);
   const canCreate=identity.roles.some(r=>r.role==='institution');
-  const onTime=active.filter(a=>(daysUntil(a.sla_due_at)??99)>=0).length;
+  const onTime=active.filter(a=>(workingDaysUntil(a.sla_due_at)??99)>=0).length;
   const [filterScope,setFilterScope]=useState<'assigned'|'at_risk'|'all'>('all');
   const [searchQuery,setSearchQuery]=useState('');
   const [selectedRegion,setSelectedRegion]=useState<string|null>(null);
@@ -30,7 +31,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   const needle=searchQuery.trim().toLowerCase();
   const filtered=needle?scoped.filter(a=>{const institution=data.institutions.find(i=>i.id===a.institution_id)?.name??'';return a.ref_no.toLowerCase().includes(needle)||a.title.toLowerCase().includes(needle)||institution.toLowerCase().includes(needle);}):scoped;
   const regionFiltered=selectedRegion?filtered.filter(a=>a.region===selectedRegion):filtered;
-  const list=regionFiltered.slice().sort((a,b)=>(daysUntil(a.sla_due_at)??9999)-(daysUntil(b.sla_due_at)??9999));
+  const list=regionFiltered.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at)??9999)-(workingDaysUntil(b.sla_due_at)??9999));
   const selected=list.find(a=>a.id===filterSelectedId)??list[0]??null;
 
   const sla=active.length?`${Math.round(onTime/active.length*100)}%`:'—';
@@ -47,7 +48,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
     {label:'At scrutiny',value:stageCount('under_scrutiny'),note:'Waiting for review or return',icon:ListChecks,tone:'verified'},
     {label:'Within SLA',value:sla,note:`${onTime} of ${active.length} active cases meet the demo target`,icon:TrendingUp,tone:'ink'}
   ];
-  const priority=active.slice().sort((a,b)=>(daysUntil(a.sla_due_at)??9999)-(daysUntil(b.sla_due_at)??9999)).slice(0,3);
+  const priority=active.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at)??9999)-(workingDaysUntil(b.sla_due_at)??9999)).slice(0,3);
 
   return <>
     <section className="dispatch-header" aria-labelledby="dispatch-title">
@@ -72,13 +73,13 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
     {/* Cryptographic Trust & Regulatory Ribbon */}
     <div className="overview-security-ribbon">
       <div className="inline">
-        <span className="ribbon-tag tag-security"><ShieldCheck size={13}/> SHA-256 Tamper-Proof Audit Chain</span>
-        <span className="ribbon-tag tag-clock"><Clock3 size={13}/> Dual-Clock Accountability Engine</span>
+        <span className="ribbon-tag tag-security"><ShieldCheck size={13}/> Hash-linked audit history</span>
+        <span className="ribbon-tag tag-clock"><Clock3 size={13}/> Time with authority / institution</span>
         <span className="ribbon-tag tag-aph"><GitBranch size={13}/> APH 2024–27 Clause Engine</span>
       </div>
       <div className="ribbon-stats">
-        <span><strong>90 / 90</strong> Statutory & Security Tests Verified</span>
-        <button className="text-button small" onClick={()=>navigate('trust')}>Verify ledger <ArrowRight size={13}/></button>
+        <span>Verification runs on demand</span>
+        <button className="text-button small" onClick={()=>navigate('trust')}>View verification results <ArrowRight size={13}/></button>
       </div>
     </div>
 
@@ -112,9 +113,9 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       </section>
 
       <section className="hero-metric-card card-verified">
-        <div className="hero-metric-head"><span>Statutory SLA Compliance</span><TrendingUp size={16}/></div>
+        <div className="hero-metric-head"><span>Within configured processing target</span><TrendingUp size={16}/></div>
         <strong className="hero-metric-value" style={{color:'#067647'}}>{sla}</strong>
-        <span className="hero-metric-note">{onTime} of {active.length} active meet APH target</span>
+        <span className="hero-metric-note">{onTime} of {active.length} active meet the configured target</span>
       </section>
     </div>
 
@@ -218,8 +219,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       </div>
       <div className="regional-grid">
         {regions.map(r=>{
-          const regApps=active.filter(a=>a.region===r);
-          const regOverdue=regApps.filter(a=>(daysUntil(a.sla_due_at)??99)<0).length;
+          const regApps=active.filter(a=>a.region===r);            const regOverdue=regApps.filter(a=>(workingDaysUntil(a.sla_due_at)??99)<0).length;
           const isSelected=selectedRegion===r;
           return (
             <button
@@ -275,7 +275,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
     <div className="overview-bottom dispatch-footer">
       <div>
         <span className="quiet-label">DISPATCH NOTE</span>
-        <p>Clauseway · Tamper-proof. Role-gated. Regulation-aware.</p>
+        <p>Clauseway · Hash-linked. Role-gated. Regulation-aware.</p>
       </div>
       <span className="quiet-label">Metrics calculated dynamically from visible synthetic cases.</span>
     </div>

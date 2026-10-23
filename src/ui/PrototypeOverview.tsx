@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Search } from 'lucide-react';
+import { workingDaysUntil } from '../domain/clock';
 import {
   actionLabels,
   allowedActions,
-  daysUntil,
   missingInputs,
   nextAuthority,
   routeStage,
@@ -54,7 +54,7 @@ export function PrototypeOverview({ data, identity, open }: Props) {
     [active, identity.id],
   );
   const atRisk = useMemo(
-    () => active.filter(a => (daysUntil(a.sla_due_at) ?? 99) <= 3),
+    () => active.filter(a => (workingDaysUntil(a.sla_due_at) ?? 99) <= 3),
     [active],
   );
 
@@ -73,7 +73,7 @@ export function PrototypeOverview({ data, identity, open }: Props) {
         })
       : scoped;
     return [...filtered].sort(
-      (a, b) => (daysUntil(a.sla_due_at) ?? 9999) - (daysUntil(b.sla_due_at) ?? 9999),
+      (a, b) => (workingDaysUntil(a.sla_due_at) ?? 9999) - (workingDaysUntil(b.sla_due_at) ?? 9999),
     );
   }, [scoped, query, data.institutions]);
 
