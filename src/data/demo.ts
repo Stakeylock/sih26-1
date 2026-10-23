@@ -9,7 +9,7 @@ import { titleSchema, validateFile } from '../domain/validation';
 const templates = templatesJson as Template[];
 const requirements = requirementsJson as Requirement[];
 const documentHashes = documentHashesJson as Record<string,string>;
-const STORAGE = 'clauseway-isolated-demo-v8';
+const STORAGE = 'clauseway-isolated-demo-v9';
 export const demoIdentities: Identity[] = [
   {id:'demo-national',name:'Aarav Mehta',email:'national@demo.invalid',roles:[{role:'national_admin',region:null}]},
   {id:'demo-institution',name:'Maya Patel',email:'institution@demo.invalid',roles:[{role:'institution',region:null}]},
@@ -43,13 +43,15 @@ export function seed(): Workspace {
   const expiredFireOn=iso(-12).slice(0,10);
   const documents=applications.flatMap(a=>a.template_snapshot.required_documents.map((type,i):DocumentRecord=>{const id=`demo-doc-${a.id}-${i}`;const doc:DocumentRecord={id,application_id:a.id,doc_type:type,file_name:type.toLowerCase().replaceAll(' ','_')+'.pdf',file_path:'demo-only',size_bytes:120000+i*45300,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash(id),uploaded_at:a.created_at};if(id==='demo-doc-demo-app-0-1'){doc.expires_on=expiredFireOn;doc.issuer='Synthetic Fire Department';doc.document_number='FIRE-DEMO-001';}return doc;}));
   documents.push(
-    {id:'demo-doc-demo-app-0-2',application_id:'demo-app-0',doc_type:'Faculty List',file_name:'faculty_list.pdf',file_path:'demo-only',size_bytes:210000,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-2'),uploaded_at:iso(-6)},
+    {id:'demo-doc-demo-app-0-2',application_id:'demo-app-0',doc_type:'Faculty List',file_name:'faculty_list.pdf',file_path:'demo-only',size_bytes:210000,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-2'),uploaded_at:iso(-6),extracted:{faculty_count:'10'}},
     {id:'demo-doc-demo-app-0-3',application_id:'demo-app-0',doc_type:'Land Document',file_name:'land_document.pdf',file_path:'demo-only',size_bytes:255300,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-3'),uploaded_at:iso(-6)},
     {id:'demo-doc-demo-app-0-4',application_id:'demo-app-0',doc_type:'Undertaking',file_name:'undertaking.pdf',file_path:'demo-only',size_bytes:180600,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-4'),uploaded_at:iso(-6)},
     {id:'demo-doc-demo-app-0-5',application_id:'demo-app-0',doc_type:'Fire Safety Certificate',file_name:'fire_safety_certificate_valid.pdf',file_path:'demo-only',size_bytes:201900,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-5'),uploaded_at:iso(-2),expires_on:iso(300).slice(0,10),issuer:'Synthetic Fire Department',document_number:'FIRE-DEMO-002'},
     {id:'demo-doc-demo-app-4-extra-0',application_id:'demo-app-4',doc_type:'Fire Safety Certificate',file_name:'fire_safety_certificate.pdf',file_path:'demo-only',size_bytes:165300,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-4-extra-0'),uploaded_at:iso(-5),expires_on:expiredFireOn,issuer:'Synthetic Fire Department',document_number:'FIRE-DEMO-001'},
   );
   const app0=applications[0];
+  // Cross-document contradiction seed: the dossier declares 12 faculty, but the attached roster lists 10.
+  app0.form_data={...app0.form_data,intake:'120',faculty_count:'12'};
   const claimStatusPlan=['verified','verified','verified','unverified','verified','verified','unverified','deficient','verified'] as const;
   const claims:Claim[]=requirements.map((requirement,index)=>{const status=claimStatusPlan[index];const verified=status==='verified';return {id:`demo-claim-${index}`,application_id:'demo-app-0',requirement_id:requirement.id,status,statement_snapshot:requirement.statement,clause_snapshot:requirement.clause,evidence_types_snapshot:requirement.evidence_types,verification_method:requirement.verification_method,system_inputs:requirement.system_fields?.map(key=>{const field=app0?.template_snapshot.required_fields.find(f=>f.key===key);return {field:key,label:field?.label??key,value:app0?.form_data[key]??'Not declared'}}),verified_by:verified?'demo-scrutiny':null,verified_at:verified?iso(-1):null,verification_note:verified?`Synthetic ${requirement.code.toLowerCase().replaceAll('_',' ')} check confirmed against the demo record.`:null,created_at:iso(-6),updated_at:verified?iso(-1):iso(-6)};});
   const linkEvidence=(claimIndex:number,documentId:string):ClaimEvidence=>({claim_id:`demo-claim-${claimIndex}`,document_id:documentId,linked_by:'demo-institution',linked_at:iso(-6),note:null});
@@ -102,8 +104,8 @@ export function seed(): Workspace {
 export function createDemoRepository(role:Role='national_admin'): Repository {
   const actor=demoIdentities.find(i=>i.roles[0].role===role)!;
   let state=seed();
-  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===8 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],agents:saved.workspace.agents??[]}; } catch { /* Corrupt demo storage is discarded. */ }
-  const persist=()=>localStorage.setItem(STORAGE,JSON.stringify({format:8,workspace:state}));
+  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===9 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],agents:saved.workspace.agents??[]}; } catch { /* Corrupt demo storage is discarded. */ }
+  const persist=()=>localStorage.setItem(STORAGE,JSON.stringify({format:9,workspace:state}));
   const visible=(a:Application)=>a.owner_id===actor.id || (a.status!=='draft' && actor.roles.some(r=>r.role==='national_admin'||(r.role!=='institution'&&r.region===a.region)));
   const find=(id:string)=>{const a=state.applications.find(x=>x.id===id);if(!a||!visible(a))throw new Error('Demo application is unavailable.');return a;};
   function log(a:Application,action:string,old:Status|null,reason:string|null=null){state.events.unshift({id:Date.now(),application_id:a.id,actor_id:actor.id,actor_role:role,action,from_status:old,to_status:a.status,reason,created_at:iso(),payload:{demo:true}});}

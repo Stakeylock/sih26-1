@@ -28,7 +28,7 @@ export interface Application {
   sla_due_at: string | null; submitted_at: string | null; created_at: string; updated_at: string;
   decision_reason: string | null; decision_evidence: string | null; is_demo: boolean;
 }
-export interface DocumentRecord { id: string; application_id: string; doc_type: string; file_name: string; file_path: string; size_bytes: number; mime_type: string; scan_status: 'pending' | 'clean' | 'rejected'; sha256: string | null; uploaded_at: string; expires_on?: string | null; issuer?: string | null; document_number?: string | null }
+export interface DocumentRecord { id: string; application_id: string; doc_type: string; file_name: string; file_path: string; size_bytes: number; mime_type: string; scan_status: 'pending' | 'clean' | 'rejected'; sha256: string | null; uploaded_at: string; expires_on?: string | null; issuer?: string | null; document_number?: string | null; /** Synthetic extraction metadata (demo only) — e.g. values read off a roster, used for cross-document consistency checks. */ extracted?: Record<string,string> }
 export interface AuditEvent { id: number; application_id: string; actor_id: string | null; actor_role: string | null; action: string; from_status: Status | null; to_status: Status | null; reason: string | null; created_at: string; payload: Record<string, unknown>; sequence?: number | null; prev_hash?: string | null; event_hash?: string | null }
 export interface ChecklistItem { id: string; application_id: string; item: string; passed: boolean | null; note: string }
 export interface ExpertMember {

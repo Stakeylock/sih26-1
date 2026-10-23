@@ -35,8 +35,8 @@ describe('claim seed', () => {
   it('exposes the declared system-check inputs on the ratio claim', () => {
     const ratio = claims.find(claim => claim.verification_method === 'system_check');
     expect(ratio?.system_inputs).toEqual([
-      { field: 'intake', label: 'Sanctioned intake', value: 'Synthetic sanctioned intake' },
-      { field: 'faculty_count', label: 'Faculty count', value: 'Synthetic faculty count' },
+      { field: 'intake', label: 'Sanctioned intake', value: '120' },
+      { field: 'faculty_count', label: 'Faculty count', value: '12' },
     ]);
   });
 

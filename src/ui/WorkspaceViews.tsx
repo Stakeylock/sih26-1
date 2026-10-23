@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,ExternalLink,FileCheck2,GitBranch,Info,LockKeyhole,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
+import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,Download,ExternalLink,FileCheck2,FastForward,GitBranch,Info,LockKeyhole,Printer,RotateCcw,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
 import type {AuditVerification} from '../domain/integrity';
 import {daysUntil,missingInputs,regions,roleLabels,routeStage,routeStages,statusLabels,typeLabels,type AppType,type Application,type Identity,type Repository,type TemplateDefinition,type Workspace} from '../domain/model';
 import {Badge,Dialog,Empty,Panel,ViewHeader} from './common';
@@ -69,11 +69,56 @@ export function Visits({data,open}:{data:Workspace;open:(id:string)=>void}){
 export function Compliance({data,identity,repo,run,busy}:{data:Workspace;identity:Identity;repo:Repository;run:Run;busy:boolean}){
   const [selected,setSelected]=useState<string|null>(null);
   const [reason,setReason]=useState('');
+  const [rehearsalStep,setRehearsalStep]=useState<number|null>(null);
   const mayVerify=identity.roles.some(r=>['regional_officer','national_admin'].includes(r.role));
   const roleName=roleLabels[identity.roles[0]?.role??'institution'];
   const openCount=data.obligations.filter(o=>o.status!=='fulfilled').length;
+  const rehearsalStages=[
+    {stage:'t_minus_90',label:'T-90 Advance Notice',badge:'90d Ahead',recipient:'Institution Registrar',summary:'Autonomous 90-day advance notification dispatched. Instructs institution to execute and register renewed 30-year lease deed.'},
+    {stage:'t_minus_30',label:'T-30 Urgent Notice',badge:'30d Ahead',recipient:'Institution & Regional Bureau',summary:'High-priority amber signal generated. Document flagged as "Expiring Soon" on Institutional Portal and Regional Bureau Dashboard.'},
+    {stage:'t_0',label:'T-0 Expiry Breached',badge:'Deadline Day',recipient:'Regional Officer',summary:'Validity expired. System flips document status to EXPIRED (Red). Institution enters default 15-day statutory curing window.'},
+    {stage:'escalated_ro',label:'T+7 RO Escalation',badge:'T+7 Days',recipient:'Regional Officer',summary:'Level-1 Statutory Escalation: Formal Non-Compliance Notice automatically lodged. Regional Officer assigned for physical inquiry.'},
+    {stage:'escalated_hq',label:'T+15 Council HQ',badge:'T+15 Days',recipient:'Member Secretary & SCC',summary:'Level-2 Statutory Escalation: Docket transmitted to AICTE Member Secretary & Standing Complaint Committee (SCC) for regulatory sanction.'}
+  ];
   return <>
     <ViewHeader index="06" title="Obligation register" summary="Time-bound undertakings, lease validity (APH 30-year norm), and multi-tier escalation tracking." count={String(openCount).padStart(2,'0')} label="open obligations"/>
+    <section className="support-surface" style={{marginBottom:'20px',borderLeft:'3px solid var(--route,#0c8272)',background:'#fcfdfd'}}>
+      <div className="support-surface-heading">
+        <div>
+          <span className="section-index">SIM</span>
+          <div>
+            <h2>Autonomous Deadline & Escalation Rehearsal</h2>
+            <p>Interactive simulation demonstrating time-bound multi-tier escalation across statutory APH windows.</p>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+          <span className="quiet-label"><FastForward size={14}/>APH Chapter 7 Engine</span>
+          {rehearsalStep!==null&&<button className="button small outline" onClick={()=>setRehearsalStep(null)}><RotateCcw size={12}/>Reset rehearsal</button>}
+        </div>
+      </div>
+      <div style={{padding:'16px 20px'}}>
+        <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'12px'}}>
+          {rehearsalStages.map((st,idx)=>(
+            <button key={st.stage} className={`button small ${rehearsalStep===idx?'':'outline'}`} style={{fontSize:'11px',padding:'6px 10px'}} onClick={()=>setRehearsalStep(idx)}>
+              <strong>{st.badge}</strong> · {st.label}
+            </button>
+          ))}
+        </div>
+        {rehearsalStep!==null?(
+          <div style={{background:'#f8fafc',border:'1px solid var(--rule,#e2e8f0)',borderRadius:'6px',padding:'12px 16px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
+              <strong style={{color:'var(--ink,#17243a)',fontSize:'13px'}}>{rehearsalStages[rehearsalStep].label} (Statutory Simulation)</strong>
+              <span className="document-tag clean" style={{fontSize:'9px'}}>Dispatched to: {rehearsalStages[rehearsalStep].recipient}</span>
+            </div>
+            <p style={{margin:0,fontSize:'12px',color:'var(--muted,#475569)',lineHeight:1.6}}>{rehearsalStages[rehearsalStep].summary}</p>
+          </div>
+        ):(
+          <p style={{margin:0,fontSize:'11px',color:'var(--muted,#64748b)'}}>
+            Click any milestone above to rehearse how Clauseway autonomously generates notices, triggers urgent flags, shifts document states, and escalates overdue undertakings to the Member Secretary.
+          </p>
+        )}
+      </div>
+    </section>
     <section className="support-surface obligation-surface">
       <div className="support-surface-heading"><div><span className="section-index">01</span><div><h2>Compliance obligations & document validity</h2><p>Lease tenure tracking, required evidence, multi-tier escalation hierarchy, and verified closure.</p></div></div><span className="quiet-label"><ShieldCheck size={14}/>Evidence-linked follow-up</span></div>
       {data.obligations.length?<div className="obligation-list">{data.obligations.map((obligation,index)=>{const application=data.applications.find(a=>a.id===obligation.application_id);const due=daysUntil(`${obligation.due_date}T23:59:59`);const fulfilled=obligation.status==='fulfilled';const documents=data.documents.filter(document=>document.application_id===obligation.application_id);const required=application?.template_snapshot.required_documents??[];const present=required.filter(type=>documents.some(document=>document.doc_type===type&&document.scan_status==='clean'));return <article className={fulfilled?'obligation-row fulfilled':'obligation-row'} key={obligation.id}><div className="obligation-index">{String(index+1).padStart(2,'0')}</div><div className="obligation-main"><div className="inline"><span className="mono">{application?.ref_no??'UNKNOWN CASE'}</span><span className={fulfilled?'document-tag clean':'document-tag pending'}>{fulfilled?<Check size={12}/>:<Clock3 size={12}/>} {fulfilled?'Closed':due!==null&&due<0?`${Math.abs(due)}d overdue`:`Due in ${due??'—'}d`}</span></div><h3>{obligation.title}</h3><p>{applicationInstitution(data,application)} · {obligation.region} region</p><p className="obligation-source"><strong>Statutory Norm</strong>{obligation.statutory_norm||(application?.decision_reason??'Prescribed under APH 2024-27')}</p>{obligation.lease_years_remaining!==undefined&&<div style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'3px 8px',borderRadius:'4px',background:obligation.lease_years_remaining>=30?'rgba(6,118,71,0.08)':'rgba(180,35,24,0.08)',color:obligation.lease_years_remaining>=30?'#067647':'#b42318',fontSize:'12px',fontWeight:600,marginTop:'4px'}}><LockKeyhole size={13}/> Registered Lease: {obligation.lease_years_remaining} years remaining (APH Requirement: Min 30 years)</div>}<div style={{marginTop:'10px',padding:'6px 10px',background:'var(--surface-muted,#f1f5f9)',borderRadius:'6px',display:'flex',flexWrap:'wrap',alignItems:'center',gap:'8px',fontSize:'12px'}}><span className="mono" style={{fontWeight:600}}>ESCALATION LADDER:</span><span style={obligation.escalation_level==='normal'?{fontWeight:700,color:'#1d4ed8'}:{color:'var(--foreground-muted,#57697c)'}}>T-90 Advance Notice</span><span>→</span><span style={obligation.escalation_level==='t_minus_30'?{fontWeight:700,color:'#b54708'}:{color:'var(--foreground-muted,#57697c)'}}>T-30 Urgent Warning</span><span>→</span><span style={due!==null&&due<=0?{fontWeight:700,color:'#b42318'}:{color:'var(--foreground-muted,#57697c)'}}>T-0 Deadline</span><span>→</span><span style={obligation.escalation_level==='escalated_ro'?{fontWeight:700,color:'#b42318'}:{color:'var(--foreground-muted,#57697c)'}}>T+7 Level-1 (Regional Officer)</span><span>→</span><span style={obligation.escalation_level==='escalated_hq'?{fontWeight:700,color:'#b42318'}:{color:'var(--foreground-muted,#57697c)'}}>T+15 Level-2 (Member Secretary)</span></div><div className="obligation-closure" style={{marginTop:'10px'}}><div><span>Required evidence</span><p>{required.length?required.join(' · '):'None recorded'}</p></div><div><span>Evidence present</span><p>{present.length}/{required.length} clean{present.length?` · ${present.join(' · ')}`:''}</p></div><div><span>Authorized verification</span><p>{mayVerify?`${roleName} · current role`:'Regional officer or national administrator'}</p></div><div><span>Permitted next action</span><p>{fulfilled?'Closed and audited':mayVerify?'Verify fulfilment with a recorded reason':'Read-only for your role'}</p></div></div></div><div className="obligation-action">{mayVerify&&!fulfilled?<button className="button outline" disabled={busy} onClick={()=>setSelected(obligation.id)}>Verify fulfilment <ArrowRight size={15}/></button>:<span className="quiet-label">{fulfilled?'Verified and audited':'Regional officer review'}</span>}</div></article>;})}</div>:<Empty title="No compliance obligations">Demo approval creates the relevant follow-up obligations.</Empty>}
@@ -98,6 +143,37 @@ export function Alerts({data,repo,run,busy,navigate}:{data:Workspace;repo:Reposi
     <div className="support-footnote"><ShieldCheck size={14}/>Alerts are tied to case references, APH route versions, and statutory deadlines with direct deep-linking.</div>
   </>;
 }
+function exportRosterCsv(applications: Workspace['applications'], data: Workspace) {
+  const headers = ['Reference No','Title','Region','Category','Stage','Status','Dual-Clock Responsibility','SLA Due Date','Remaining Days','Open Deficiencies'];
+  const rows = applications.map(app => {
+    const remaining = daysUntil(app.sla_due_at);
+    const defCount = data.deficiencies.filter(d => d.application_id === app.id && d.status === 'open').length;
+    const isInstDelay = app.status === 'deficiency_raised';
+    const responsibility = isInstDelay ? 'Institution Return' : 'Council Processing';
+    const daysLabel = remaining === null ? 'None' : remaining < 0 ? `${Math.abs(remaining)}d overdue` : `${remaining}d remaining`;
+    return [
+      app.ref_no,
+      `"${app.title.replace(/"/g, '""')}"`,
+      app.region,
+      typeLabels[app.app_type] || app.app_type,
+      routeStage(app.status).label,
+      app.status,
+      responsibility,
+      app.sla_due_at ? app.sla_due_at.slice(0, 10) : 'N/A',
+      daysLabel,
+      defCount
+    ].join(',');
+  });
+  const blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `aicte-statutory-pendency-roster-${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 export function Reports({data}:{data:Workspace}){
   const [scope,setScope]=useState<'active'|'closed'|'all'>('active');
   const active=data.applications.filter(a=>!['approved','rejected'].includes(a.status));
@@ -113,7 +189,13 @@ export function Reports({data}:{data:Workspace}){
   return <>
     <ViewHeader index="08" title="Operations report" summary={scope==='closed'?'Approved and rejected outcomes within the visible scope.':scope==='all'?'Every visible case across the route, including closed outcomes.':'Where active work is waiting within the visible scope.'} count={String(scoped.length).padStart(2,'0')} label={scope==='active'?'active cases':scope==='closed'?'closed cases':'visible applications'}/>
     <div className="report-scope" role="group" aria-label="Report scope">{scopes.map(item=><button key={item.key} className={scope===item.key?'active':''} aria-pressed={scope===item.key} onClick={()=>setScope(item.key)}>{item.label}<strong>{String(item.count).padStart(2,'0')}</strong></button>)}</div>
-    <p className="report-scope-note">Showing {scopeLabel.toLowerCase()} · {scoped.length} of {data.applications.length} visible applications.</p>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'10px',margin:'10px 0 16px'}}>
+      <p className="report-scope-note" style={{margin:0}}>Showing {scopeLabel.toLowerCase()} · {scoped.length} of {data.applications.length} visible applications.</p>
+      <div style={{display:'flex',gap:'8px'}}>
+        <button className="button small outline" onClick={()=>exportRosterCsv(scoped,data)}><Download size={13}/>Export statutory roster (CSV)</button>
+        <button className="button small secondary" onClick={()=>window.print()}><Printer size={13}/>Print executive brief</button>
+      </div>
+    </div>
     <section className="report-board">
       <div className="report-question"><div className="support-surface-heading"><div><span className="section-index">01</span><div><h2>{scope==='closed'?'Closed outcomes':scope==='all'?'All visible applications':'Where are cases waiting?'}</h2><p>{scope==='closed'?'Approved and rejected outcomes, with waiting-stage counts excluded.':scope==='all'?'Every visible case across the route, including outcomes.':'Current handoffs calculated from active cases visible to this role.'}</p></div></div>{scope!=='closed'&&<span className="quiet-label"><TimerReset size={14}/>{overdue} overdue</span>}</div>
         {scope==='closed'?<div className="report-outcome-list"><div><span>Approved</span><strong>{String(approved).padStart(2,'0')}</strong><small>{closed.length?Math.round(approved/closed.length*100):0}% of closed cases</small></div><div><span>Rejected</span><strong>{String(rejected).padStart(2,'0')}</strong><small>{closed.length?Math.round(rejected/closed.length*100):0}% of closed cases</small></div></div>:<div className="report-route-list">{routeRows.map((stage,index)=>{const count=scoped.filter(a=>routeStage(a.status).key===stage.key).length;const share=scoped.length?Math.round(count/scoped.length*100):0;return <div className="report-route-row" key={stage.key}><span className="report-route-index">{String(index+1).padStart(2,'0')}</span><div><div className="spread"><strong>{stage.label}</strong><span className="mono">{count} {count===1?'case':'cases'}</span></div><div className="report-bar"><span style={{width:`${share}%`}}/></div></div></div>;})}</div>}
