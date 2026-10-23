@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react';
 import {ArrowUpRight,Command,Search} from 'lucide-react';
 import type {Workspace} from '../domain/model';
 import {Dialog} from './common';
-const pages=[['overview','Operations overview'],['applications','Application register'],['workflows','Workflow configuration'],['visits','Verification visits'],['compliance','Compliance obligations'],['alerts','Alerts & escalations'],['reports','Reports & insights'],['audit','Audit logs'],['settings','Workspace settings']];
+const pages=[['overview','Operations overview'],['applications','Application register'],['workflows','Workflow configuration'],['visits','Verification visits'],['compliance','Compliance obligations'],['alerts','Alerts & escalations'],['reports','Reports & insights'],['trust','Trust Center'],['audit','Audit logs'],['settings','Workspace settings']];
 export function CommandPalette({data,navigate}:{data:Workspace|null;navigate:(page:string)=>void}){
   const [open,setOpen]=useState(false);const [query,setQuery]=useState('');const [index,setIndex]=useState(0);
   useEffect(()=>{const onKey=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setOpen(v=>!v);setQuery('');setIndex(0);}};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[]);

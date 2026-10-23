@@ -10,6 +10,7 @@ export const tourSteps:TourStep[]=[
   {role:'evc_coordinator',route:'case/demo-app-2',roleLabel:roleLabels.evc_coordinator,routeLabel:'Dossier / DEMO-2026-1003',title:'A visit is a scheduled handoff.',body:'The expert visit is a named stage with a coordinator, a date, and a report. It is not an email thread with no owner.'},
   {role:'regional_officer',route:'case/demo-app-3',roleLabel:roleLabels.regional_officer,routeLabel:'Dossier / DEMO-2026-1004',title:'A decision needs a reason and a receipt.',body:'The decision desk cites clean evidence and records the rationale. The route cannot be silently rerouted around a missing check.'},
   {role:'national_admin',route:'audit',roleLabel:roleLabels.national_admin,routeLabel:'Audit logs',title:'The record outlives the meeting.',body:'Actor, role, reason, time, and workflow version are append-only. This is the trust layer a regulator can inspect.'},
+  {role:'national_admin',route:'trust',roleLabel:roleLabels.national_admin,routeLabel:'Trust Center',title:'Inspect the boundaries separately.',body:'Record integrity, evidence, access, and agents stay visible as separate checks. There is no single green score to hide behind.'},
   {role:'national_admin',route:'receipt/demo-app-5',roleLabel:roleLabels.national_admin,routeLabel:'Decision receipt / DEMO-2026-1006',title:'Open the receipt.',body:'A decision rendered as one verifiable record. Print it, share it, or trace it back to the dossier that produced it.'}
 ];
 

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
+import type { AuditVerification } from '../domain/integrity';
 import type { Repository,Advisory } from '../domain/model';
 import { institutionSchema, titleSchema, validateFile } from '../domain/validation';
 
@@ -37,22 +38,44 @@ export function createSupabaseRepository(): Repository {
     async signIn(email, password) { const {error} = await client.auth.signInWithPassword({email,password}); check(error); },
     async signOut() { const {error} = await client.auth.signOut({scope: 'local'}); check(error); },
     async workspace() {
-      const [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications] = await Promise.all([
+      const [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications,requirements,claims,claimEvidence,deficiencies,signals,grants,agents] = await Promise.all([
         client.from('applications').select('*').order('created_at',{ascending:false}).limit(200),
         client.from('institutions').select('*').limit(200), client.from('workflow_templates').select('*').limit(50),
         client.from('application_documents').select('*').order('uploaded_at',{ascending:false}).limit(1000),
         client.from('application_events').select('*').order('created_at',{ascending:false}).limit(500),
         client.from('checklist_items').select('*').limit(1000),client.from('evc_visits').select('*').limit(200),
         client.from('obligations').select('*').limit(500),client.from('notifications').select('*').order('created_at',{ascending:false}).limit(100),
+        client.from('requirements').select('*').limit(2000),client.from('application_claims').select('*').limit(2000),
+        client.from('claim_evidence').select('*').limit(4000),client.from('deficiencies').select('*').limit(2000),
+        client.from('integrity_signals').select('*').limit(2000),
+        client.from('user_roles').select('*').limit(2000),
+        client.from('agent_registry').select('*').limit(200),
       ]);
-      for (const result of [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications]) check(result.error);
-      return {applications:applications.data??[],institutions:institutions.data??[],templates:templates.data??[],documents:documents.data??[],events:events.data??[],checklist:checklist.data??[],visits:visits.data??[],obligations:obligations.data??[],notifications:notifications.data??[]};
+      for (const result of [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications,requirements,claims,claimEvidence,deficiencies,signals,grants,agents]) check(result.error);
+      return {applications:applications.data??[],institutions:institutions.data??[],templates:templates.data??[],documents:documents.data??[],events:events.data??[],checklist:checklist.data??[],visits:visits.data??[],obligations:obligations.data??[],notifications:notifications.data??[],requirements:requirements.data??[],claims:claims.data??[],claim_evidence:claimEvidence.data??[],deficiencies:deficiencies.data??[],integrity_signals:signals.data??[],access_assignments:grants.data??[],agents:agents.data??[]};
     },
     async createInstitution(input) { const v=institutionSchema.parse(input); const {error}=await client.rpc('fp_create_institution',{_name:v.name,_ref:v.aicte_ref,_region:v.region,_state:v.state}); check(error); },
     async createApplication(type,title) { const {data,error}=await client.rpc('fp_create_application',{_type:type,_title:titleSchema.parse(title)}); check(error); if (!data) throw new Error('No application was created.'); return data; },
     async saveDraft(application,title,form) { const {error}=await client.rpc('fp_save_draft',{_id:application.id,_title:titleSchema.parse(title),_form:form,_version:application.version}); check(error); },
     async transition({application,action,reason,payload,requestId}) { const {error}=await client.rpc('fp_transition',{_id:application.id,_action:action,_reason:reason,_payload:payload,_expected_version:application.version,_request_id:requestId}); check(error); },
     async checklist(application,item,passed,note) { const {error}=await client.rpc('fp_checklist',{_id:application.id,_item:item,_passed:passed,_note:note}); check(error); },
+    async verifyClaim(_application,claim,result,note) { const {error}=await client.rpc('fp_verify_claim',{_claim:claim.id,_result:result,_note:note||null}); check(error); },
+    async linkClaimEvidence(_application,claim,document,note) { const {error}=await client.rpc('fp_link_claim_evidence',{_claim:claim.id,_document:document.id,_note:note||null}); check(error); },
+    async raiseClaimDeficiency(_application,claim,observation,remedy,dueAt) { const {error}=await client.rpc('fp_raise_deficiency',{_claim:claim.id,_observation:observation,_remedy:remedy,_due:dueAt}); check(error); },
+    async resolveClaimDeficiency(_application,deficiency,evidence,note) { const {error}=await client.rpc('fp_resolve_deficiency',{_deficiency:deficiency.id,_evidence:evidence.id,_note:note}); check(error); },
+    async recheckClaimDeficiency(_application,deficiency,result,note) { const {error}=await client.rpc('fp_recheck_deficiency',{_deficiency:deficiency.id,_result:result,_note:note}); check(error); },
+    async verifyAudit(application) {
+      const {data,error}=await client.rpc('fp_verify_audit_chain',{_application:application.id});
+      check(error);
+      if(!data) throw new Error('Audit verification returned no result.');
+      return data as AuditVerification;
+    },
+    async tamperReplay(application) {
+      const {data,error}=await client.rpc('fp_demo_tamper_replay',{_application:application.id});
+      check(error);
+      if(!data) throw new Error('Tamper replay returned no result.');
+      return data as AuditVerification;
+    },
     async upload(application,type,file) {
       validateFile(file);
       const {data:id,error}=await client.rpc('fp_reserve_document',{_id:application.id,_type:type,_name:file.name,_mime:file.type,_size:file.size}); check(error);
