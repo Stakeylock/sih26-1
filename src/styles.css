@@ -477,6 +477,19 @@ body{font-size:14px}.sidebar{width:220px;background:#182126;border-right:1px sol
 .replay-detail>p{font-size:10px;color:#4a5b73;line-height:1.55;margin:3px 0 0}
 .replay-basis{display:block;margin-top:4px;font-size:8px;color:#8593a5}
 .replay-empty{padding:18px 23px;margin:0}
+.responsibility-split{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:11px;padding-top:11px;border-top:1px solid #edf1f5}
+.responsibility-label{font-family:var(--font-record,ui-monospace),monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#5b6b82;font-weight:700}
+.responsibility-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #e4eaf1;border-radius:6px;padding:5px 9px;font-family:var(--font-record,ui-monospace),monospace;font-size:10px;letter-spacing:.03em;color:#4a5b73;background:#fafbfd}
+.responsibility-chip b{font-size:13px;font-variant-numeric:tabular-nums;color:#2c3e58}
+.responsibility-chip.officer{border-color:#cfe0f5;background:#f2f6fd;color:#2f5590}
+.responsibility-chip.officer b{color:#1e3a8a}
+.responsibility-chip.institution{border-color:#f0dcc0;background:#fdf6ec;color:#8a5a1e}
+.responsibility-chip.institution b{color:#a4512a}
+.responsibility-chip.paused{border-color:#ecd3c2;background:#fdf4ef;color:#a4512a;font-weight:700}
+.responsibility-note{flex-basis:100%;font-size:9px;color:#8593a5;line-height:1.5}
+@media(max-width:760px){.responsibility-split{gap:7px}}
+.due{font-family:var(--font-record,ui-monospace),monospace;font-variant-numeric:tabular-nums;font-size:10px;letter-spacing:.02em;color:#586670;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid #dfe5ec;background:#f7f9fc;border-radius:5px;padding:3px 7px}
+.due.urgent{color:#a4512a;border-color:#ecd3c2;background:#fdf4ef;font-weight:700}
 @media(max-width:700px){.preflight-list{padding:0 16px 6px}.preflight-clear{padding:14px 16px 16px}}
 
 .passport-trigger{flex-shrink:0;font-size:9px}

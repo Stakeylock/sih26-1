@@ -1,6 +1,7 @@
 import {useState,type FormEvent} from 'react';
 import {ArrowLeft,ArrowRight,Check,CheckCircle2,CircleAlert,Clock3,Download,FileCheck2,FileText,LockKeyhole,Printer,ShieldCheck,Upload} from 'lucide-react';
 import type {AuditVerification} from '../domain/integrity';
+import {computeDualClock} from '../domain/clock';
 import {actionLabels,allowedActions,missingInputs,nextAuthority,roleLabels,routeStage,typeLabels,type Action,type Advisory,type Application,type Identity,type Repository,type Workspace} from '../domain/model';
 import {Badge,Dialog,Due,Panel,SecurityNote,Timeline,WorkflowRail} from './common';
 import {ClaimLedger} from './ClaimLedger';
@@ -23,6 +24,7 @@ export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,
   const reviewComplete=checklist.length>0&&reviewedChecks===checklist.length;
   const reviewPassed=reviewComplete&&passedChecks===checklist.length;
   const claims=data.claims.filter(claim=>claim.application_id===app.id);const claimEvidence=data.claim_evidence.filter(link=>claims.some(claim=>claim.id===link.claim_id));const claimDeficiencies=data.deficiencies.filter(item=>item.application_id===app.id);
+  const dualClock=computeDualClock({startAt:app.submitted_at??app.created_at,deficiencies:claimDeficiencies});
   const claimRoute=claims.length>0;const verifiedClaims=claims.filter(claim=>['verified','not_applicable'].includes(claim.status)).length;const openClaimDeficiencies=claimDeficiencies.filter(item=>['open','escalated'].includes(item.status)).length;const claimsReady=claimRoute&&verifiedClaims===claims.length&&openClaimDeficiencies===0;
   const closed=['approved','rejected'].includes(app.status);
   const lastDeficiency=data.events.find(e=>e.application_id===app.id&&e.action==='raise_deficiency');
@@ -70,6 +72,13 @@ export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,
             </a>
           )}
         </div>
+      </div>
+      <div className="responsibility-split" role="group" aria-label="Delay attribution">
+        <span className="responsibility-label">Delay attribution</span>
+        <span className="responsibility-chip officer"><b>{dualClock.officerDays}</b> officer processing · working days</span>
+        <span className="responsibility-chip institution"><b>{dualClock.institutionDays}</b> institution response · working days</span>
+        {dualClock.paused&&<span className="responsibility-chip paused">Clock paused · with institution</span>}
+        <span className="responsibility-note">Working days exclude weekends. The officer clock pauses while a claim deficiency is open.</span>
       </div>
       {hasReplacementEvidence&&(
         <div style={{marginTop:'10px',padding:'8px 12px',background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:'6px',fontSize:'11px',color:'#166534',display:'flex',alignItems:'center',gap:'8px'}}>

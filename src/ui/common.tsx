@@ -1,12 +1,13 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { ArrowUpRight, Check, Clock3, FileText, ShieldCheck, X } from 'lucide-react';
-import { daysUntil, routeStageIndex, routeStages, statusLabels, type Application, type AuditEvent, type Status } from '../domain/model';
+import { routeStageIndex, routeStages, statusLabels, type Application, type AuditEvent, type Status } from '../domain/model';
+import { workingDaysUntil } from '../domain/clock';
 export function Brand({onClick}:{onClick?:()=>void}={}){
   const content=<><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4.5h8.5L19 9v10.5H6z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M14.5 4.5V9H19" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M9 13h7M9 16h4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span>FlowPilot<span className="brand-period">.</span></>;
   return onClick?<button className="brand brand-button" type="button" aria-label="FlowPilot home" onClick={onClick}>{content}</button>:<div className="brand">{content}</div>;
 }
-export function Badge({status}:{status:Status}) {return <span className={`badge ${status}`}>{statusLabels[status]}</span>;}
-export function Due({app}:{app:Application}){const days=daysUntil(app.sla_due_at);return <span className={days!==null&&days<=3?'due urgent':'due'}><Clock3 size={13}/>{days===null?'No active deadline':days<0?`${-days}d overdue`:days===0?'Due today':`${days}d remaining`}</span>;}
+export function Badge({status}:{status:Status}) {return <span className={`badge ${status}`} role="status" aria-label={`Status: ${statusLabels[status]}`}>{statusLabels[status]}</span>;}
+export function Due({app}:{app:Application}){const days=workingDaysUntil(app.sla_due_at);const text=days===null?'No active deadline':days<0?`${-days}d overdue`:days===0?'Due today':`${days}d remaining`;const aria=days===null?'No active deadline':days<0?`Deadline: ${-days} working days overdue`:days===0?'Deadline: due today':`Deadline: ${days} working days remaining`;return <span className={days!==null&&days<=3?'due urgent':'due'} aria-label={aria}><Clock3 size={13} aria-hidden="true"/>{text}</span>;}
 export function Empty({title,children}:{title:string;children?:ReactNode}){return <div className="empty"><FileText size={29}/><h3>{title}</h3><div>{children}</div></div>;}
 export function Panel({title,subtitle,action,children,className=''}:{title:string;subtitle?:string;action?:ReactNode;children:ReactNode;className?:string}){return <section className={`panel ${className}`}><div className="panel-heading"><div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div>{action}</div>{children}</section>;}
 export function ViewHeader({index,title,summary,count,label}:{index:string;title:string;summary:string;count?:string;label?:string}){return <section className="support-header"><div><span className="dispatch-kicker">DISPATCH / {index}</span><h1>{title}</h1><p>{summary}</p></div>{count!==undefined&&<div className="support-header-count"><strong>{count}</strong><span>{label}</span></div>}</section>;}
