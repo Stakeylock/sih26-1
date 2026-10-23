@@ -81,8 +81,8 @@ export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,
         <span className="responsibility-note">Working days exclude weekends. The officer clock pauses while a claim deficiency is open.</span>
       </div>
       {hasReplacementEvidence&&(
-        <div style={{marginTop:'10px',padding:'8px 12px',background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:'6px',fontSize:'11px',color:'#166534',display:'flex',alignItems:'center',gap:'8px'}}>
-          <CheckCircle2 size={15} style={{flexShrink:0}}/>
+        <div style={{marginTop:'10px',padding:'8px 12px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:'6px',fontSize:'11px',color:'#92400e',display:'flex',alignItems:'center',gap:'8px'}}>
+          <CircleAlert size={15} style={{flexShrink:0}}/>
           <span>
             <strong>Evidentiary Evolution:</strong> Replacement {replacementDoc?.doc_type} ({replacementDoc?.file_name}) uploaded by institution. <em>"Uploaded ≠ Verified"</em> — statutory deficiency remains open until an authorized scrutiny officer accepts and links the replacement under APH Clause 1.8.
           </span>
