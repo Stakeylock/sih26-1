@@ -1,4 +1,6 @@
 import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
+
+export type { Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
 export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'regional_officer', 'national_admin'] as const;
 export type Role = typeof roles[number];
 export const regions = ['North', 'South', 'East', 'West', 'Central', 'North-East'] as const;
@@ -29,9 +31,16 @@ export interface Application {
 export interface DocumentRecord { id: string; application_id: string; doc_type: string; file_name: string; file_path: string; size_bytes: number; mime_type: string; scan_status: 'pending' | 'clean' | 'rejected'; sha256: string | null; uploaded_at: string; expires_on?: string | null; issuer?: string | null; document_number?: string | null }
 export interface AuditEvent { id: number; application_id: string; actor_id: string | null; actor_role: string | null; action: string; from_status: Status | null; to_status: Status | null; reason: string | null; created_at: string; payload: Record<string, unknown>; sequence?: number | null; prev_hash?: string | null; event_hash?: string | null }
 export interface ChecklistItem { id: string; application_id: string; item: string; passed: boolean | null; note: string }
-export interface Visit { id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null }
-export interface Obligation { id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string }
-export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string }
+export interface ExpertMember {
+  name: string;
+  designation: string;
+  domain: 'Academic (Chairman)' | 'Architectural / Civil' | 'Regional Nominee';
+  institution: string;
+  no_conflict_signed: boolean;
+}
+export interface Visit { id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null; committee?: ExpertMember[] }
+export interface Obligation { id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string; escalation_level?: 'normal' | 't_minus_30' | 't_minus_0' | 'escalated_ro' | 'escalated_hq'; statutory_norm?: string; lease_years_remaining?: number }
+export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null }
 export interface Workspace { applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[] }
 export const routeStages = [
   { key: 'submission', label: 'Submission', statuses: ['draft'] },
@@ -56,8 +65,8 @@ export function nextAuthority(status: Status) {
     outcome: 'Record complete',
   } as const)[routeStage(status).key];
 }
-export type Action = 'submit' | 'resubmit' | 'start_scrutiny' | 'raise_deficiency' | 'pass_scrutiny' | 'schedule_evc' | 'submit_evc_report' | 'approve' | 'reject';
-export const actionLabels: Record<Action, string> = { submit: 'Submit application', resubmit: 'Resubmit application', start_scrutiny: 'Start scrutiny', raise_deficiency: 'Return for deficiency', pass_scrutiny: 'Accept scrutiny', schedule_evc: 'Schedule visit', submit_evc_report: 'Submit visit report', approve: 'Record demo approval', reject: 'Record demo rejection' };
+export type Action = 'submit' | 'resubmit' | 'start_scrutiny' | 'raise_deficiency' | 'pass_scrutiny' | 'schedule_evc' | 'submit_evc_report' | 'approve' | 'reject' | 'request_shc';
+export const actionLabels: Record<Action, string> = { submit: 'Submit application', resubmit: 'Resubmit application', start_scrutiny: 'Start scrutiny', raise_deficiency: 'Return for deficiency', pass_scrutiny: 'Accept scrutiny', schedule_evc: 'Schedule visit', submit_evc_report: 'Submit visit report', approve: 'Record demo approval', reject: 'Record demo rejection', request_shc: 'File SHC appeal' };
 export interface Transition { application: Application; action: Action; reason: string; payload: Record<string, unknown>; requestId: string }
 export interface Advisory {engine:string;advisoryOnly:boolean;model:string;summary:string;warnings:string[];trace:string[];disclaimer:string;automation:{id:string;state:string}}
 export interface Repository {
@@ -80,7 +89,12 @@ export interface Repository {
 }
 export function allowedActions(app: Application, identity: Identity): Action[] {
   const has = (role: Role) => identity.roles.some(r => r.role === role && (r.region === app.region || role === 'national_admin'));
-  if (app.owner_id === identity.id) return app.status === 'draft' ? ['submit'] : app.status === 'deficiency_raised' ? ['resubmit'] : [];
+  if (app.owner_id === identity.id) {
+    if (app.status === 'draft') return ['submit'];
+    if (app.status === 'deficiency_raised') return ['resubmit'];
+    if (app.status === 'rejected' && !app.form_data['shc_appeal_submitted']) return ['request_shc'];
+    return [];
+  }
   if (['submitted', 'resubmitted'].includes(app.status) && has('scrutiny_officer')) return ['start_scrutiny'];
   if (app.status === 'under_scrutiny' && app.assigned_officer === identity.id && has('scrutiny_officer')) return ['raise_deficiency', 'pass_scrutiny'];
   if (app.status === 'evc_pending' && has('evc_coordinator')) return ['schedule_evc'];

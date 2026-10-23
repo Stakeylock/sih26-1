@@ -12,8 +12,11 @@ import {Welcome} from './ui/Welcome';
 import {GuidedStory,tourSteps} from './ui/GuidedStory';
 import {Receipt} from './ui/Receipt';
 import {TrustCenter} from './ui/TrustCenter';
+import {PrototypeOverview} from './ui/PrototypeOverview';
+import {PrototypeDossier} from './ui/PrototypeDossier';
+import './ui/prototype.css';
 const navigation=[{id:'overview',label:'Overview',icon:LayoutDashboard},{id:'applications',label:'Applications',icon:ClipboardList},{id:'workflows',label:'Approval routes',icon:GitBranch},{id:'visits',label:'Verification visits',icon:CalendarClock},{id:'compliance',label:'Compliance',icon:ShieldCheck},{id:'alerts',label:'Alerts & escalations',icon:Bell},{id:'reports',label:'Reports',icon:BarChart3},{id:'trust',label:'Trust Center',icon:Fingerprint},{id:'audit',label:'Audit logs',icon:FileClock},{id:'settings',label:'Settings',icon:Settings2}];
-const titles:Record<string,string>={overview:'Overview',applications:'Applications',new:'New approval application',case:'Application workspace',receipt:'Decision receipt',workflows:'Approval routes',visits:'Verification visits',compliance:'Compliance monitoring',alerts:'Alerts & escalations',reports:'Reports & insights',trust:'Trust Center',audit:'Audit logs',settings:'Workspace settings'};
+const titles:Record<string,string>={overview:'Overview',applications:'Applications',new:'New approval application',case:'Application workspace',receipt:'Decision receipt',workflows:'Approval routes',visits:'Verification visits',compliance:'Compliance monitoring',alerts:'Alerts & escalations',reports:'Reports & insights',trust:'Trust Center',audit:'Audit logs',settings:'Workspace settings',prototype:'Applications requiring attention',['prototype/case']:'Application workspace'};
 export default function App(){
   const [role,setRole]=useState<Role>('national_admin');const [repo,setRepo]=useState<Repository|null>(null);const [identity,setIdentity]=useState<Identity|null>(null);const [data,setData]=useState<Workspace|null>(null);
   const [error,setError]=useState('');const [notice,setNotice]=useState('');const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const locked=useRef(false);
@@ -35,6 +38,9 @@ export default function App(){
   const reload=async()=>{if(!repo)return;setError('');try{const user=await repo.identity();setIdentity(user);setData(user?await repo.workspace():null);}catch(e){setError(e instanceof Error?e.message:'Unable to reload.');}};
   const run:Run=async(operation,message)=>{if(locked.current)return false;locked.current=true;setBusy(true);setError('');try{await operation();if(repo){const workspace=await repo.workspace();setData(workspace);}setNotice(message);return true;}catch(e){setError(e instanceof Error?e.message:'The operation failed. Please reload and try again.');return false;}finally{locked.current=false;setBusy(false);}};
   const page=route.split('/')[0];const caseId=decodeURIComponent(route.split('/')[1]??'');const application=data?.applications.find(a=>a.id===caseId);
+  const prototypePage=route==='prototype'||route.startsWith('prototype/case');
+  const prototypeCaseId=route.startsWith('prototype/case/')?decodeURIComponent(route.slice('prototype/case/'.length)):'';
+  const prototypeApplication=prototypeCaseId?data?.applications.find(a=>a.id===prototypeCaseId):null;
   const welcome=!route||route==='welcome';const tourOverlay=tourOpen?<GuidedStory step={tourStep} onNext={nextTourStep} onExit={closeTour}/>:null;
   if(welcome)return <><Welcome onEnter={()=>navigate('overview')} onStory={startTour}/>{tourOverlay}</>;
   if(loading)return <><Startup page={page}/>{tourOverlay}</>;
@@ -47,16 +53,24 @@ export default function App(){
     <main id="main-content" className="content" tabIndex={-1}>
       {error&&<div className="error-banner" role="alert"><TriangleAlert size={18}/><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={()=>setError('')}><X size={16}/></button></div>}
       <div className="page-body" key={route}>
-      {data?<>
+      {data?(prototypePage?(<div className="prototype-shell">{prototypePage&&prototypeApplication?<PrototypeDossier app={prototypeApplication} data={data} identity={identity} repo={repo} busy={busy} back={()=>navigate('prototype')} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)} openCase={(id)=>navigate(`case/${encodeURIComponent(id)}`)}/>:<PrototypeOverview data={{applications:data.applications,institutions:Object.fromEntries(data.institutions.map(i=>[i.id,{name:i.name}]))}} identity={identity} open={(id)=>id==='new'?navigate('new'):navigate(`prototype/case/${encodeURIComponent(id)}`)}/>}</div>):<>
         {page==='overview'&&<Overview data={data} identity={identity} open={open} navigate={navigate}/>}
         {page==='applications'&&<Applications data={data} query={query} setQuery={setQuery} open={open} create={()=>navigate('new')} identity={identity}/>}
         {page==='new'&&identity.roles.some(r=>r.role==='institution')&&<NewApplication data={data} identity={identity} repo={repo} run={run} open={open} back={()=>navigate('applications')} busy={busy}/>}
         {page==='case'&&(application?<CaseWorkspace key={caseId} app={application} data={data} identity={identity} repo={repo} run={run} busy={busy} back={()=>navigate('applications')} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)} openCase={(id)=>open(id)}/>:<div className="empty"><h2>Application unavailable</h2><p>This case may be outside your permitted scope.</p><button className="button outline" onClick={()=>navigate('applications')}>Back to applications</button></div>)}
         {page==='receipt'&&(application?<Receipt app={application} data={data} repo={repo} run={run} busy={busy} back={()=>navigate('overview')} openCase={()=>open(application.id)}/>:<div className="empty"><h2>Receipt unavailable</h2><p>This decision may be outside your permitted scope.</p><button className="button outline" onClick={()=>navigate('overview')}>Back to overview</button></div>)}
-        {page==='workflows'&&<Workflows data={data} open={open}/>}{page==='visits'&&<Visits data={data} open={open}/>}{page==='compliance'&&<Compliance data={data} identity={identity} repo={repo} run={run} busy={busy}/>}{page==='alerts'&&<Alerts data={data} repo={repo} run={run} busy={busy} navigate={navigate}/>}{page==='reports'&&<Reports data={data}/>}{page==='trust'&&<TrustCenter data={data} identity={identity} repo={repo} run={run} busy={busy}/>}{page==='audit'&&<Audit data={data} repo={repo} run={run} busy={busy} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)}/>}{page==='settings'&&<Settings identity={identity} repo={repo}/>}
+        {page==='workflows'&&<Workflows data={data} open={open}/>}
+        {page==='visits'&&<Visits data={data} open={open}/>}
+        {page==='compliance'&&<Compliance data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
+        {page==='alerts'&&<Alerts data={data} repo={repo} run={run} busy={busy} navigate={navigate}/>}
+        {page==='reports'&&<Reports data={data}/>}
+        {page==='trust'&&<TrustCenter data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
+        {page==='audit'&&<Audit data={data} repo={repo} run={run} busy={busy} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)}/>}
+        {page==='settings'&&<Settings identity={identity} repo={repo}/>}
         {!titles[page]&&<div className="empty"><h2>Page unavailable</h2><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>}
-      </>:<div className="empty"><h2>Workspace could not be loaded</h2><button className="button outline" onClick={()=>void reload()}>Try again</button></div>}
+      </>):<div className="empty"><h2>Workspace could not be loaded</h2><button className="button outline" onClick={()=>void reload()}>Try again</button></div>}
       </div>
+      <div className="prototype-shell-protector" aria-hidden="true"/>
       <footer><span>FlowPilot <span>·</span> Right process. Right authority. Right time.</span><span><LockIcon/>Demonstration environment · v0.4</span></footer>
     </main></div>{tourOverlay}{notice&&<div className="toast" role="status"><CheckIcon/>{notice}<button className="icon-button" aria-label="Dismiss notification" onClick={()=>setNotice('')}><X size={15}/></button></div>}
   </div>;

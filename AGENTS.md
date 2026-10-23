@@ -1,3 +1,136 @@
-# FlowPilot
+# FlowPilot — Evidence Review Demo
 
-This is the locally editable continuation of FlowPilot SIH26262. Use synthetic data only. Never claim regulatory or production readiness. Never put secret/service-role credentials in the client or reports. Keep demo and connected adapters separate. Database authorization, workflow transitions, roles and audit events are authoritative on the server. Run build, SQL security tests and browser tests before release; hosted integration failures block deployment. Preserve Lovable history. Drive is the engineering document vault; evidence stays in private object storage.
+## Intent
+
+A structured evidence-review demo for institutional approval workflows. The work is about organizing claims, evidence, deficiencies, and an auditable record of review. It is not a simulation of any real institution and the demo disclosures make that clear in the shell and at simulated decision points.
+
+HTML sketches can suggest composition (whether each screen has a purpose) without implying backend behavior. They are not a substitute for verifying the actual rendered app or the actual tests.
+
+## Context
+
+- React 19 + TypeScript + Vite
+- Supabase (Postgres + RLS) in production; PGlite harness for local/CI unit and SQL-gated tests
+- Current task: evidence verification and auditability
+
+## Recent windows
+
+### DATES AND SPIRIT
+
+- **WEBSITE:** https://flowpilot.cc
+- **KEYWORK:** verification, audit trail, Trust Center, access ledger, claims
+- **OBLIGATION:** Record evidence review decisions and their provenance so they can be followed later.
+- **IMPORTANT THING:** "Spirit" = what this demo actually does, not a marketing layer. The verified build (build verified + 80/80 unit/SQL tests + 26/26 Playwright E2E) is the current evidence that the claims/evidence/audit stack is wired, not a claim that the demo is production.
+- **HELP:** Trust Center shows access grants, Evidence Passport shows document security state, and the claims ledger records verification events and deficiency threads; the reviewer test verifies the resolve→re-check→accept loop.
+
+### PRACTICE AND REVIEW
+
+- **RULE:** Claim behavior is covered by SQL-gated tests for mandatory-claim gating, expired-evidence blocking, unlink-blocking, resolve/re-check loop, and signal disposition; behavioral reviewer E2E verifies provenance rendering and missing-infra blocking.
+- **MOMENTUM:** Do not add a "dispatch / control tower / cockpit" theme layer. The identity must come from the actual review composition, not from a new formula.
+- **REVIEW:** Before UI changes that touch the worklist or dossier, answer:
+  1. What is the one task this screen is for?
+  2. What is being removed from the current presentation layer?
+  3. Does the change change backend behavior to support the layout, or only the presentation?
+
+## Rules
+
+### Correctness before appearance
+
+- Do not change backend behavior to support a layout.
+- Do not simulate permissions or actions the current role cannot perform.
+- Do not fabricate reviewer assignments, official seals, or decision outcomes.
+- Do not fabricate data not present in the current demo/connected mode.
+
+### Integrity over speed
+
+- Verification events and deficiency resolutions must leave a record.
+- Access grants and document trust state must remain honest and traceable.
+- Demo disclosures must remain accessible and explicit at decision points.
+
+### Scope discipline
+
+- Keep each screen focused on one primary task.
+- Stop stacking summary cards around the same data.
+- Remove decorative template language: eyebrows, numbered section headings, generic explanatory subtitles, repeated slogans.
+- Use numbers only where sequence or reference actually matters.
+
+### Verification discipline
+
+- Before runtime behavior is treated as real, check:
+  - The relevant tests pass
+  - The behavior you read in the code is the behavior the tests cover
+  - E2E coverage exists for any flow introduced or changed
+
+## Patterns
+
+### Evidence review screen
+
+- Compact header: institution + application type + current stage
+- Evidence surface as the visual anchor, not a readiness score
+- Claims/deficiencies/findings beside the evidence, not stacked as a separate card pile
+- Honest missing-evidence or preview-unavailable states
+- Read-only role: explain restriction near the header, not repeated on every item
+
+### Overview / worklist
+
+- One worklist, not a dashboard stack
+- Why a case needs attention, current stage, unresolved claims/deficiencies, permitted next action
+- Scope controls only for scopes actually supported by data
+- Mobile: complete case summary, no page-level overflow, next action visible
+
+### Records and history
+
+- Compact audit rows with visible labels
+- Expand detail on request
+- No decorative stamps on every entry
+
+## Templates
+
+### Before editing a screen
+
+Write one sentence for each:
+- What is this screen for?
+- What is the one main action here?
+- What supporting detail is real and needed on this screen, not decorative?
+
+### Before adding a component
+
+- Does an existing primitive already cover this?
+- What will this component remove or replace?
+- Does it introduce a dependency? If so, say why in the change description.
+
+### Before claiming a behavior fix
+
+Map the claim to a test or E2E step:
+- What assertion covers it?
+- Does the assertion fail before the fix?
+- Does the assertion pass after?
+
+## Prohibited
+
+- Marketing slogans inside working screens
+- Fake approval outcomes
+- Fake reviewer identity
+- Fake official documents or seals
+- Making unavailable actions appear functional
+- Heavy decorative themes: glassmorphism, gradients, neo-brutalism, terminal, control tower/dispatch/cockpit metaphors
+- Adding a dependency without saying why
+
+## Files
+
+<!-- AUTOGENERATED FILES LIST -->
+<!-- Run: node scripts/list-files.cjs > docs/FILES.txt -->
+<!-- Then paste the output below. -->
+
+- `src/ui/ClaimLedger.tsx` — claim/evidence/workflow history and system-check provenance line
+- `src/data/demo.ts` — demo case/claims/evidence seed built from declared form values
+- `src/data/requirements.json` — review requirements, including `system_fields` for system-check provenance
+- `src/domain/integrity.ts` — domain types and integrity/verification/disposition concepts
+- `tasks/integrity-slice-plan.md` — plan and risk note for the current claims/evidence/audit slice
+- `e2e/demo.spec.ts` — existing end-to-end verifier scenarios
+- `tests/claims.test.ts` — claim-seed and claim-state assertions
+- `tests/claim-rpcs.test.ts` — SQL-gated claim/evidence/deficiency gate and loop tests
+- `src/styles.css` — current global presentation layer (the part the redesign prompt targets)
+
+- `docs/FILES.txt` — generated file inventory, when it exists
+
+<!-- STOP EDITING BELOW THIS LINE -->

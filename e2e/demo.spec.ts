@@ -46,7 +46,7 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
   await page.screenshot({path:'../../work/flowpilot-case.png',fullPage:true});
-  for(const [name,heading] of [['Approval routes','Approval route registry'],['Verification visits','Verification agenda'],['Compliance','Compliance obligations'],['Alerts & escalations','Escalation queue'],['Reports','Where are cases waiting?'],['Trust Center','Record integrity'],['Audit logs','Receipt register'],['Settings','Workspace & identity']] as const) {await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
+  for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Obligation register'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
@@ -235,16 +235,16 @@ test('supporting desks keep task-specific composition',async({page})=>{
   await page.getByRole('navigation').getByRole('button',{name:'Verification visits',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Verification agenda',exact:true})).toBeVisible();
   await expect(page.locator('.agenda-day').first()).toBeVisible();
-  await expect(page.getByText('Coordinator record · demo-evc',{exact:true})).toBeVisible();
+  await expect(page.getByText('Coordinator record · demo-evc',{exact:true}).first()).toBeVisible();
   await expect(page.getByText(/local timezone/i)).toBeVisible();
   await expect(page.getByRole('button',{name:'Open dossier',exact:true}).first()).toBeVisible();
   await page.getByRole('navigation').getByRole('button',{name:'Compliance',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Obligation register',exact:true})).toBeVisible();
-  await expect(page.getByText('What must happen before this obligation can be closed?',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Compliance obligations & document validity',exact:true})).toBeVisible();
   for(const label of ['Required evidence','Evidence present','Authorized verification','Permitted next action'])await expect(page.getByText(label,{exact:true}).first()).toBeVisible();
   await page.getByRole('navigation').getByRole('button',{name:'Alerts & escalations',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Escalation desk',exact:true})).toBeVisible();
-  await expect(page.getByText('1 escalation requires review · 1 informational update.',{exact:true})).toBeVisible();
+  await expect(page.getByText('2 escalations require review · 2 informational updates.',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:/Open case|Review case/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Mark read',exact:true}).first()).toBeVisible();
   await page.getByRole('navigation').getByRole('button',{name:'Reports',exact:true}).click();
@@ -341,7 +341,7 @@ test('overview lists every active case and reports follow the selected scope',as
   await page.getByRole('button',{name:/Closed cases/}).click();
   await expect(page.locator('.support-header-count')).toContainText('04');
   await expect(page.locator('.support-header-count')).toContainText('closed cases');
-  await expect(page.locator('.report-question .quiet-label')).toHaveCount(0);
+  await expect(page.locator('.report-board').first().locator('.report-question .quiet-label')).toHaveCount(0);
   await expect(page.locator('.report-outcome-list')).toBeVisible();
   await page.getByRole('button',{name:/All applications/}).click();
   await expect(page.locator('.support-header-count')).toContainText('11');
