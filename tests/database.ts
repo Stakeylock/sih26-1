@@ -68,6 +68,36 @@ export async function ready(db:PGlite) {
   }
   return id;
 }
+export async function upload(db:PGlite,id:string,type:string,hash='b'.repeat(64),expiresOn?:string) {
+  await as(db,ids.institution);
+  const doc=await scalar<string>(db,`select public.fp_reserve_document($1,$2,'demo.pdf','application/pdf',100)`,[id,type]);
+  await db.exec('reset role');
+  await db.query(`insert into storage.objects(bucket_id,name,metadata) select 'application-docs',file_path,'{"size":100,"mimetype":"application/pdf"}' from public.application_documents where id=$1`,[doc]);
+  await db.exec('set role service_role');
+  await db.query(`select public.fp_complete_document($1,$2,true,'test-fixture-scanner')`,[doc,hash]);
+  if(expiresOn){ await db.exec('reset role'); await db.query('update public.application_documents set expires_on=$2 where id=$1',[doc,expiresOn]); }
+  await as(db,ids.institution);
+  return doc;
+}
+export async function readyClaims(db:PGlite) {
+  const id=await draft(db,'extension_self_disclosure');
+  await db.query(`select public.fp_save_draft($1,'Self-disclosure extension 2026-27',$2,1)`,[id,{academic_year:'2026-27',intake:'120',faculty_count:'40',declaration:'Synthetic declaration for testing'}]);
+  const docs:Record<string,string>={};
+  const types=['Affidavit','Faculty List','Land Document','Building Plan','Fire Safety Certificate','Undertaking'];
+  for(const [i,type] of types.entries()) docs[type]=await upload(db,id,type,String(i+1).padStart(2,'0').repeat(32));
+  const claims:Record<string,string>={};
+  for(const code of ['INSTITUTION_IDENTITY','ACADEMIC_YEAR','SANCTIONED_INTAKE','FACULTY_STRENGTH','STUDENT_FACULTY_RATIO','LAND_OWNERSHIP','BUILT_UP_AREA','FIRE_SAFETY','UNDERTAKING']) claims[code]=await scalar<string>(db,`select c.id from public.application_claims c join public.requirements r on r.id=c.requirement_id where c.application_id=$1 and r.code=$2`,[id,code]);
+  const links=[['INSTITUTION_IDENTITY','Affidavit'],['ACADEMIC_YEAR','Affidavit'],['SANCTIONED_INTAKE','Affidavit'],['FACULTY_STRENGTH','Faculty List'],['STUDENT_FACULTY_RATIO','Faculty List'],['LAND_OWNERSHIP','Land Document'],['BUILT_UP_AREA','Building Plan'],['FIRE_SAFETY','Fire Safety Certificate'],['UNDERTAKING','Undertaking']];
+  for(const [code,type] of links) await db.query('select public.fp_link_claim_evidence($1,$2,null)',[claims[code],docs[type]]);
+  await transition(db,id,'submit');
+  await as(db,ids.scrutiny);
+  await transition(db,id,'start_scrutiny');
+  return {id,docs,claims};
+}
+export async function grantRole(db:PGlite,userId:string,role:string,region:string|null,opts:{expiresAt?:string|null;reason?:string}={}) {
+  await as(db,ids.admin);
+  await db.query(`select public.fp_assign_role($1,$2,$3,$4,$5)`,[userId,role,region,opts.expiresAt??null,opts.reason??'Synthetic grant reason fixture']);
+}
 export async function transition(db:PGlite,id:string,action:string,reason='Synthetic test reason',payload:Record<string,unknown>={},requestId=crypto.randomUUID()) {
   const version=await scalar<number>(db,`select version from public.applications where id=$1`,[id]);
   return scalar<{id:string;status:string;version:number}>(db,`select public.fp_transition($1,$2,$3,$4,$5,$6)`,[id,action,reason,payload,version,requestId]);

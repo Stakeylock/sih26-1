@@ -1,6 +1,6 @@
 import { beforeAll,afterAll,beforeEach,afterEach,describe,it,expect } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
-import {database,as,ids,scalar,failure,draft,ready,transition} from './database';
+import {database,as,ids,scalar,failure,draft,ready,transition,grantRole} from './database';
 let db:PGlite;
 beforeAll(async()=>{db=await database();},60000);
 afterAll(async()=>{await db?.close();});
@@ -24,7 +24,7 @@ describe('PostgreSQL authorization and workflow security',()=>{
     await as(db,ids.institution);
     expect(await failure(db,`insert into public.user_roles(user_id,role) values(auth.uid(),'national_admin')`)).toContain('permission denied');
     expect(await failure(db,`update public.profiles set email='admin@example.test' where id=auth.uid()`)).toContain('permission denied');
-    expect(await failure(db,`select public.fp_assign_role($1,'national_admin',null)`,[ids.institution])).toContain('Administrator required');
+    expect(await failure(db,`select public.fp_assign_role($1,'national_admin',null,null,null)`,[ids.institution])).toContain('Administrator required');
   });
   it('forbids null or invalid regional jurisdictions',async()=>{
     expect(await failure(db,`insert into public.user_roles(user_id,role,region) values($1,'evc_coordinator',null)`,[ids.west])).toContain('role_jurisdiction');
@@ -119,6 +119,51 @@ describe('PostgreSQL authorization and workflow security',()=>{
     expect(await scalar<number>(db,`select count(*)::int from public.obligations where kind='renewal'`)).toBe(1);
     expect(await failure(db,`select public.fp_transition($1,'approve','Repeated decision','{}',10,$2)`,[id,crypto.randomUUID()])).toContain('Pending decision');
     expect(await scalar<number>(db,`select template_version from public.applications where id=$1`,[id])).toBe(1);
+  });
+});
+describe('Access expiry, revocation and the read-only agent registry',()=>{
+  it('rejects grants from non-admins and grants without reason or officer expiry',async()=>{
+    await as(db,ids.institution);
+    expect(await failure(db,`select public.fp_assign_role($1,'institution',null,null,'Synthetic grant reason text')`,[ids.other])).toContain('Administrator required');
+    await as(db,ids.admin);
+    expect(await failure(db,`select public.fp_assign_role($1,'institution',null,null,'Too short')`,[ids.other])).toContain('grant reason');
+    expect(await failure(db,`select public.fp_assign_role($1,'evc_coordinator','South',null,'Synthetic grant reason text')`,[ids.other])).toContain('expiry');
+    expect(await failure(db,`select public.fp_assign_role($1,'regional_officer','South',now()-interval '1 hour','Synthetic grant reason text')`,[ids.other])).toContain('expiry');
+  });
+  it('expires grants at the assigned time and removes subsequent access',async()=>{
+    await grantRole(db,ids.other,'regional_officer','South',{expiresAt:new Date(Date.now()+60000).toISOString(),reason:'Synthetic regional grant fixture'});
+    await as(db,ids.other);
+    expect(await scalar<boolean>(db,`select public.has_role($1,'regional_officer')`,[ids.other])).toBe(true);
+    await db.exec('reset role');
+    await db.query(`update public.user_roles set expires_at=now()-interval '1 minute' where user_id=$1 and role='regional_officer'`,[ids.other]);
+    await as(db,ids.other);
+    expect(await scalar<boolean>(db,`select public.has_role($1,'regional_officer')`,[ids.other])).toBe(false);
+    expect(await scalar<boolean>(db,`select fp_private.has_role('regional_officer','South')`)).toBe(false);
+  });
+  it('revokes grants immediately and writes the config audit trail',async()=>{
+    await grantRole(db,ids.other,'evc_coordinator','South',{expiresAt:'2036-01-01T00:00:00Z',reason:'Synthetic coordinator grant fixture'});
+    await as(db,ids.other);
+    expect(await scalar<boolean>(db,`select public.has_role($1,'evc_coordinator')`,[ids.other])).toBe(true);
+    await as(db,ids.admin);
+    await db.query(`select public.fp_revoke_role($1,'evc_coordinator','Synthetic revocation reason text')`,[ids.other]);
+    await as(db,ids.other);
+    expect(await scalar<boolean>(db,`select public.has_role($1,'evc_coordinator')`,[ids.other])).toBe(false);
+    expect(await failure(db,`select public.fp_revoke_role($1,'evc_coordinator','Synthetic revocation reason text')`,[ids.other])).toContain('Administrator required');
+    await as(db,ids.admin);
+    expect(await scalar<number>(db,`select count(*)::int from public.config_audit where action='assign_role' and target_user=$1 and role='evc_coordinator' and reason='Synthetic coordinator grant fixture'`,[ids.other])).toBe(1);
+    expect(await scalar<number>(db,`select count(*)::int from public.config_audit where action='revoke_role' and target_user=$1 and actor_id=$2 and reason='Synthetic revocation reason text'`,[ids.other,ids.admin])).toBe(1);
+  });
+  it('keeps the agent registry read-only and incapable of approval',async()=>{
+    await as(db,ids.institution);
+    expect(await scalar<number>(db,'select count(*)::int from public.fp_agent_registry()')).toBe(0);
+    expect(await failure(db,`insert into public.agent_registry(name,purpose) values('Advisory bot','Synthetic advisory agent')`)).toContain('permission denied');
+    expect(await failure(db,`update public.agent_registry set enabled=false`)).toContain('permission denied');
+    expect(await failure(db,`delete from public.agent_registry`)).toContain('permission denied');
+    await db.exec('set role service_role');
+    expect(await failure(db,`insert into public.agent_registry(name,purpose,can_approve) values('Advisory bot','Synthetic advisory agent',true)`)).toContain('agent_registry_can_approve_check');
+    await as(db,ids.institution);
+    expect(await scalar<string>(db,`select string_agg(p.proname||'-'||p.prosecdef::text,',') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname like '%agent%'`)).toBe('fp_agent_registry-false');
+    expect(await scalar<number>(db,`select count(*)::int from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='fp_private' and (p.prosrc ilike '%insert into public.agent_registry%' or p.prosrc ilike '%update public.agent_registry%')`)).toBe(0);
   });
 });
 describe('Private storage authorization',()=>{

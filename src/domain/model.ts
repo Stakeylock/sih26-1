@@ -1,3 +1,4 @@
+import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
 export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'regional_officer', 'national_admin'] as const;
 export type Role = typeof roles[number];
 export const regions = ['North', 'South', 'East', 'West', 'Central', 'North-East'] as const;
@@ -25,13 +26,13 @@ export interface Application {
   sla_due_at: string | null; submitted_at: string | null; created_at: string; updated_at: string;
   decision_reason: string | null; decision_evidence: string | null; is_demo: boolean;
 }
-export interface DocumentRecord { id: string; application_id: string; doc_type: string; file_name: string; file_path: string; size_bytes: number; mime_type: string; scan_status: 'pending' | 'clean' | 'rejected'; sha256: string | null; uploaded_at: string }
-export interface AuditEvent { id: number; application_id: string; actor_id: string | null; actor_role: string | null; action: string; from_status: Status | null; to_status: Status | null; reason: string | null; created_at: string; payload: Record<string, unknown> }
+export interface DocumentRecord { id: string; application_id: string; doc_type: string; file_name: string; file_path: string; size_bytes: number; mime_type: string; scan_status: 'pending' | 'clean' | 'rejected'; sha256: string | null; uploaded_at: string; expires_on?: string | null; issuer?: string | null; document_number?: string | null }
+export interface AuditEvent { id: number; application_id: string; actor_id: string | null; actor_role: string | null; action: string; from_status: Status | null; to_status: Status | null; reason: string | null; created_at: string; payload: Record<string, unknown>; sequence?: number | null; prev_hash?: string | null; event_hash?: string | null }
 export interface ChecklistItem { id: string; application_id: string; item: string; passed: boolean | null; note: string }
 export interface Visit { id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null }
 export interface Obligation { id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string }
 export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string }
-export interface Workspace { applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[] }
+export interface Workspace { applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[] }
 export const routeStages = [
   { key: 'submission', label: 'Submission', statuses: ['draft'] },
   { key: 'scrutiny', label: 'Scrutiny', statuses: ['submitted', 'resubmitted', 'under_scrutiny', 'deficiency_raised'] },
@@ -66,6 +67,13 @@ export interface Repository {
   createApplication(type: AppType, title: string): Promise<string>;
   saveDraft(application: Application, title: string, form: Record<string, string>): Promise<void>;
   transition(input: Transition): Promise<void>; checklist(application: Application, item: string, passed: boolean, note: string): Promise<void>;
+  verifyClaim(application: Application, claim: Claim, result: 'verified' | 'not_applicable', note: string): Promise<void>;
+  linkClaimEvidence(application: Application, claim: Claim, document: DocumentRecord, note: string): Promise<void>;
+  raiseClaimDeficiency(application: Application, claim: Claim, observation: string, remedy: string, dueAt: string): Promise<void>;
+  resolveClaimDeficiency(application: Application, deficiency: Deficiency, evidence: DocumentRecord, note: string): Promise<void>;
+  recheckClaimDeficiency(application: Application, deficiency: Deficiency, result: 'accepted' | 'reopened', note: string): Promise<void>;
+  verifyAudit(application: Application): Promise<AuditVerification>;
+  tamperReplay(application: Application): Promise<AuditVerification>;
   upload(application: Application, type: string, file: File): Promise<void>; download(document: DocumentRecord): Promise<void>;
   markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>;
   advisory(application:Application,documents:DocumentRecord[]):Promise<Advisory>;

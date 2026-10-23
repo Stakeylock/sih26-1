@@ -225,13 +225,14 @@ create index on public.user_roles(expires_at) where active;
 The SQL and demo verifier use this ordered field list:
 
 ```text
-application_id | sequence | actor_id | actor_role | action |
-from_status | to_status | reason | payload_json | created_at_utc
+application_id, sequence, prev_hash, actor_id, actor_role, action,
+from_status, to_status, reason, payload_json, created_at_utc
 ```
 
+- Demo mode serializes the fields as a stable JSON array; connected mode uses `jsonb_build_array` with the same order.
 - `created_at_utc` format: `YYYY-MM-DDTHH24:MI:SS.USZ`.
+- `prev_hash` is the previous event's `event_hash` for the same application, or an empty string for sequence 1.
 - `event_hash = sha256(canonical_payload)`.
-- `prev_hash` is the previous event's `event_hash` for the same application, or `null` for sequence 1.
 - Appends take a transaction-scoped advisory lock on the application ID and a unique `(application_id, sequence)` constraint.
 
 ## RPC Contracts
@@ -444,21 +445,21 @@ This assumes one builder plus an AI agent. If two people are available, split Tr
 
 ### Phase 1: Foundation
 
-- [ ] **Task 1: Add integrity domain types and canonical audit helper**
+- [x] **Task 1: Add integrity domain types and canonical audit helper**
   - Acceptance: `Claim`, `Deficiency`, `IntegritySignal`, `AccessAssignment`, `AgentRecord`, and `AuditVerification` types exist; canonical event serialization is unit-tested.
   - Verification: `npm test`; build.
   - Dependencies: none.
   - Files: `src/domain/model.ts`, `src/domain/integrity.ts`, `tests/audit.test.ts`.
   - Scope: S.
 
-- [ ] **Task 2: Add claim ledger migration and RLS**
+- [x] **Task 2: Add claim ledger migration and RLS**
   - Acceptance: enums, four tables, indexes, and policies apply; direct authenticated writes are denied.
   - Verification: PGlite security harness applies migrations; `npm test`.
   - Dependencies: Task 1.
   - Files: `supabase/migrations/20261023100000_claim_ledger.sql`, `src/data/database.types.ts`.
   - Scope: M.
 
-- [ ] **Task 3: Seed requirements and claims**
+- [x] **Task 3: Seed requirements and claims**
   - Acceptance: nine requirements and nine `demo-app-0` claims; expected statuses; missing Building Plan; expired Fire Safety.
   - Verification: unit test asserts counts and statuses; demo loads.
   - Dependencies: Task 2.
@@ -467,27 +468,27 @@ This assumes one builder plus an AI agent. If two people are available, split Tr
 
 ### Checkpoint: Foundation
 
-- [ ] Migrations apply.
-- [ ] `npm run check` passes.
-- [ ] Demo dossier data loads with claims.
+- [x] Migrations apply.
+- [x] `npm run check` passes.
+- [x] Demo dossier data loads with claims.
 
 ### Phase 2: Claim and evidence flow
 
-- [ ] **Task 4: Add claim RPCs and transition gates**
+- [x] **Task 4: Add claim RPCs and transition gates**
   - Acceptance: link, verify, raise, resolve, recheck, disposition; resubmit and pass scrutiny enforce the claim gate; owner cannot review own case.
   - Verification: SQL tests for each RPC and denial path.
   - Dependencies: Task 3.
   - Files: `supabase/migrations/20261023110000_claim_rpcs.sql`, `tests/security.test.ts`, `tests/database.ts`.
   - Scope: L, split into link/verify and deficiency sub-tasks if needed.
 
-- [ ] **Task 5: Build claim ledger UI**
+- [x] **Task 5: Build claim ledger UI**
   - Acceptance: nine claims render with counts; scrutiny and institution actions are role-gated; mobile layout has no overflow.
   - Verification: E2E and axe; visual check.
   - Dependencies: Task 4.
   - Files: `src/ui/ClaimLedger.tsx`, `src/ui/CaseWorkspace.tsx`, `src/styles.css`.
   - Scope: M.
 
-- [ ] **Task 6: Build deficiency and pre-flight UI**
+- [x] **Task 6: Build deficiency and pre-flight UI**
   - Acceptance: raise, resolve, recheck dialogs; pre-flight lists missing, expired, duplicate, and open deficiency; links open the right claim/document.
   - Verification: E2E deficiency loop; keyboard/focus check.
   - Dependencies: Task 5.
@@ -497,26 +498,26 @@ This assumes one builder plus an AI agent. If two people are available, split Tr
 ### Checkpoint: Claim and evidence flow
 
 - [ ] Raise, resolve, recheck, and resubmit work end-to-end.
-- [ ] No direct table writes.
-- [ ] Claim ledger is usable at 390px width.
+- [x] No direct table writes.
+- [x] Claim ledger is usable at 390px width.
 
 ### Phase 3: Evidence and audit
 
-- [ ] **Task 7: Add integrity signals and evidence passport**
+- [x] **Task 7: Add integrity signals and evidence passport**
   - Acceptance: duplicate and expired signals seeded; passport shows hash, scan, expiry, duplicate matches, linked claims.
   - Verification: E2E opens passport; SQL test confirms duplicate query and RLS.
   - Dependencies: Task 6.
   - Files: `supabase/migrations/20261023120000_evidence_integrity.sql`, `src/ui/EvidencePassport.tsx`, `src/ui/CaseWorkspace.tsx`, `src/styles.css`.
   - Scope: M.
 
-- [ ] **Task 8: Add audit chain and verifier**
+- [x] **Task 8: Add audit chain and verifier**
   - Acceptance: chain columns backfilled; append function used by every event; verifier returns intact/checked/head/broken_at; decision gate blocks a broken chain.
   - Verification: SQL tests for append, verify, tamper replay; unit test for demo verifier.
   - Dependencies: Task 7.
   - Files: `supabase/migrations/20261023130000_audit_chain.sql`, `src/domain/integrity.ts`, `src/data/demo.ts`, `src/data/supabase.ts`.
   - Scope: L, split schema and UI if needed.
 
-- [ ] **Task 9: Add verify surfaces**
+- [x] **Task 9: Add verify surfaces**
   - Acceptance: dossier, audit, and receipt can verify; tamper replay shows red and resets green; demo-only labeling is visible.
   - Verification: E2E verify/tamper/reset; receipt print check.
   - Dependencies: Task 8.
@@ -525,9 +526,9 @@ This assumes one builder plus an AI agent. If two people are available, split Tr
 
 ### Checkpoint: Evidence and audit
 
-- [ ] Duplicate and expired evidence are visible.
-- [ ] Audit chain verifies green and tamper replay verifies red.
-- [ ] Receipt shows a record hash.
+- [x] Duplicate and expired evidence are visible.
+- [x] Audit chain verifies green and tamper replay verifies red.
+- [x] Receipt shows a record hash.
 
 ### Phase 4: Trust Center and release
 

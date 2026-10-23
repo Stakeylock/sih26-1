@@ -4,39 +4,39 @@ Plan: `tasks/integrity-slice-plan.md`
 
 ## Phase 1: Foundation
 
-- [ ] Add integrity domain types and canonical audit helper
-- [ ] Add claim ledger migration and RLS
-- [ ] Seed nine requirements and nine `demo-app-0` claims
+- [x] Add integrity domain types and canonical audit helper
+- [x] Add claim ledger migration and RLS
+- [x] Seed nine requirements and nine `demo-app-0` claims
 
 ## Checkpoint: Foundation
 
-- [ ] Migrations apply in the PGlite security harness
-- [ ] `npm run check` passes
-- [ ] Demo dossier loads with claims
+- [x] Migrations apply in the PGlite security harness
+- [x] `npm run check` passes
+- [x] Demo dossier loads with claims
 
 ## Phase 2: Claim and evidence flow
 
-- [ ] Add claim RPCs and transition gates
-- [ ] Build claim ledger UI
-- [ ] Build deficiency and pre-flight UI
+- [x] Add claim RPCs and transition gates
+- [x] Build claim ledger UI
+- [x] Build deficiency and pre-flight UI
 
 ## Checkpoint: Claim and evidence flow
 
 - [ ] Raise, resolve, recheck, and resubmit work end-to-end
-- [ ] No direct table writes
-- [ ] Claim ledger is usable at 390px width
+- [x] No direct table writes
+- [x] Claim ledger is usable at 390px width
 
 ## Phase 3: Evidence and audit
 
-- [ ] Add integrity signals and evidence passport
-- [ ] Add audit chain and verifier
-- [ ] Add verify surfaces to dossier, audit, and receipt
+- [x] Add integrity signals and evidence passport
+- [x] Add audit chain and verifier
+- [x] Add verify surfaces to dossier, audit, and receipt
 
 ## Checkpoint: Evidence and audit
 
-- [ ] Duplicate and expired evidence are visible
-- [ ] Audit chain verifies green and tamper replay verifies red
-- [ ] Receipt shows a record hash
+- [x] Duplicate and expired evidence are visible
+- [x] Audit chain verifies green and tamper replay verifies red
+- [x] Receipt shows a record hash
 
 ## Phase 4: Trust Center and release
 

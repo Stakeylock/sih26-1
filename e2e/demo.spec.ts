@@ -21,6 +21,7 @@ test('landing enters the dispatch board',async({page})=>{
 });
 test('closed case exposes a printable decision receipt',async({page})=>{
   await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await page.getByRole('button',{name:'Closed 4'}).click();
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1006');
   await page.getByRole('button',{name:'DEMO-2026-1006',exact:true}).click();
   await page.getByRole('button',{name:/Open full receipt/}).click();
@@ -45,7 +46,7 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
   await page.screenshot({path:'../../work/flowpilot-case.png',fullPage:true});
-  for(const [name,heading] of [['Approval routes','Approval route registry'],['Verification visits','Verification agenda'],['Compliance','Compliance obligations'],['Alerts & escalations','Escalation queue'],['Reports','Where are cases waiting?'],['Audit logs','Receipt register'],['Settings','Workspace & identity']] as const) {await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
+  for(const [name,heading] of [['Approval routes','Approval route registry'],['Verification visits','Verification agenda'],['Compliance','Compliance obligations'],['Alerts & escalations','Escalation queue'],['Reports','Where are cases waiting?'],['Trust Center','Record integrity'],['Audit logs','Receipt register'],['Settings','Workspace & identity']] as const) {await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
@@ -67,16 +68,129 @@ test('institution creates and saves a synthetic draft; unsafe upload is rejected
   await page.getByLabel('Upload Building Plan').setInputFiles({name:'active.html',mimeType:'text/html',buffer:Buffer.from('<script>alert(1)</script>')});
   await expect(page.getByRole('alert')).toContainText('PDF, PNG, or JPEG');
 });
-test('scrutiny verifies a checklist and records a reasoned deficiency',async({page})=>{
+test('evidence passport surfaces duplicate use and linked claims',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
-  await page.getByRole('button',{name:'Verify Affidavit notarised'}).click();
-  await expect(page.getByRole('status')).toContainText('Checklist updated');
+  await page.locator('.document').filter({hasText:'fire_safety_certificate.pdf'}).first().getByRole('button',{name:/View document record/}).click();
+  const passport=page.getByRole('dialog');
+  await expect(passport.getByRole('heading',{name:'Document record'})).toBeVisible();
+  await expect(passport).toContainText('75600d1d');
+  await expect(passport).toContainText(/Expired \d/);
+  await expect(passport).toContainText('DEMO-2026-1005');
+  await expect(passport).toContainText('APH safety');
+  await expect(passport).toContainText('duplicate document');
+  await passport.getByRole('button',{name:'Open the other case'}).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByText('DOSSIER / DEMO-2026-1005',{exact:true})).toBeVisible();
+});
+test('evidence passport remains readable at 390px',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await page.getByRole('button',{name:'Open navigation'}).click();
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await page.locator('.application-mobile-card').filter({hasText:'DEMO-2026-1001'}).getByRole('button').click();
+  await page.locator('.document').filter({hasText:'fire_safety_certificate.pdf'}).first().getByRole('button',{name:/View document record/}).click();
+  const passport=page.getByRole('dialog');
+  await expect(passport.getByRole('heading',{name:'Document record'})).toBeVisible();
+  await expect(passport).toContainText('75600d1d');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
+});
+test('scrutiny verifies a claim and records a reasoned deficiency',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  const claim=page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
+  await claim.getByRole('button',{name:'Verify',exact:true}).click();
+  await page.getByRole('textbox',{name:'Verification note'}).fill('Synthetic faculty list reviewed for this demonstration.');
+  await page.getByRole('button',{name:'Record verification'}).click();
+  await expect(page.getByRole('status')).toContainText('Claim verified');
   await page.getByRole('button',{name:'Return for deficiency',exact:true}).click();
   await page.getByRole('textbox',{name:'Reason',exact:true}).fill('Please update the synthetic fire certificate for this demonstration.');
   await page.getByRole('button',{name:'Confirm return for deficiency'}).click();
   await expect(page.getByText('Clarification required',{exact:true})).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+test('claims raise, resolve, and re-check across institution and scrutiny',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  const scrutinyRow=()=>page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
+  await scrutinyRow().getByRole('button',{name:'Raise deficiency',exact:true}).click();
+  const raise=page.getByRole('dialog');
+  await raise.getByLabel('Observation').fill('The faculty list does not reconcile with the sanctioned intake.');
+  await raise.getByLabel('Remedy requested').fill('Provide a reconciled faculty list signed by the registrar.');
+  await raise.getByRole('button',{name:'Raise deficiency'}).click();
+  await expect(page.getByRole('status')).toContainText('Deficiency raised');
+  await expect(scrutinyRow()).toContainText('Deficiency open');
+
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  const institutionRow=()=>page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
+  await institutionRow().getByRole('button',{name:'Resolve',exact:true}).click();
+  const resolve=page.getByRole('dialog');
+  await resolve.getByLabel('Replacement evidence').selectOption({label:'Faculty List · faculty_list.pdf'});
+  await resolve.getByLabel('Resolution note').fill('Reconciled faculty list signed by the registrar is attached.');
+  await resolve.getByRole('button',{name:'Resolve deficiency'}).click();
+  await expect(page.getByRole('status')).toContainText('Deficiency resolved');
+  await expect(institutionRow()).toContainText('awaiting re-check');
+
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await scrutinyRow().getByRole('button',{name:'Re-check',exact:true}).click();
+  const recheck=page.getByRole('dialog');
+  await recheck.getByLabel('Re-check note').fill('Reconciled register checked; the faculty list now matches.');
+  await recheck.getByRole('button',{name:'Record re-check'}).click();
+  await expect(page.getByRole('status')).toContainText('Re-check accepted');
+  await expect(scrutinyRow()).toContainText('Verified');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+test('behavioral: replacement certificate clears the fire claim while missing infrastructure evidence still blocks',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  const fire=()=>page.locator('.claim-row').filter({hasText:'Fire safety certificate is valid on the scrutiny date'});
+  await fire().getByRole('button',{name:'Resolve',exact:true}).click();
+  const resolve=page.getByRole('dialog');
+  await resolve.getByLabel('Replacement evidence').selectOption({label:'Fire Safety Certificate · fire_safety_certificate_valid.pdf'});
+  await resolve.getByLabel('Resolution note').fill('Uploaded the current synthetic certificate for this demonstration.');
+  await resolve.getByRole('button',{name:'Resolve deficiency'}).click();
+  await expect(page.getByRole('status')).toContainText('Deficiency resolved');
+  await expect(fire()).toContainText('Resolution submitted · awaiting re-check');
+  await expect(page.locator('.claim-summary')).toContainText('6 of 9 verified or not applicable');
+  const ratio=page.locator('.claim-row').filter({hasText:'Student-faculty ratio'});
+  await expect(ratio).toContainText('System check');
+  await expect(ratio).toContainText('Sanctioned intake');
+
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await fire().getByRole('button',{name:'Re-check',exact:true}).click();
+  const recheck=page.getByRole('dialog');
+  await recheck.getByLabel('Re-check note').fill('Current replacement certificate checked for this demonstration.');
+  await recheck.getByRole('button',{name:'Record re-check'}).click();
+  await expect(page.getByRole('status')).toContainText('Re-check accepted');
+  await expect(fire()).toContainText('Verified');
+  await expect(page.locator('.claim-summary')).toContainText('7 of 9 verified or not applicable');
+  const faculty=page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
+  await faculty.getByRole('button',{name:'Verify',exact:true}).click();
+  await page.getByRole('textbox',{name:'Verification note'}).fill('Synthetic faculty list reviewed for this demonstration.');
+  await page.getByRole('button',{name:'Record verification'}).click();
+  await expect(page.getByRole('status')).toContainText('Claim verified');
+  await expect(page.locator('.claim-summary')).toContainText('8 of 9 verified or not applicable');
+  await expect(page.locator('.preflight-panel')).toContainText('Evidence missing · APH infrastructure');
+  await expect(page.locator('.dossier-readiness')).toContainText('Claims8 of 9 verified or not applicable');
+  await expect(page.locator('.timeline')).toContainText('deficiency resolved');
+  await expect(page.locator('.timeline')).toContainText('deficiency rechecked');
+  await expect(page.locator('.timeline')).toContainText('claim verified');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+test('claim dialogs hold focus and close with Escape',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'}).getByRole('button',{name:'Verify',exact:true}).click();
+  const dialog=page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  expect(await page.evaluate(()=>Boolean(document.activeElement?.closest('dialog')))).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
 });
 test('mobile navigation and Applications screen have no serious automated accessibility violations',async({page})=>{
   await page.setViewportSize({width:390,height:844});
@@ -150,7 +264,7 @@ test('supporting desks keep task-specific composition',async({page})=>{
   await expect(firstReceipt).toContainText('Synthetic demonstration event');
 });
 test('every desktop route has no serious automated accessibility violations',async({page})=>{
-  for(const name of ['Overview','Applications','Approval routes','Verification visits','Compliance','Alerts & escalations','Reports','Audit logs','Settings']){
+  for(const name of ['Overview','Applications','Approval routes','Verification visits','Compliance','Alerts & escalations','Reports','Trust Center','Audit logs','Settings']){
     await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();
     await expect(page.locator('main h1')).toHaveCount(1);
     const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
@@ -159,7 +273,7 @@ test('every desktop route has no serious automated accessibility violations',asy
 });
 test('design-rationale copy is absent from every route',async({page})=>{
   const banned=['Start with the dossier closest to a missed handoff.','Where visible cases are waiting now.','decorative chart','queue stays legible','before asking for a chart','application mix, not'];
-  for(const name of ['Overview','Applications','Approval routes','Verification visits','Compliance','Alerts & escalations','Reports','Audit logs','Settings']){
+  for(const name of ['Overview','Applications','Approval routes','Verification visits','Compliance','Alerts & escalations','Reports','Trust Center','Audit logs','Settings']){
     await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();
     for(const phrase of banned)await expect(page.locator('main')).not.toContainText(phrase);
   }
@@ -180,13 +294,17 @@ test('mobile overview orders header, priority, and stage workload without the du
 });
 test('application register matches region, stage, and status columns',async({page})=>{
   await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Active 7'})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('button',{name:'All 11'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Closed 4'})).toBeVisible();
   const headers=await page.locator('.applications-table thead th').allTextContents();
   expect(headers.slice(0,5)).toEqual(['Application / institution','Region','Current stage','Status','Next deadline']);
   await expect(page.getByRole('combobox',{name:'Filter by status'})).toBeVisible();
   const firstRow=page.locator('.applications-table tbody tr').first();
   await expect(firstRow.locator('td').nth(1)).toHaveText('South');
   await expect(firstRow.locator('td').nth(2)).toContainText('Scrutiny');
-  await expect(firstRow.locator('td').nth(3)).toContainText('Under review');
+  await expect(firstRow.locator('td').nth(3)).toContainText('Submitted');
+  await expect(firstRow.locator('td').nth(3)).toContainText('Awaiting reviewer assignment');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1002');
   await expect(page.locator('.applications-table tbody tr').first().locator('td').nth(3)).toContainText('Changes requested');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1007');
@@ -200,14 +318,15 @@ test('mobile applications use case cards and the dossier route stays inside the 
   await expect(page.locator('.applications-table')).toBeHidden();
   const card=page.locator('.application-mobile-card').first();
   await expect(card).toBeVisible();
+  await expect(card).toContainText('DEMO-2026-1005');
   await expect(card).toContainText('Stage');
   await expect(card).toContainText('Region');
   await expect(card).toContainText('Deadline');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await card.getByRole('button',{name:/Open DEMO-2026-1001/}).click();
+  await page.locator('.application-mobile-card').filter({hasText:'DEMO-2026-1001'}).getByRole('button',{name:/Open DEMO-2026-1001/}).click();
   await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
   await expect(page.getByText(/Viewing as/)).toContainText('National administrator');
-  await expect(page.getByText('Review pending',{exact:true})).toBeVisible();
+  await expect(page.getByText('Claims 6 of 9',{exact:true})).toBeVisible();
   await expect(page.getByText(/Ready for next gate|Ready for the next workflow gate/)).toHaveCount(0);
   await expect(page.getByText('Current authority',{exact:true})).toBeVisible();
   await expect(page.locator('.workflow-rail-scroll')).toBeVisible();
@@ -238,4 +357,83 @@ test('alerts offer queue navigation and route visuals expose a return branch',as
   await expect(page.locator('.workflow-branch')).toContainText('Return and query branch');
   const zeroFill=await page.locator('.bottleneck-row').first().locator('.bottleneck-bar span').evaluate(element=>getComputedStyle(element).width);
   expect(zeroFill).toBe('0px');
+});
+test('claim ledger shows nine claims and stays within a 390px viewport',async({page})=>{
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Claim ledger',exact:true})).toBeVisible();
+  await expect(page.locator('.claim-row')).toHaveCount(9);
+  await expect(page.locator('.claim-summary')).toContainText('6 of 9 verified or not applicable');
+  await expect(page.getByText('No evidence linked',{exact:true})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Pre-flight',exact:true})).toBeVisible();
+  await expect(page.locator('.preflight-panel')).toContainText('Fire Safety Certificate expired');
+  await expect(page.locator('.preflight-panel')).toContainText('Duplicate hash');
+  await expect(page.locator('.preflight-panel')).toContainText('Open deficiency');
+  await expect(page.locator('.preflight-panel')).toContainText('Unverified');
+  const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
+  expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical')).toEqual([]);
+  await page.screenshot({path:'../../work/flowpilot-case.png',fullPage:true});
+  await page.setViewportSize({width:390,height:900});
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'Claim ledger',exact:true})).toBeVisible();
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  await page.screenshot({path:'../../work/flowpilot-mobile.png',fullPage:true});
+});
+
+test('trust center derives boundaries from the workspace and tamper replay fails closed',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.getByRole('navigation').getByRole('button',{name:'Trust Center',exact:true}).click();
+  await expect(page.getByRole('heading',{level:1,name:'Trust Center',exact:true})).toBeVisible();
+  const metrics=page.locator('.trust-metric');
+  await expect(metrics.nth(0)).toContainText('2');
+  await expect(metrics.nth(1)).toContainText('1');
+  await expect(metrics.nth(2)).toContainText('0');
+  await expect(metrics.nth(3)).toContainText('2');
+  await expect(page.locator('.trust-access-summary')).toContainText('5 active');
+  await expect(page.locator('.trust-access-summary')).toContainText('1 expiring within 7 days');
+  await expect(page.locator('.trust-access-summary')).toContainText('1 revoked');
+  await expect(page.locator('.trust-agent-summary')).toContainText('2 registered');
+  await expect(page.locator('.trust-agent-summary')).toContainText('1 enabled');
+  await expect(page.locator('.trust-agent-summary')).toContainText('0 with approval authority');
+  await page.getByRole('button',{name:'Verify chain',exact:true}).click();
+  await expect(page.locator('.trust-chain-status')).toContainText('Chain verified. Event history intact.');
+  await expect(page.locator('.trust-chain-status')).toContainText(/events checked/);
+  await page.getByRole('button',{name:'Run tamper replay',exact:true}).click();
+  await expect(page.locator('.trust-replay')).toContainText(/detected the alteration at event \d+/);
+  await expect(page.locator('.trust-chain-status')).toContainText('Chain verified. Event history intact.');
+  await page.setViewportSize({width:390,height:900});
+  await page.reload();
+  await expect(page.getByRole('heading',{level:1,name:'Trust Center',exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth)).toBeLessThanOrEqual(1);
+  expect(errors).toEqual([]);
+});
+
+test('audit verifies green, replays tamper red on a copy, resets, and the receipt verifies',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.getByRole('navigation').getByRole('button',{name:'Audit logs',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Record verification',exact:true})).toBeVisible();
+  const status=page.locator('.audit-chain-status');
+  await expect(status).toContainText('Not verified');
+  await page.getByRole('button',{name:'Verify chain',exact:true}).click();
+  await expect(status).toContainText('Chain verified. Event history intact.');
+  await expect(status).toContainText(/events checked/);
+  await expect(status).toContainText(/HEAD [a-f0-9]{64}/);
+  await page.getByRole('button',{name:'Simulate tamper',exact:true}).click();
+  await expect(status).toContainText(/Integrity mismatch detected at event \d+/);
+  await expect(status).toContainText('temporary copy');
+  await expect(status).toContainText('stored events were not changed');
+  await page.getByRole('button',{name:'Reset replay',exact:true}).click();
+  await expect(status).toContainText('Chain verified. Event history intact.');
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await page.getByRole('button',{name:'Closed 4'}).click();
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1006');
+  await page.getByRole('button',{name:'DEMO-2026-1006',exact:true}).click();
+  await page.getByRole('button',{name:/Open full receipt/}).click();
+  await expect(page.locator('.receipt-hash')).toHaveText(/^[a-f0-9]{64}$/);
+  await page.getByRole('button',{name:'Verify record',exact:true}).click();
+  await expect(page.locator('.receipt-verification')).toContainText('Chain verified. Event history intact.');
+  await expect(page.locator('.receipt-verification')).toContainText(/events checked/);
+  expect(errors).toEqual([]);
 });
