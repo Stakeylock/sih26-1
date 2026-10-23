@@ -8,6 +8,9 @@ const operationalStatus: { [key in Status]: string } = {
   pending_decision: 'Awaiting decision', approved: 'Approved', rejected: 'Rejected',
 };
 import {Badge,Due,Empty} from './common';
+import {Search} from 'lucide-react';
+import {useState} from 'react';
+import {missingInputs} from '../domain/model';
 function priorityReason(app:Application){const days=daysUntil(app.sla_due_at);if(days!==null&&days<0)return `Overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return 'Due today';if(days!==null)return `Due in ${days} day${days===1?'':'s'}`;return 'No demo SLA recorded';}
 function nextAction(app:Application,identity:Identity){const action=allowedActions(app,identity)[0];return action?`Your next action: ${actionLabels[action].toLowerCase()}`:'Next authority: '+nextAuthorityLabel(app.status);}
 function nextAuthorityLabel(status:Status){if(status==='deficiency_raised')return 'Institution';const byStage:{[key in Status]:string}={draft:'Institution',submitted:'Scrutiny officer',under_scrutiny:'Assigned scrutiny officer',deficiency_raised:'Institution',resubmitted:'Scrutiny officer',evc_pending:'EVC coordinator',evc_scheduled:'Assigned EVC coordinator',pending_decision:'Regional officer',approved:'Record closed',rejected:'Record closed'};return byStage[status];}
@@ -16,16 +19,57 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   const atRisk=active.filter(a=>(daysUntil(a.sla_due_at)??99)<=3);
   const canCreate=identity.roles.some(r=>r.role==='institution');
   const onTime=active.filter(a=>(daysUntil(a.sla_due_at)??99)>=0).length;
+  const [filterScope,setFilterScope]=useState<'assigned'|'at_risk'|'all'>('all');
+  const [searchQuery,setSearchQuery]=useState('');
+  const [filterSelectedId, _setFilterSelectedId]=useState<string|null>(null);
+  const assigned=active.filter(a=>a.owner_id===identity.id||a.assigned_officer===identity.id);
+  const scoped=filterScope==='assigned'?assigned:filterScope==='at_risk'?atRisk:active;
+  const needle=searchQuery.trim().toLowerCase();
+  const filtered=needle?scoped.filter(a=>{const institution=data.institutions.find(i=>i.id===a.institution_id)?.name??'';return a.ref_no.toLowerCase().includes(needle)||a.title.toLowerCase().includes(needle)||institution.toLowerCase().includes(needle);}):scoped;
+  const list=filtered.slice().sort((a,b)=>(daysUntil(a.sla_due_at)??9999)-(daysUntil(b.sla_due_at)??9999));
+  const selected=list.find(a=>a.id===filterSelectedId)??list[0]??null;
+
   const sla=active.length?`${Math.round(onTime/active.length*100)}%`:'—';
   const stageCount=(status:Status)=>active.filter(a=>routeStage(a.status).key===routeStage(status).key).length;
   const metrics=[{label:'Active cases',value:active.length,note:`${data.applications.length} visible dossiers`,icon:FileStack,tone:'route'},{label:'Need intervention',value:atRisk.length,note:'Due within 3 days or overdue',icon:Clock3,tone:'attention'},{label:'At scrutiny',value:stageCount('under_scrutiny'),note:'Waiting for review or return',icon:ListChecks,tone:'verified'},{label:'Within SLA',value:sla,note:`${onTime} of ${active.length} active cases meet the demo target`,icon:TrendingUp,tone:'ink'}];
   const priority=active.slice().sort((a,b)=>(daysUntil(a.sla_due_at)??9999)-(daysUntil(b.sla_due_at)??9999)).slice(0,3);
   return <>
     <section className="dispatch-header" aria-labelledby="dispatch-title"><div><span className="dispatch-kicker">DISPATCH / 01 · ACTIVE WORK</span><h1 id="dispatch-title">Approval operations</h1><p>{active.length} active cases. {atRisk.length} need intervention.</p></div><div className="dispatch-header-side"><div className="dispatch-header-actions">{canCreate&&<button className="button" onClick={()=>navigate('new')}><Plus size={16}/>New application</button>}<button className="button outline" onClick={()=>navigate('reports')}><BarChart3 size={16}/>View reports</button></div><div className="dispatch-context"><span>Visible scope · Academic Year 2026–27</span><strong>{String(active.length).padStart(2,'0')}</strong><small>active dossiers</small></div></div></section>
+    <div className="overview-filter-bar" role="group" aria-label="Worklist scope">
+      <div className="overview-scope-chips">
+        {([['assigned','Assigned to me',assigned.length],['at_risk','At risk',atRisk.length],['all','All open',active.length]] as const).map(([key,label,count])=>(
+          <button key={key} type="button" aria-pressed={filterScope===key} className={filterScope===key?'overview-scope-chip active':'overview-scope-chip'} onClick={()=>setFilterScope(key)}>{label} <b>{count}</b></button>
+        ))}
+      </div>
+      <label className="overview-search">
+        <Search size={14}/>
+        <input aria-label="Search cases" placeholder="Search by reference, institution, or title" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
+      </label>
+    </div>
+    {selected&&list.length>1&&(
+      <aside className="overview-preview" aria-label="Selected case preview">
+        <div><span className="mono">{selected.ref_no}</span><Badge status={selected.status}/></div>
+        <h2>{data.institutions.find(i=>i.id===selected.institution_id)?.name??'Demo institution'}</h2>
+        <p>{selected.title}</p>
+        <dl className="overview-preview-facts">
+          <div><dt>Stage</dt><dd>{routeStageIndex(selected.status)+1} of {routeStages.length} · {routeStage(selected.status).label}</dd></div>
+          <div><dt>Status</dt><dd>{operationalStatus[selected.status]}</dd></div>
+          <div><dt>Deadline</dt><dd><Due app={selected}/></dd></div>
+          <div><dt>Next authority</dt><dd>{nextAuthorityLabel(selected.status)}</dd></div>
+        </dl>
+        <div className="overview-preview-block">
+          <h3>Why it needs attention</h3>
+          {missingInputs(selected,[]).length>0?(<ul>{missingInputs(selected,[]).slice(0,4).map(item=><li key={item}>{item}</li>)}</ul>):<p className="quiet">Submission is complete; the case is waiting on the current authority.</p>}
+        </div>
+        <div className="overview-preview-actions">
+          <button className="button" onClick={()=>open(selected.id)}>Open dossier <ArrowRight size={15}/></button>
+        </div>
+      </aside>
+    )}
     <section className="dispatch-board" aria-label="Approval dispatch board"><div className="dispatch-column dispatch-action-column"><div className="dispatch-column-heading"><div><span className="section-index">01</span><div><h2>Priority queue</h2><p>Cases closest to their next deadline.</p></div></div><span className="dispatch-count">{String(priority.length).padStart(2,'0')}</span></div>{priority.length?priority.map((app,index)=><article className={`dispatch-case ${index===0?'dispatch-case-primary':''}`} key={app.id}><div className="dispatch-case-index">{String(index+1).padStart(2,'0')}</div><div className="dispatch-case-main"><div className="inline"><span className="mono">{app.ref_no}</span><Badge status={app.status}/></div><h3>{data.institutions.find(i=>i.id===app.institution_id)?.name??'Demo institution'}</h3><p>{app.title}</p><div className="dispatch-case-meta"><span><Clock3 size={13}/>{priorityReason(app)}</span><span><ShieldCheck size={13}/>{nextAction(app,identity)}</span></div></div><button className="dispatch-case-open" onClick={()=>open(app.id)} aria-label={`Open ${app.ref_no}`}>Inspect case <ArrowRight size={15}/></button></article>):<Empty title="The priority queue is clear">No active cases need intervention right now.</Empty>}</div><aside className="dispatch-column dispatch-handoff-column"><div className="dispatch-column-heading"><div><span className="section-index">02</span><div><h2>Work by stage</h2><p>Active cases across approval stages.</p></div></div><span className="quiet-label"><span className="live-dot"/>Live</span></div><div className="handoff-route">{routeStages.map((stage,index)=>{const count=active.filter(a=>routeStage(a.status).key===stage.key).length;return <div className="handoff-station" key={stage.key}><div className="handoff-marker">{String(index+1).padStart(2,'0')}</div><div className="handoff-copy"><strong>{stage.label}</strong><span>{count} {count===1?'case':'cases'}</span></div>{index<routeStages.length-1&&<span className="handoff-line"/>}</div>;})}</div><div className="handoff-footer"><ShieldCheck size={14}/>Visible active scope<strong>{active.length}</strong></div></aside></section>
-    <section className="case-register" aria-labelledby="case-register-title"><div className="case-register-heading"><div><span className="dispatch-kicker">REGISTER / {active.length} ACTIVE OF {data.applications.length} VISIBLE</span><h2 id="case-register-title">Case register</h2><p>Active dossiers with route, region, and next deadline.</p></div><button className="text-button" onClick={()=>navigate('applications')}>View all cases <ArrowRight size={15}/></button></div><div className="table-wrap"><table><thead><tr><th>Case / institution</th><th>Region</th><th>Current stage</th><th>Status</th><th>Next deadline</th><th><span className="sr-only">Open</span></th></tr></thead><tbody>{active.map(a=><ApplicationRow key={a.id} app={a} institution={data.institutions.find(i=>i.id===a.institution_id)?.name??'Demo institution'} open={open}/>)}</tbody></table></div></section>
+    <section className="case-register" aria-labelledby="case-register-title"><div className="case-register-heading"><div><span className="dispatch-kicker">REGISTER / {active.length} ACTIVE OF {data.applications.length} VISIBLE</span><h2 id="case-register-title">Case register</h2><p>Active dossiers with route, region, and next deadline.</p></div><button className="text-button" onClick={()=>navigate('applications')}>View all cases <ArrowRight size={15}/></button></div><div className="table-wrap"><table><thead><tr><th>Case / institution</th><th>Region</th><th>Current stage</th><th>Status</th><th>Next deadline</th><th><span className="sr-only">Open</span></th></tr></thead><tbody>{list.map(a=><ApplicationRow key={a.id} app={a} institution={data.institutions.find(i=>i.id===a.institution_id)?.name??'Demo institution'} open={open} selectedId={selected?.id}/>)}</tbody></table></div></section>
     <div className="metrics dispatch-metrics">{metrics.map(m=><section key={m.label} className={`metric metric-${m.tone}`}><div className="spread"><span>{m.label}</span><m.icon size={17}/></div><strong>{m.value}</strong><small><span className="metric-point"/>{m.note}</small></section>)}</div>
     <div className="overview-bottom dispatch-footer"><div><span className="quiet-label">DISPATCH NOTE</span><p>Right process. Right authority. Right time.</p></div><span className="quiet-label">Metrics calculated from visible synthetic cases.</span></div>
   </>;
 }
-export function ApplicationRow({app,institution,open}:{app:Application;institution:string;open:(id:string)=>void}){const stage=routeStage(app.status);return <tr><td><button className="case-link" onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{app.title}</small></td><td>{app.region}</td><td><span className="station-label"><span className="station-number">{String(routeStageIndex(app.status)+1).padStart(2,'0')}</span>{stage.label}</span></td><td><span className="status-annotation"><Badge status={app.status}/><small>{operationalStatus[app.status]}</small></span></td><td><Due app={app}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}
+export function ApplicationRow({app,institution,open,selectedId}:{app:Application;institution:string;open:(id:string)=>void;selectedId?:string}){const stage=routeStage(app.status);const isSelected=selectedId===app.id;return <tr data-selected={isSelected}><td><button className={`case-link${isSelected?' selected':''}`} aria-pressed={isSelected} onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{app.title}</small></td><td>{app.region}</td><td><span className="station-label"><span className="station-number">{String(routeStageIndex(app.status)+1).padStart(2,'0')}</span>{stage.label}</span></td><td><span className="status-annotation"><Badge status={app.status}/><small>{operationalStatus[app.status]}</small></span></td><td><Due app={app}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}

@@ -1,0 +1,8 @@
+{
+  "pid": 37832,
+  "sock_path": "\\\\.\\pipe\\bsk-daemon-c85aa250f016387c",
+  "ws_port": 52800,
+  "version": "0.3.3",
+  "started_at_epoch_secs": 1792773282,
+  "host_managed": true
+}

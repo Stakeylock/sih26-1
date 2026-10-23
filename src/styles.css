@@ -537,3 +537,35 @@ body{font-size:14px}.sidebar{width:220px;background:#182126;border-right:1px sol
 .trust-replay-body .button{white-space:nowrap;font-size:10px}
 @media(max-width:900px){.trust-grid{grid-template-columns:1fr}.trust-replay{grid-column:auto}}
 @media(max-width:760px){.trust-reference{align-items:flex-start;flex-direction:column;padding:14px 16px}.trust-reference .button{width:100%;justify-content:center}.trust-chain-status{padding:14px 16px}.trust-metric{padding:13px 16px}.trust-findings,.trust-ledger,.trust-agents{padding-left:16px;padding-right:16px}.trust-access-summary,.trust-agent-summary{padding-left:16px;padding-right:16px}.trust-replay-body{align-items:flex-start;flex-direction:column;padding:14px 16px}.trust-replay-body .button{width:100%;justify-content:center}.trust-empty{padding-left:16px;padding-right:16px}}
+tr[data-selected] td{background:#eaf6f1}
+tr[data-selected] .case-link{color:#085f53;font-weight:700}
+tr[data-selected] .due{color:#57697c}
+.application-mobile-card{border:1px solid var(--border);border-radius:9px;padding:14px 15px;background:white;display:flex;flex-direction:column;gap:9px}
+.application-mobile-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.application-mobile-card strong{font-size:12px;color:#27364d}
+.application-mobile-card p{font-size:11px;color:#5c6b80;margin:0;line-height:1.45;overflow-wrap:anywhere}
+.application-mobile-meta{margin:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 14px;max-width:340px}
+.application-mobile-meta dt{color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.application-mobile-meta dd{margin:0;color:#5c6b80;font-size:10px}
+.application-mobile-card .button{margin-top:3px}
+.applications-worklist-preview{border:1px solid var(--rule);border-left:3px solid var(--teal);border-radius:8px;background:#f7fbf9;padding:14px 16px;margin:0 23px 21px;max-width:360px;display:flex;flex-direction:column;gap:8px}
+.applications-preview-back{display:inline-flex;color:#94a3b8;align-self:flex-start;background:none;border:0;padding:3px;border-radius:5px;cursor:pointer}
+.applications-preview-back:hover{color:var(--ink);background:#eef3f1}
+.applications-worklist-preview>div{display:flex;align-items:center;gap:8px}
+.applications-worklist-preview h2{display:none}
+.applications-worklist-preview p{font-size:11px;color:#5c6b80;line-height:1.45;overflow-wrap:anywhere;margin:0}
+.applications-preview-facts{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:10px}
+.applications-preview-facts>div{display:flex;gap:8px;align-items:flex-start}
+.applications-preview-facts dt{color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0;margin-top:1px}
+.applications-preview-facts dd{margin:0;color:#56677f;line-height:1.4}
+.applications-worklist-preview .button{margin-top:4px;align-self:flex-start}
+.application-mobile-card[data-selected="true"]{border-color:var(--teal);background:#eef7f4;box-shadow:inset 0 0 0 1px var(--teal)}
+.applications-worklist-preview{border:1px solid var(--rule);border-left:3px solid var(--teal);border-radius:8px;background:#f7fbf9;padding:14px 16px;margin:0 23px 21px;max-width:360px;display:flex;flex-direction:column;gap:8px}
+.applications-preview-back{display:inline-flex;color:#94a3b8;align-self:flex-start;background:none;border:0;padding:3px;border-radius:5px;cursor:pointer}
+.applications-preview-back:hover{color:var(--ink);background:#eef3f1}
+/* worklist scope bar + selected-case preview (Overview filters)
+   These mirror the prototype worklist controls so the production
+   Overview has the same scope chips, search, and live preview. */
+.applications-worklist-preview{border:1px solid var(--rule);border-left:3px solid var(--teal);border-radius:8px;background:#f7fbf9;padding:14px 16px;margin:0 23px 21px;max-width:360px;display:flex;flex-direction:column;gap:8px}
+.applications-preview-back{display:inline-flex;color:#94a3b8;align-self:flex-start;background:none;border:0;padding:3px;border-radius:5px;cursor:pointer}
+.applications-preview-back:hover{color:var(--ink);background:#eef3f1}
