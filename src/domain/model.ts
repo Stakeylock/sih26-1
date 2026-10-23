@@ -2,9 +2,9 @@ export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'reg
 export type Role = typeof roles[number];
 export const regions = ['North', 'South', 'East', 'West', 'Central', 'North-East'] as const;
 export const statusLabels = {
-  draft: 'Draft', submitted: 'Submitted', under_scrutiny: 'Under scrutiny', deficiency_raised: 'Deficiency raised',
-  resubmitted: 'Resubmitted', evc_pending: 'EVC pending', evc_scheduled: 'EVC scheduled',
-  pending_decision: 'Pending decision', approved: 'Approved', rejected: 'Rejected',
+  draft: 'Draft', submitted: 'Submitted', under_scrutiny: 'Under review', deficiency_raised: 'Changes requested',
+  resubmitted: 'Resubmitted', evc_pending: 'Visit pending', evc_scheduled: 'Visit scheduled',
+  pending_decision: 'Decision pending', approved: 'Approved', rejected: 'Rejected',
 } as const;
 export type Status = keyof typeof statusLabels;
 export const typeLabels = { extension_self_disclosure: 'Self-disclosure extension', name_change: 'Institution name change', new_programme: 'New programme' } as const;
