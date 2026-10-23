@@ -22,14 +22,44 @@ export function Applications({data,query,setQuery,open,create,identity}:{data:Wo
 }
 export function NewApplication({data,identity,repo,run,open,back,busy}:{data:Workspace;identity:Identity;repo:Repository;run:Run;open:(id:string)=>void;back:()=>void;busy:boolean}){
   const [step,setStep]=useState(0);const [type,setType]=useState<AppType>('new_programme');const [title,setTitle]=useState('');
+  const [intake,setIntake]=useState(60);
   const existing=data.institutions.find(i=>i.owner_id===identity.id);const [profile,setProfile]=useState({name:existing?.name??'',aicte_ref:existing?.aicte_ref??'DEMO-',region:existing?.region??'South',state:existing?.state??''});
   const template=data.templates.find(t=>t.app_type===type&&t.status==='published');
+  const maxPermissible=type==='new_programme'?300:420;
+  const isOverLimit=intake>maxPermissible;
   async function create(){let id='';const success=await run(async()=>{if(!existing)await repo.createInstitution(profile);id=await repo.createApplication(type,title);},'Draft created. Add the required details and evidence.');if(success)open(id);}
   return <><button className="text-button back" onClick={back}><ArrowLeft size={16}/>Back to applications</button><ViewHeader index="03" title="New approval application" summary="Create a synthetic dossier through a published route."/><div className="wizard-steps">{['Select category','Institution details','Upload evidence','Review & submit'].map((label,i)=><span key={label} className={i===step?'current':i<step?'done':''}><b>{i<step?<Check size={13}/>:String(i+1).padStart(2,'0')}</b>{label}</span>)}</div>
     <Panel title={step===0?'Choose an application category':'Tell us about your institution'} subtitle="Synthetic information only. This workspace does not issue regulatory decisions.">
       <form className="application-form" onSubmit={e=>{e.preventDefault();if(step===0)setStep(1);else void create();}}>
-        {step===0?<><div className="category-options">{Object.entries(typeLabels).map(([key,label])=><label key={key} className={type===key?'category selected':'category'}><input type="radio" name="category" value={key} checked={type===key} onChange={()=>setType(key as AppType)}/><span><strong>{label}</strong><small>Version 1 · Human review required</small></span></label>)}</div><label className="field">Application title<input value={title} onChange={e=>setTitle(e.target.value)} minLength={5} maxLength={200} required placeholder="Demo programme approval · 2026–27"/></label></>:<><div className="form-grid"><label className="field">Institution name<input value={profile.name} disabled={Boolean(existing)} onChange={e=>setProfile({...profile,name:e.target.value})} minLength={3} maxLength={200} required placeholder="Demo Cedar Technical Institute"/></label><label className="field">Synthetic institution ID<input value={profile.aicte_ref} disabled={Boolean(existing)} onChange={e=>setProfile({...profile,aicte_ref:e.target.value})} pattern="DEMO-[A-Z0-9-]{3,40}" required aria-describedby="id-hint"/><small id="id-hint">Use DEMO- followed by a synthetic identifier.</small></label><label className="field">Region<select value={profile.region} disabled={Boolean(existing)} onChange={e=>setProfile({...profile,region:e.target.value})}>{regions.map(r=><option key={r}>{r}</option>)}</select></label><label className="field">State<input value={profile.state} disabled={Boolean(existing)} onChange={e=>setProfile({...profile,state:e.target.value})} minLength={2} required/></label></div><div className="route-note"><strong>Automatic demo route</strong><p>{template?.definition.stages.map(s=>s.label).join(' → ')}</p><small>The published workflow is snapshotted when the draft is created.</small></div></>}
-        <div className="form-actions">{step===1&&<button type="button" className="button secondary" onClick={()=>setStep(0)}>Back</button>}<button className="button" disabled={busy||!template}>{busy?'Creating…':step===0?'Continue to institution details':'Save draft & continue to evidence'}<ArrowRight size={16}/></button></div>
+        {step===0?<><div className="category-options">{Object.entries(typeLabels).map(([key,label])=><label key={key} className={type===key?'category selected':'category'}><input type="radio" name="category" value={key} checked={type===key} onChange={()=>setType(key as AppType)}/><span><strong>{label}</strong><small>Version 1 · Human review required</small></span></label>)}</div><label className="field">Application title<input value={title} onChange={e=>setTitle(e.target.value)} minLength={5} maxLength={200} required placeholder="Demo programme approval · 2026–27"/></label>
+        <div style={{marginTop:'12px',padding:'12px 14px',background:'#f8fafc',border:'1px solid var(--border,#e2e8f0)',borderRadius:'8px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'15px',flexWrap:'wrap'}}>
+            <label className="field" style={{margin:0,flex:1,minWidth:'200px'}}>
+              Proposed Annual Intake (Seats)
+              <input type="number" min={30} max={600} step={30} value={intake} onChange={e=>setIntake(Number(e.target.value)||60)} required/>
+            </label>
+            <div style={{textAlign:'right',fontSize:'11px',color:'var(--muted,#64748b)'}}>
+              <span style={{fontFamily:'var(--font-record)',display:'block',fontWeight:600,color:'var(--ink,#17243a)'}}>
+                {Math.ceil(intake / 60)} Division{Math.ceil(intake / 60)===1?'':'s'} (60 seats/unit)
+              </span>
+              <span>Mandated Cadre: {Math.ceil(intake / 20)} Faculty required</span>
+            </div>
+          </div>
+          {isOverLimit&&(
+            <div className="callout warning" style={{marginTop:'10px',background:'#fef2f2',borderColor:'#ef4444',color:'#991b1b',fontSize:'11px',padding:'8px 12px'}}>
+              <strong>⚠️ APH 2024-27 Clause 2.4 Intake Cap Exceeded</strong>
+              <p style={{margin:'4px 0 0'}}>Maximum permissible initial intake is {maxPermissible} seats ({maxPermissible/60} divisions). Proposed {intake} seats requires 2 years of autonomous accreditation. Intake blocked at the source.</p>
+            </div>
+          )}
+          {intake % 60 !== 0 && !isOverLimit && (
+            <div className="callout warning" style={{marginTop:'10px',background:'#fffbeb',borderColor:'#f59e0b',color:'#92400e',fontSize:'11px',padding:'8px 12px'}}>
+              <strong>APH Clause 2.4.1 Modular Division Advisory</strong>
+              <p style={{margin:'4px 0 0'}}>Approved courses must be scheduled in 60-seat divisions. {intake} seats will result in a non-standard {intake % 60}-seat fractional division.</p>
+            </div>
+          )}
+        </div>
+        </>:<><div className="form-grid"><label className="field">Institution name<input value={profile.name} disabled={Boolean(existing)} onChange={e=>setProfile({...profile,name:e.target.value})} minLength={3} maxLength={200} required placeholder="Demo Cedar Technical Institute"/></label><label className="field">Synthetic institution ID<input value={profile.aicte_ref} disabled={Boolean(existing)} onChange={e=>setProfile({...profile,aicte_ref:e.target.value})} pattern="DEMO-[A-Z0-9-]{3,40}" required aria-describedby="id-hint"/><small id="id-hint">Use DEMO- followed by a synthetic identifier.</small></label><label className="field">Region<select value={profile.region} disabled={Boolean(existing)} onChange={e=>setProfile({...profile,region:e.target.value})}>{regions.map(r=><option key={r}>{r}</option>)}</select></label><label className="field">State<input value={profile.state} disabled={Boolean(existing)} onChange={e=>setProfile({...profile,state:e.target.value})} minLength={2} required/></label></div><div className="route-note"><strong>Automatic demo route</strong><p>{template?.definition.stages.map(s=>s.label).join(' → ')}</p><small>The published workflow is snapshotted when the draft is created.</small></div></>}
+        <div className="form-actions">{step===1&&<button type="button" className="button secondary" onClick={()=>setStep(0)}>Back</button>}<button className="button" disabled={busy||!template||isOverLimit}>{busy?'Creating…':step===0?'Continue to institution details':'Save draft & continue to evidence'}<ArrowRight size={16}/></button></div>
       </form>
     </Panel><SecurityNote/>
   </>;

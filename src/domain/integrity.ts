@@ -198,3 +198,87 @@ export async function verifyAuditChain(events: readonly AuditEventLike[]): Promi
   }
   return { intact: true, checked: ordered.length, head: previousHash, broken_at: null };
 }
+
+/** A declared application value that disagrees with a value extracted from linked evidence. */
+export interface EvidenceContradiction {
+  claim_id: string;
+  field: string;
+  label: string;
+  declared: string;
+  observed: string;
+  document_id: string;
+  document_name: string;
+}
+
+/**
+ * Cross-document contradiction review: flags any claim whose linked evidence carries an
+ * extracted value that disagrees with the value declared in the dossier. Pure and advisory —
+ * it never mutates state; a human resolves the conflict.
+ */
+export function detectContradictions(
+  app: { form_data: Record<string, string>; template_snapshot: { required_fields: { key: string; label: string }[] } },
+  claims: readonly Claim[],
+  claimEvidence: readonly { claim_id: string; document_id: string }[],
+  documents: readonly { id: string; file_name: string; extracted?: Record<string, string> }[],
+): EvidenceContradiction[] {
+  const byId = new Map(documents.map(document => [document.id, document]));
+  const labelFor = (field: string) => app.template_snapshot.required_fields.find(item => item.key === field)?.label ?? field;
+  const contradictions: EvidenceContradiction[] = [];
+  for (const claim of claims) {
+    for (const link of claimEvidence.filter(item => item.claim_id === claim.id)) {
+      const document = byId.get(link.document_id);
+      if (!document?.extracted) continue;
+      for (const [field, rawObserved] of Object.entries(document.extracted)) {
+        const declared = (app.form_data[field] ?? '').trim();
+        const observed = (rawObserved ?? '').trim();
+        if (!declared || !observed || declared === observed) continue;
+        contradictions.push({ claim_id: claim.id, field, label: labelFor(field), declared, observed, document_id: document.id, document_name: document.file_name });
+      }
+    }
+  }
+  return contradictions;
+}
+
+/**
+ * Targeted correction & re-review: which claims a replacement document of `docType` touches
+ * (affected) versus which verified / not-applicable claims stay untouched (preserved).
+ */
+export function replacementImpact(claims: readonly Claim[], docType: string): { affected: Claim[]; preserved: Claim[] } {
+  const affected = claims.filter(claim => claim.evidence_types_snapshot.includes(docType));
+  const affectedIds = new Set(affected.map(claim => claim.id));
+  const preserved = claims.filter(claim => ['verified', 'not_applicable'].includes(claim.status) && !affectedIds.has(claim.id));
+  return { affected, preserved };
+}
+
+export interface EvidenceVersionComparison {
+  doc_type: string;
+  expired: { id: string; file_name: string; expires_on: string }[];
+  replacements: { id: string; file_name: string; expires_on: string | null; linked: boolean }[];
+}
+
+/**
+ * Groups a claim's evidence into expired originals (linked but lapsed) beside current valid
+ * replacements of the same document type, for the side-by-side review card.
+ */
+export function compareEvidenceVersions(
+  claim: Pick<Claim, 'id' | 'evidence_types_snapshot'>,
+  claimEvidence: readonly { claim_id: string; document_id: string }[],
+  documents: readonly { id: string; doc_type: string; file_name: string; scan_status: string; expires_on?: string | null }[],
+  today = new Date().toISOString().slice(0, 10),
+): EvidenceVersionComparison[] {
+  const linkedIds = new Set(claimEvidence.filter(link => link.claim_id === claim.id).map(link => link.document_id));
+  const comparisons: EvidenceVersionComparison[] = [];
+  for (const docType of claim.evidence_types_snapshot) {
+    const ofType = documents.filter(document => document.doc_type === docType && document.scan_status === 'clean');
+    const expired = ofType.filter(document => document.expires_on && document.expires_on < today && linkedIds.has(document.id));
+    const replacements = ofType.filter(document => !document.expires_on || document.expires_on >= today);
+    if (expired.length && replacements.length) {
+      comparisons.push({
+        doc_type: docType,
+        expired: expired.map(document => ({ id: document.id, file_name: document.file_name, expires_on: document.expires_on! })),
+        replacements: replacements.map(document => ({ id: document.id, file_name: document.file_name, expires_on: document.expires_on ?? null, linked: linkedIds.has(document.id) })),
+      });
+    }
+  }
+  return comparisons;
+}

@@ -1,5 +1,5 @@
 import {useState,type FormEvent} from 'react';
-import {ArrowLeft,ArrowRight,Check,CheckCircle2,CircleAlert,Clock3,Download,FileCheck2,FileText,LockKeyhole,ShieldCheck,Upload} from 'lucide-react';
+import {ArrowLeft,ArrowRight,Check,CheckCircle2,CircleAlert,Clock3,Download,FileCheck2,FileText,LockKeyhole,Printer,ShieldCheck,Upload} from 'lucide-react';
 import type {AuditVerification} from '../domain/integrity';
 import {actionLabels,allowedActions,missingInputs,nextAuthority,roleLabels,routeStage,typeLabels,type Action,type Advisory,type Application,type Identity,type Repository,type Workspace} from '../domain/model';
 import {Badge,Dialog,Due,Panel,SecurityNote,Timeline,WorkflowRail} from './common';
@@ -8,7 +8,7 @@ import {EvidencePassport} from './EvidencePassport';
 import {Preflight} from './Preflight';
 import type {Run} from './Applications';
 export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,openCase}:{app:Application;data:Workspace;identity:Identity;repo:Repository;run:Run;busy:boolean;back:()=>void;openReceipt?:(id:string)=>void;openCase?:(id:string)=>void}){
-  const [action,setAction]=useState<Action|null>(null);const [advisory,setAdvisory]=useState<Advisory|null>(null);const [passport,setPassport]=useState<Workspace['documents'][number]|null>(null);const [audit,setAudit]=useState<AuditVerification|null>(null);const [auditAt,setAuditAt]=useState('');const [replay,setReplay]=useState(false);const documents=data.documents.filter(d=>d.application_id===app.id);const decisionEvent=data.events.filter(e=>e.application_id===app.id&&['approved','rejected','approve','reject'].includes(e.action)).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at))[0];
+  const [action,setAction]=useState<Action|null>(null);const [advisory,setAdvisory]=useState<Advisory|null>(null);const [passport,setPassport]=useState<Workspace['documents'][number]|null>(null);const [audit,setAudit]=useState<AuditVerification|null>(null);const [auditAt,setAuditAt]=useState('');const [replay,setReplay]=useState(false);const [showNotice,setShowNotice]=useState(false);const documents=data.documents.filter(d=>d.application_id===app.id);const decisionEvent=data.events.filter(e=>e.application_id===app.id&&['approved','rejected','approve','reject'].includes(e.action)).sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at))[0];
   const editable=app.owner_id===identity.id&&['draft','deficiency_raised'].includes(app.status);
   const canCheck=app.assigned_officer===identity.id&&app.status==='under_scrutiny'&&identity.roles.some(r=>r.role==='scrutiny_officer'&&r.region===app.region);
   const actions=allowedActions(app,identity);const missing=missingInputs(app,documents);
@@ -32,10 +32,52 @@ export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,
   const simulateTamper=()=>void run(async()=>{setAudit(await repo.tamperReplay(app));setReplay(true);setAuditAt(new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}));},'Tamper replay ran on a copy. Stored events were not changed.');
   const readinessLabel=closed?'Record closed':missing.length?`Blocked by ${missing.length}`:claimRoute?!claimsReady?`Claims ${verifiedClaims} of ${claims.length}`:actions.length?'Ready to advance':`Awaiting ${nextGate}`:!reviewComplete?'Review pending':!reviewPassed?'Review issues':actions.length?'Ready to advance':`Awaiting ${nextGate}`;
   const readinessTone=readinessLabel==='Ready to advance'?'ready':missing.length?'blocked':claimRoute&&!claimsReady?'pending':readinessLabel==='Review pending'||readinessLabel.startsWith('Awaiting')?'pending':readinessLabel==='Record closed'?'closed':'blocked';
+  const unverifiedCount=claims.length-verifiedClaims;
+  const replacementDoc=documents.find(d=>d.doc_type==='Fire Safety Certificate'&&(!d.expires_on||d.expires_on>=new Date().toISOString().slice(0,10)));
+  const hasReplacementEvidence=documents.some(d=>d.expires_on&&d.expires_on<new Date().toISOString().slice(0,10))&&Boolean(replacementDoc);
   return <>
     <div className="spread case-top"><button className="text-button" onClick={back}><ArrowLeft size={16}/>Application register</button><span className="mono">WORKFLOW v{app.template_version} · RECORD VERSION {app.version}</span></div>
     <section className="dossier-header" aria-labelledby="dossier-title"><div className="dossier-header-top"><span className="dossier-kicker">DOSSIER / {app.ref_no}</span><div className="inline"><span className="document-tag">{app.is_demo?'Synthetic record':'Connected record'}</span><Badge status={app.status}/><Due app={app}/></div></div><h1 id="dossier-title">{institution}</h1><p className="dossier-title">{app.title}</p><div className="dossier-meta-line"><span>{typeLabels[app.app_type]}</span><span>{app.region} region</span><span>Current station: {currentStage}</span><span>Next authority: {nextAuthority(app.status)}</span><span className="mono">WORKFLOW {app.template_version}.0</span></div></section>
     <div className={`dossier-viewing ${actions.length?'can-act':''}`}><ShieldCheck size={15}/><span>Viewing as <strong>{roleName}</strong>. {closed?'This record is closed.':actions.length?'Your role holds the next permitted action.':<>Read-only at this gate; the next action belongs to <strong>{nextGate}</strong>.</>}</span></div>
+    <section className="movement-contract" style={{background:'#ffffff',border:'1px solid var(--rule,#e2e8f0)',borderLeft:'4px solid '+(closed?'#059669':actions.length?'#0284c7':openClaimDeficiencies>0?'#d97706':'#475569'),borderRadius:'8px',padding:'14px 18px',margin:'12px 0 16px',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:'10px'}}>
+        <div>
+          <span style={{fontFamily:'var(--font-record)',fontSize:'10px',letterSpacing:'0.06em',textTransform:'uppercase',color:'var(--muted,#64748b)',fontWeight:600}}>
+            MOVEMENT CONTRACT · STATUTORY GATE GOVERNANCE
+          </span>
+          <h2 style={{margin:'4px 0 3px',fontSize:'16px',color:'var(--ink,#0f172a)'}}>
+            {closed?'Dossier Concluded':actions.length?'Ready for Your Authorized Statutory Action':`${currentStage} Cannot Advance Yet`}
+          </h2>
+          <p style={{margin:0,fontSize:'12px',color:'var(--muted,#475569)'}}>
+            {closed?'Statutory decision has been recorded and cryptographically sealed.':(
+              <>
+                <strong>Movement Blockers:</strong> {unverifiedCount>0?`${unverifiedCount} claim${unverifiedCount===1?'':'s'} await verification`:'Claims verified'} · {openClaimDeficiencies>0?`${openClaimDeficiencies} deficiency open`:'Zero open deficiencies'} · <strong>Next action:</strong> {nextGate} ({actions.length?'You hold the authority':identity.roles.some(r=>r.role==='national_admin')?'Oversight role monitoring this station':`Reserved for ${nextGate}`})
+              </>
+            )}
+          </p>
+        </div>
+        <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+          {openClaimDeficiencies>0&&(
+            <button className="button small secondary" onClick={()=>setShowNotice(true)} style={{fontSize:'11px'}}>
+              <FileText size={13}/>Deficiency Memorandum
+            </button>
+          )}
+          {!closed&&(
+            <a href="#checks" className="button small outline" style={{fontSize:'11px',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:'5px'}}>
+              Inspect unresolved items <ArrowRight size={13}/>
+            </a>
+          )}
+        </div>
+      </div>
+      {hasReplacementEvidence&&(
+        <div style={{marginTop:'10px',padding:'8px 12px',background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:'6px',fontSize:'11px',color:'#166534',display:'flex',alignItems:'center',gap:'8px'}}>
+          <CheckCircle2 size={15} style={{flexShrink:0}}/>
+          <span>
+            <strong>Evidentiary Evolution:</strong> Replacement {replacementDoc?.doc_type} ({replacementDoc?.file_name}) uploaded by institution. <em>"Uploaded ≠ Verified"</em> — statutory deficiency remains open until an authorized scrutiny officer accepts and links the replacement under APH Clause 1.8.
+          </span>
+        </div>
+      )}
+    </section>
     <section className="dossier-route-shell" aria-label="Approval route"><div className="dossier-section-heading"><div className="dossier-heading-group"><span className="section-index">01</span><div><h2>Approval route</h2><p>Movement is pinned to the version carried by this dossier.</p></div></div><span className="quiet-label"><LockKeyhole size={13}/>Server enforced in connected mode</span></div><div className="workflow-rail-scroll"><WorkflowRail app={app}/></div><div className="dossier-route-note"><span className="route-line-swatch"/>{app.status==='deficiency_raised'?<><strong>Return in route:</strong> Scrutiny query <ArrowLeft size={13}/> Institution correction <ArrowLeft size={13}/> Resubmission</>:<><strong>Current handoff:</strong> {currentStage} · {nextAuthority(app.status)}</>}<span>All deadlines are demo SLAs.</span></div></section>
     {app.status==='deficiency_raised'&&<div className="callout warning dossier-alert"><strong>Clarification required</strong><p>{lastDeficiency?.reason||'The scrutiny officer has requested corrected evidence. Review the case history.'}</p></div>}
     {app.form_data?.shc_appeal_active==='true'&&<div className="callout dossier-alert" style={{background:'#eef2ff',borderColor:'#6366f1'}}><strong>APH Standing Hearing Committee (SHC) Appeal In Progress</strong><p>A statutory appeal under APH Chapter 2 has been registered. Hearing panel review and compliance verification are underway.</p></div>}
@@ -47,6 +89,43 @@ export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,
       <section id="history" className="dossier-paper"><div className="dossier-paper-heading"><div><span className="section-index">04</span><div><h2>Decision history</h2><p>Every movement leaves a receipt.</p></div></div><span className="mono">{data.events.filter(e=>e.application_id===app.id).length} EVENTS</span></div><Timeline events={data.events.filter(e=>e.application_id===app.id)}/></section>
       <section id="advisory" className="dossier-paper"><div className="dossier-paper-heading"><div><span className="section-index">05</span><div><h2>Compliance Intelligence Advisory</h2><p>Deterministic LangGraph rule engine · Human oversight firewall (No autonomous regulatory decision)</p></div></div><button className="button outline" disabled={busy} onClick={()=>void run(async()=>{setAdvisory(await repo.advisory(app,documents));},'Advisory prepared. Workflow status is unchanged.')}>Run compliance engine</button></div>{advisory?<div className="advisory-result"><div className="inline"><span className="document-tag clean">LangGraph Advisory</span><span className="quiet-label">n8n follow-up: {advisory.automation.state}</span></div><p>{advisory.summary}</p>{advisory.warnings.length>0&&<ul>{advisory.warnings.map(w=><li key={w}>{w}</li>)}</ul>}<div className="advisory-trace">{advisory.trace.map(node=><span key={node}><Check size={12}/>{node.replaceAll('_',' ')}</span>)}</div><small>{advisory.disclaimer}</small></div>:<div className="advisory-result"><p>Run the LangGraph compliance intelligence engine to verify document completeness and metadata consistency before official human review. Flags gaps deterministically while preserving strict statutory authority.</p><small>Statutory Safeguard: LangGraph provides explainable advisory steps; statutory scrutiny and decisions remain reserved for designated AICTE authorities.</small></div>}</section>
     </div><aside className="dossier-action-rail"><section className="dossier-action-card"><span className="dossier-index-label">YOUR ACCESS</span><strong>{roleName}</strong><p>{actions.length?'You hold the next permitted action.':closed?'This record is closed and read-only.':`Read-only at this gate. ${nextGate} holds the next action.`}</p><div className="dossier-action-buttons">{actions.map(a=><button className={`button ${['reject','raise_deficiency'].includes(a)?'outline':''}`} key={a} disabled={busy||(['submit','resubmit'].includes(a)&&missing.length>0)} onClick={()=>setAction(a)}>{actionLabels[a]}</button>)}{!actions.length&&<span className="quiet-label"><LockKeyhole size={15}/>No actions available</span>}</div></section>{app.decision_reason&&<section className="decision-receipt"><span className="dossier-index-label">DECISION RECEIPT</span><strong>{app.status==='approved'?'Approved':'Rejected'}</strong><p>{app.decision_reason}</p><small>{decisionEvent?.actor_role?.replaceAll('_',' ')??'Recorded decision'} · {decisionEvent?.actor_id??identity.name} · workflow v{app.template_version}</small><span className="mono">Evidence ID: {app.decision_evidence}</span>{openReceipt&&<button className="text-button" onClick={()=>openReceipt(app.id)}>Open full receipt <ArrowRight size={13}/></button>}</section>}<section className={`record-integrity ${audit?audit.intact?'intact':'broken':''}`}><span className="dossier-index-label">RECORD INTEGRITY</span><strong>{audit?audit.intact?'Chain verified. Event history intact.':`Integrity mismatch detected at event ${audit.broken_at??'?'}`:'Not verified'}</strong><p>{audit?`${audit.checked} events checked${replay?' on a temporary copy':' in the stored chain'}.${replay?' Stored events were not changed.':''}`:'Verify the hash-linked event chain before relying on this record.'}</p><small className="chain-scope-note">Chain verification covers the stored event history only. It does not confirm the underlying claims or document validity.</small>{audit?.head&&<span className="mono record-head">HEAD {audit.head}</span>}<div className="record-integrity-actions"><button className="button outline" disabled={busy} onClick={verifyRecord}>{audit&&!replay?'Verify again':'Verify record'}</button></div>{repo.mode==='demo'&&<div className="demo-controls"><span className="demo-controls-label">Demo tool · simulation only</span><div className="record-integrity-actions">{!replay?<button className="text-button" disabled={busy} onClick={simulateTamper}>Simulate tamper</button>:<button className="text-button" disabled={busy} onClick={verifyRecord}>Reset replay</button>}</div><small>{replay?'The mismatch above came from a temporary copy; nothing stored was changed.':'Reproduces a mismatch on a temporary copy inside this demo session. Stored events are untouched.'}</small></div>}{auditAt&&<small>Last checked {auditAt}</small>}</section><SecurityNote/></aside></div>
+    {showNotice&&(
+      <Dialog title="AICTE Formal Memorandum of Deficiency" onClose={()=>setShowNotice(false)}>
+        <div style={{fontSize:'12px',lineHeight:1.6}}>
+          <div style={{borderBottom:'2px solid var(--ink)',paddingBottom:'10px',marginBottom:'14px',textAlign:'center'}}>
+            <strong style={{fontSize:'14px',display:'block',letterSpacing:'0.04em'}}>ALL INDIA COUNCIL FOR TECHNICAL EDUCATION</strong>
+            <span style={{fontSize:'10px',color:'var(--muted)'}}>A Statutory Body of the Government of India · Approval Bureau</span>
+            <span style={{fontSize:'10px',display:'block',color:'var(--muted)'}}>Nelson Mandela Marg, Vasant Kunj, New Delhi – 110070</span>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',marginBottom:'12px',fontSize:'11px',color:'var(--muted)'}}>
+            <span><strong>Ref:</strong> AICTE/{app.region}/SCRUTINY/{app.ref_no}/DEF-01</span>
+            <span><strong>Date:</strong> {new Date().toISOString().slice(0,10)}</span>
+          </div>
+          <p><strong>To:</strong><br/>The Head of Institution / Authorized Signatory<br/>{institution}<br/>{app.region} Regional Jurisdiction</p>
+          <p><strong>Subject:</strong> Notice of Scrutiny Deficiency under AICTE Approval Process Handbook (APH 2024–27) for Application <code>{app.ref_no}</code>.</p>
+          <div style={{background:'#fffaf0',border:'1px solid #fde68a',padding:'10px 12px',borderRadius:'6px',margin:'12px 0'}}>
+            <strong style={{color:'#92400e',display:'block',marginBottom:'4px'}}>Recorded Deficiency & Handbook Contravention:</strong>
+            <p style={{margin:0,color:'#78350f'}}>
+              {lastDeficiency?.reason||'Document submitted does not meet statutory validity requirements on the scrutiny date.'} (Cited: APH 2024-27 Clause 1.8 - Fire & Building Safety Norms).
+            </p>
+          </div>
+          <p>
+            <strong>Statutory Directive:</strong> You are hereby directed to upload rectified documentary proof along with certified validity verification through the FlowPilot portal within the statutory window (Deadline: <strong>{app.sla_due_at?app.sla_due_at.slice(0,10):'10 days'}</strong>).
+          </p>
+          <div style={{borderTop:'1px solid var(--rule)',paddingTop:'12px',marginTop:'14px',display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
+            <span style={{fontSize:'10px',color:'var(--muted)'}}>Digitally generated & audited · FlowPilot SHA-256 Ledger</span>
+            <div style={{textAlign:'right',fontSize:'11px'}}>
+              <strong>Scrutiny Committee Convener</strong><br/>
+              <span style={{color:'var(--muted)'}}>AICTE {app.region} Regional Office</span>
+            </div>
+          </div>
+          <div className="form-actions" style={{marginTop:'18px',display:'flex',justifyContent:'flex-end',gap:'8px'}}>
+            <button className="button outline" type="button" onClick={()=>window.print()}><Printer size={13}/>Print Official Memorandum</button>
+            <button className="button" type="button" onClick={()=>setShowNotice(false)}>Close Notice</button>
+          </div>
+        </div>
+      </Dialog>
+    )}
     {passport&&<EvidencePassport document={passport} app={app} data={data} openCase={openCase} close={()=>setPassport(null)}/>}
     {action&&<ActionDialog key={action} action={action} app={app} documents={documents} run={run} repo={repo} busy={busy} close={()=>setAction(null)}/>}</>;
 }

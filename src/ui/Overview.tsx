@@ -209,7 +209,12 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
     <section className="regional-control-section" aria-label="Regional Workload Matrix">
       <div className="regional-control-head">
         <h3><MapPin size={16}/> Pan-India Regional Dispatch {selectedRegion&&<span className="quiet-label" style={{fontWeight:500}}>(Filtered to {selectedRegion} Region)</span>}</h3>
-        {selectedRegion&&<button className="text-button small" onClick={()=>setSelectedRegion(null)}>Clear region filter</button>}
+        {selectedRegion&&(
+          <div style={{display:'flex',gap:'12px',alignItems:'center'}}>
+            <button className="text-button small" onClick={()=>navigate('applications')}>View in full register <ArrowRight size={12}/></button>
+            <button className="text-button small" onClick={()=>setSelectedRegion(null)}>Clear filter</button>
+          </div>
+        )}
       </div>
       <div className="regional-grid">
         {regions.map(r=>{
