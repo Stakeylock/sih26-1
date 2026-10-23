@@ -71,7 +71,7 @@ export default function App(){
       </>):<div className="empty"><h2>Workspace could not be loaded</h2><button className="button outline" onClick={()=>void reload()}>Try again</button></div>}
       </div>
       <div className="prototype-shell-protector" aria-hidden="true"/>
-      <footer><span>Clauseway <span>·</span> Right process. Right authority. Right time.</span><span><LockIcon/>Demonstration environment · v0.4</span></footer>
+      <footer><span>Clauseway <span>·</span> Tamper-proof. Role-gated. Regulation-aware.</span><span><LockIcon/>Demonstration environment · v0.4</span></footer>
     </main></div>{tourOverlay}{notice&&<div className="toast" role="status"><CheckIcon/>{notice}<button className="icon-button" aria-label="Dismiss notification" onClick={()=>setNotice('')}><X size={15}/></button></div>}
   </div>;
 }
