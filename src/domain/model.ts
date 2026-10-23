@@ -32,6 +32,29 @@ export interface Visit { id: string; application_id: string; coordinator_id: str
 export interface Obligation { id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string }
 export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string }
 export interface Workspace { applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[] }
+export const routeStages = [
+  { key: 'submission', label: 'Submission', statuses: ['draft'] },
+  { key: 'scrutiny', label: 'Scrutiny', statuses: ['submitted', 'resubmitted', 'under_scrutiny', 'deficiency_raised'] },
+  { key: 'expert_visit', label: 'Expert visit', statuses: ['evc_pending', 'evc_scheduled'] },
+  { key: 'final_decision', label: 'Final decision', statuses: ['pending_decision'] },
+  { key: 'outcome', label: 'Outcome', statuses: ['approved', 'rejected'] },
+] as const satisfies readonly { key: string; label: string; statuses: readonly Status[] }[];
+export type RouteStage = typeof routeStages[number];
+export function routeStageIndex(status: Status) {
+  const index = routeStages.findIndex(stage => (stage.statuses as readonly Status[]).includes(status));
+  return index < 0 ? 0 : index;
+}
+export function routeStage(status: Status): RouteStage { return routeStages[routeStageIndex(status)]; }
+export function nextAuthority(status: Status) {
+  if (status === 'deficiency_raised') return roleLabels.institution;
+  return ({
+    submission: roleLabels.institution,
+    scrutiny: roleLabels.scrutiny_officer,
+    expert_visit: roleLabels.evc_coordinator,
+    final_decision: roleLabels.regional_officer,
+    outcome: 'Record complete',
+  } as const)[routeStage(status).key];
+}
 export type Action = 'submit' | 'resubmit' | 'start_scrutiny' | 'raise_deficiency' | 'pass_scrutiny' | 'schedule_evc' | 'submit_evc_report' | 'approve' | 'reject';
 export const actionLabels: Record<Action, string> = { submit: 'Submit application', resubmit: 'Resubmit application', start_scrutiny: 'Start scrutiny', raise_deficiency: 'Return for deficiency', pass_scrutiny: 'Accept scrutiny', schedule_evc: 'Schedule visit', submit_evc_report: 'Submit visit report', approve: 'Record demo approval', reject: 'Record demo rejection' };
 export interface Transition { application: Application; action: Action; reason: string; payload: Record<string, unknown>; requestId: string }

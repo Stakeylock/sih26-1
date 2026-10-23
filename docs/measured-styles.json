@@ -6,7 +6,7 @@
   "body": {
     "backgroundColor": "rgb(236, 239, 241)"
   },
-  ".page-heading h1": {
+  ".dispatch-header h1": {
     "fontSize": "31px"
   },
   ".case-register": {

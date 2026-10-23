@@ -99,6 +99,7 @@ These references informed structure and craft, not branding or copied layouts:
 - [x] A judge can find the next case, its reason, and its permitted action without scanning the whole page.
 - [x] The application workspace reads as a dossier with a single review task.
 - [x] The approval route uses numbered stations and explicit handoffs.
+- [x] Supporting views use task-specific compositions: agenda, obligation register, escalation desk, operational report, and decision receipts.
 - [x] Mobile case summaries keep institution, stage, deadline, and action together.
 - [x] Existing unit, security, browser, accessibility, and demo-build checks remain green.
 - [x] No production or regulatory claims are introduced.

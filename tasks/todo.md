@@ -10,6 +10,7 @@
 - [x] Establish Dispatch Office visual grammar and route typography
 - [x] Recompose overview and case workspace around dossier movement
 - [x] Replace clipped mobile register with action-first case summaries
+- [x] Propagate Dispatch Office grammar through supporting desks
 - [ ] Add deterministic end-to-end demo storyline
 - [ ] Group and clarify advisory warnings without changing its contract
 - [ ] Document reproducible demo checks and known release gaps
