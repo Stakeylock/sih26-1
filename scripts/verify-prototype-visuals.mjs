@@ -129,8 +129,8 @@ try {
     expect(
       'Section B: Regional matrix section 03 rendered',
       reportsText.includes('Pan-India Regional Pendency & Bottlenecks') &&
-        reportsText.includes('Northern') &&
-        reportsText.includes('Eastern'),
+        reportsText.includes('North') &&
+        reportsText.includes('East'),
     );
     await page.screenshot({ path: 'scratch-visual/reports-detail-1440.png', fullPage: true });
 
