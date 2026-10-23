@@ -1,6 +1,10 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { ArrowUpRight, Check, Clock3, FileText, ShieldCheck, X } from 'lucide-react';
 import { daysUntil, routeStageIndex, routeStages, statusLabels, type Application, type AuditEvent, type Status } from '../domain/model';
+export function Brand({onClick}:{onClick?:()=>void}={}){
+  const content=<><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4.5h8.5L19 9v10.5H6z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M14.5 4.5V9H19" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M9 13h7M9 16h4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span>FlowPilot<span className="brand-period">.</span></>;
+  return onClick?<button className="brand brand-button" type="button" aria-label="FlowPilot home" onClick={onClick}>{content}</button>:<div className="brand">{content}</div>;
+}
 export function Badge({status}:{status:Status}) {return <span className={`badge ${status}`}>{statusLabels[status]}</span>;}
 export function Due({app}:{app:Application}){const days=daysUntil(app.sla_due_at);return <span className={days!==null&&days<=3?'due urgent':'due'}><Clock3 size={13}/>{days===null?'No active deadline':days<0?`${-days}d overdue`:days===0?'Due today':`${days}d remaining`}</span>;}
 export function Empty({title,children}:{title:string;children?:ReactNode}){return <div className="empty"><FileText size={29}/><h3>{title}</h3><div>{children}</div></div>;}

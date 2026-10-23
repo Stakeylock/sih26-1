@@ -1,6 +1,33 @@
 import {test,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-test.beforeEach(async({page})=>{await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();});
+test.beforeEach(async({page})=>{await page.goto('/#overview');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();});
+test('public landing explains the approval record and starts the guided story',async({page})=>{
+  await page.goto('/');
+  await expect(page.getByRole('heading',{level:1,name:/The file moves/})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Run the 90-second story',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Run the 90-second story',exact:true}).click();
+  await expect(page.getByRole('complementary',{name:'Guided demonstration story'})).toBeVisible();
+  await expect(page.getByText('Start where the deadline is closest.',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Next handoff',exact:true}).click();
+  await expect(page.getByText('The institution sees the same record the reviewer sees.',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Exit tour',exact:true}).click();
+  await expect(page.getByRole('complementary',{name:'Guided demonstration story'})).toHaveCount(0);
+  await expect(page.locator('main h1')).toHaveCount(1);
+});
+test('landing enters the dispatch board',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'Open the dispatch board',exact:true}).click();
+  await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
+});
+test('closed case exposes a printable decision receipt',async({page})=>{
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1006');
+  await page.getByRole('button',{name:'DEMO-2026-1006',exact:true}).click();
+  await page.getByRole('button',{name:/Open full receipt/}).click();
+  await expect(page.getByRole('heading',{name:'Decision receipt',exact:true})).toBeVisible();
+  await expect(page.getByText('RCPT-2026-1006-01',{exact:true})).toBeVisible();
+  await expect(page.getByText(/Synthetic demonstration receipt/)).toBeVisible();
+});
 test('overview uses calculated metrics, search opens a case, all views render',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await expect(page.getByText('Synthetic cases only.',{exact:false}).first()).toBeVisible();
@@ -11,7 +38,7 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await expect(dispatchBoard.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
   await page.getByRole('navigation').getByRole('button',{name:'Approval routes',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Approval route registry',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Bottleneck heatmap',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Time by stage',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Open Scrutiny stage',exact:true})).toBeVisible();
   await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
@@ -73,7 +100,7 @@ test('shell owns one contextual header and an expandable demo disclosure',async(
   await expect(page.getByText('Start with the dossier closest to a missed handoff.',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Where visible cases are waiting now.',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Cases closest to their next deadline.',{exact:true})).toBeVisible();
-  await expect(page.getByText('Current workload across approval stages.',{exact:true})).toBeVisible();
+  await expect(page.getByText('Active cases across approval stages.',{exact:true})).toBeVisible();
 });
 test('dossier is the page header and keeps authority and return path',async({page})=>{
   await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
@@ -137,16 +164,78 @@ test('design-rationale copy is absent from every route',async({page})=>{
     for(const phrase of banned)await expect(page.locator('main')).not.toContainText(phrase);
   }
 });
-test('mobile overview orders header, priority, route, and register',async({page})=>{
+test('mobile overview orders header, priority, and stage workload without the duplicate register',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.reload();
   await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
   const ordered=await page.evaluate(()=>{
-    const selectors=['.dispatch-header','.dispatch-action-column','.dispatch-handoff-column','.case-register'];
+    const selectors=['.dispatch-header','.dispatch-action-column','.dispatch-handoff-column'];
     const nodes=selectors.map(selector=>document.querySelector(selector));
     return nodes.every(Boolean)&&nodes.every((node,index)=>index===0||Boolean(nodes[index-1]!.compareDocumentPosition(node!)&Node.DOCUMENT_POSITION_FOLLOWING));
   });
   expect(ordered).toBe(true);
   await expect(page.locator('.dispatch-action-column').getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
+  await expect(page.locator('.case-register')).toBeHidden();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+test('application register matches region, stage, and status columns',async({page})=>{
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  const headers=await page.locator('.applications-table thead th').allTextContents();
+  expect(headers.slice(0,5)).toEqual(['Application / institution','Region','Current stage','Status','Next deadline']);
+  await expect(page.getByRole('combobox',{name:'Filter by status'})).toBeVisible();
+  const firstRow=page.locator('.applications-table tbody tr').first();
+  await expect(firstRow.locator('td').nth(1)).toHaveText('South');
+  await expect(firstRow.locator('td').nth(2)).toContainText('Scrutiny');
+  await expect(firstRow.locator('td').nth(3)).toContainText('Under review');
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1002');
+  await expect(page.locator('.applications-table tbody tr').first().locator('td').nth(3)).toContainText('Changes requested');
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1007');
+  await expect(page.locator('.applications-table tbody tr').first().locator('td').nth(3)).toContainText('Resubmitted');
+});
+test('mobile applications use case cards and the dossier route stays inside the viewport',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.reload();
+  await page.getByRole('button',{name:'Open navigation'}).click();
+  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await expect(page.locator('.applications-table')).toBeHidden();
+  const card=page.locator('.application-mobile-card').first();
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('Stage');
+  await expect(card).toContainText('Region');
+  await expect(card).toContainText('Deadline');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await card.getByRole('button',{name:/Open DEMO-2026-1001/}).click();
+  await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
+  await expect(page.getByText(/Viewing as/)).toContainText('National administrator');
+  await expect(page.getByText('Review pending',{exact:true})).toBeVisible();
+  await expect(page.getByText(/Ready for next gate|Ready for the next workflow gate/)).toHaveCount(0);
+  await expect(page.getByText('Current authority',{exact:true})).toBeVisible();
+  await expect(page.locator('.workflow-rail-scroll')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+test('overview lists every active case and reports follow the selected scope',async({page})=>{
+  await expect(page.getByRole('heading',{name:'Work by stage',exact:true})).toBeVisible();
+  await expect(page.locator('.case-register tbody tr')).toHaveCount(7);
+  await page.getByRole('navigation').getByRole('button',{name:'Reports',exact:true}).click();
+  await expect(page.locator('.support-header-count')).toContainText('07');
+  await expect(page.locator('.support-header-count')).toContainText('active cases');
+  await page.getByRole('button',{name:/Closed cases/}).click();
+  await expect(page.locator('.support-header-count')).toContainText('04');
+  await expect(page.locator('.support-header-count')).toContainText('closed cases');
+  await expect(page.locator('.report-question .quiet-label')).toHaveCount(0);
+  await expect(page.locator('.report-outcome-list')).toBeVisible();
+  await page.getByRole('button',{name:/All applications/}).click();
+  await expect(page.locator('.support-header-count')).toContainText('11');
+  await expect(page.locator('.support-header-count')).toContainText('visible applications');
+});
+test('alerts offer queue navigation and route visuals expose a return branch',async({page})=>{
+  await page.getByRole('navigation').getByRole('button',{name:'Alerts & escalations',exact:true}).click();
+  await page.getByRole('button',{name:'Open priority queue',exact:true}).click();
+  await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
+  await page.getByRole('navigation').getByRole('button',{name:'Approval routes',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Time by stage',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Bottleneck heatmap',exact:true})).toHaveCount(0);
+  await expect(page.locator('.workflow-branch')).toContainText('Return and query branch');
+  const zeroFill=await page.locator('.bottleneck-row').first().locator('.bottleneck-bar span').evaluate(element=>getComputedStyle(element).width);
+  expect(zeroFill).toBe('0px');
 });

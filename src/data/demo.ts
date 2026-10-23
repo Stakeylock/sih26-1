@@ -3,7 +3,7 @@ import type { Advisory,Application, AuditEvent, Identity, Repository, Role, Stat
 import { allowedActions, missingInputs } from '../domain/model';
 import { titleSchema, validateFile } from '../domain/validation';
 const templates = templatesJson as Template[];
-const STORAGE = 'flowpilot-isolated-demo-v3';
+const STORAGE = 'flowpilot-isolated-demo-v4';
 export const demoIdentities: Identity[] = [
   {id:'demo-national',name:'Aarav Mehta',email:'national@demo.invalid',roles:[{role:'national_admin',region:null}]},
   {id:'demo-institution',name:'Maya Patel',email:'institution@demo.invalid',roles:[{role:'institution',region:null}]},
@@ -16,21 +16,22 @@ function seed(): Workspace {
   const institutions = ['Cedar Technical Institute','Meridian College of Engineering','Sunrise School of Technology','Eastern Polytechnic','Horizon Institute','Northbridge College'].map((name,i)=>({id:`demo-inst-${i}`,owner_id:i===0?'demo-institution':`demo-owner-${i}`,name:`${name} · Demo`,aicte_ref:`DEMO-INST-${i+1}`,region:i===0||i===2||i===4?'South':i===1?'West':i===3?'East':'North',state:i===0?'Telangana':'Synthetic state'}));
   const states: Status[]=['under_scrutiny','deficiency_raised','evc_pending','pending_decision','submitted','approved','resubmitted','evc_scheduled','approved','approved','rejected','draft'];
   const applications: Application[]=states.map((status,i)=>{
-    const inst=institutions[i%institutions.length]; const t=templates[i%3];
-    return {id:`demo-app-${i}`,ref_no:`DEMO-2026-${String(1001+i)}`,title:i===0?'Self-disclosure extension · 2026–27':i===1?'Institution name change':i===2?'New programme · Computer science':`${t.name} · Demo`,owner_id:inst.owner_id,institution_id:inst.id,app_type:t.app_type,status,region:inst.region,version:1,template_version:1,template_snapshot:t.definition,form_data:Object.fromEntries(t.definition.required_fields.map(f=>[f.key,`Synthetic ${f.label.toLowerCase()}`])),evc_required:['evc_pending','evc_scheduled'].includes(status),assigned_officer:status==='under_scrutiny'?'demo-scrutiny':null,sla_due_at:['approved','rejected','draft'].includes(status)?null:iso(i===0?2:i===4?-1:4+i),submitted_at:status==='draft'?null:iso(-6-i),created_at:iso(-8-i),updated_at:iso(-i),decision_reason:status==='approved'?'Synthetic evidence accepted for demonstration only.':null,decision_evidence:null,is_demo:true};
+    const inst=institutions[i===3?2:i%institutions.length]; const t=templates[i%3]; const id=`demo-app-${i}`; const closed=['approved','rejected'].includes(status);
+    return {id,ref_no:`DEMO-2026-${String(1001+i)}`,title:i===0?'Self-disclosure extension · 2026-27':i===1?'Institution name change':i===2?'New programme · Computer science':`${t.name} · Demo`,owner_id:inst.owner_id,institution_id:inst.id,app_type:t.app_type,status,region:inst.region,version:1,template_version:1,template_snapshot:t.definition,form_data:Object.fromEntries(t.definition.required_fields.map(f=>[f.key,`Synthetic ${f.label.toLowerCase()}`])),evc_required:['evc_pending','evc_scheduled'].includes(status),assigned_officer:status==='under_scrutiny'?'demo-scrutiny':null,sla_due_at:['approved','rejected','draft'].includes(status)?null:iso(i===0?2:i===4?-1:4+i),submitted_at:status==='draft'?null:iso(-6-i),created_at:iso(-8-i),updated_at:iso(-i),decision_reason:closed?(status==='approved'?'Synthetic evidence accepted for demonstration only.':'Synthetic evidence did not meet the demo checklist. Human review recorded.'):null,decision_evidence:closed?`demo-doc-${id}-0`:null,is_demo:true};
   });
   const documents=applications.flatMap(a=>a.template_snapshot.required_documents.map((type,i)=>({id:`demo-doc-${a.id}-${i}`,application_id:a.id,doc_type:type,file_name:type.toLowerCase().replaceAll(' ','_')+'.pdf',file_path:'demo-only',size_bytes:120000+i*45300,mime_type:'application/pdf',scan_status:'clean' as const,sha256:'a'.repeat(64),uploaded_at:a.created_at})));
   const events:AuditEvent[]=applications.flatMap((a,i)=>[
     {id:i*3+1,application_id:a.id,actor_id:a.owner_id,actor_role:'institution',action:'created',from_status:null,to_status:'draft' as const,reason:'Synthetic case created.',created_at:a.created_at,payload:{demo:true}},
     ...(a.status==='draft'?[]:[{id:i*3+2,application_id:a.id,actor_id:a.owner_id,actor_role:'institution',action:'submit',from_status:'draft' as const,to_status:'submitted' as const,reason:'Synthetic evidence attached.',created_at:a.submitted_at!,payload:{demo:true}}]),
+    ...(['approved','rejected'].includes(a.status)?[{id:i*3+3,application_id:a.id,actor_id:'demo-regional',actor_role:'regional_officer',action:a.status,from_status:'pending_decision' as const,to_status:a.status,reason:a.decision_reason,created_at:a.updated_at,payload:{demo:true}}]:[]),
   ]);
   return {applications,institutions,templates,documents,events,checklist:[],visits:[{id:'demo-visit',application_id:'demo-app-7',coordinator_id:'demo-evc',scheduled_for:iso(3),completed_at:null,report:null,recommendation:null}],obligations:[{id:'demo-obligation',application_id:'demo-app-5',institution_id:'demo-inst-5',title:'Demo annual compliance disclosure',due_date:iso(15).slice(0,10),status:'open',deadline_source:'demo_sla',region:'North'}],notifications:[{id:'demo-notification-1',title:'Two cases need attention',body:'Demo deadlines are approaching in the scrutiny queue.',read_at:null,created_at:iso()},{id:'demo-notification-2',title:'Workflow version 1 is published',body:'Active demo cases retain their original workflow snapshot.',read_at:null,created_at:iso(-1)}]};
 }
 export function createDemoRepository(role:Role='national_admin'): Repository {
   const actor=demoIdentities.find(i=>i.roles[0].role===role)!;
   let state=seed();
-  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===3 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) state=saved.workspace; } catch { /* Corrupt demo storage is discarded. */ }
-  const persist=()=>localStorage.setItem(STORAGE,JSON.stringify({format:3,workspace:state}));
+  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===4 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) state=saved.workspace; } catch { /* Corrupt demo storage is discarded. */ }
+  const persist=()=>localStorage.setItem(STORAGE,JSON.stringify({format:4,workspace:state}));
   const visible=(a:Application)=>a.owner_id===actor.id || (a.status!=='draft' && actor.roles.some(r=>r.role==='national_admin'||(r.role!=='institution'&&r.region===a.region)));
   const find=(id:string)=>{const a=state.applications.find(x=>x.id===id);if(!a||!visible(a))throw new Error('Demo application is unavailable.');return a;};
   function log(a:Application,action:string,old:Status|null,reason:string|null=null){state.events.unshift({id:Date.now(),application_id:a.id,actor_id:actor.id,actor_role:role,action,from_status:old,to_status:a.status,reason,created_at:iso(),payload:{demo:true}});}
