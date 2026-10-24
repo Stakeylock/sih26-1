@@ -1,12 +1,15 @@
 import type { Deficiency } from './integrity';
+import type {AuditEvent} from './model';
+import {recordedSnapshot} from './review';
+const DAY=86400000, IST=19800000;
 
 export function isWeekend(date: Date): boolean {
-  const day = date.getDay();
+  const day = new Date(date.getTime()+IST).getUTCDay();
   return day === 0 || day === 6;
 }
 
 function dateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return new Date(date.getTime()+IST).toISOString().slice(0,10);
 }
 
 /** `holidays` are `YYYY-MM-DD` keys that do not count as working days. */
@@ -20,18 +23,11 @@ export function workingDaysBetween(from: Date | string | number, to: Date | stri
   const end = new Date(to);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
   const sign = end.getTime() >= start.getTime() ? 1 : -1;
-  const low = sign > 0 ? start : end;
-  const high = sign > 0 ? end : start;
+  const low = Math.floor(((sign > 0 ? start : end).getTime()+IST)/DAY);
+  const high = Math.floor(((sign > 0 ? end : start).getTime()+IST)/DAY);
   let count = 0;
-  const cursor = new Date(low);
-  cursor.setHours(0, 0, 0, 0);
-  const target = new Date(high);
-  target.setHours(0, 0, 0, 0);
-  while (cursor < target) {
-    cursor.setDate(cursor.getDate() + 1);
-    if (isWorkingDay(cursor, holidays)) count += 1;
-  }
-  return sign * count;
+  for(let day=low+1;day<=high;day++)if(isWorkingDay(new Date(day*DAY-IST),holidays))count++;
+  return count===0?0:sign*count;
 }
 
 /** Working days until a deadline; negative when overdue. Returns null when there is no deadline. */
@@ -48,6 +44,8 @@ export interface DualClock {
   /** True while an open/escalated deficiency currently holds the clock. */
   paused: boolean;
   totalWorkingDays: number;
+  complete: boolean;
+  coverageStart: string | null;
 }
 
 function mergeWindows(windows: [number, number][]): [number, number][] {
@@ -61,34 +59,43 @@ function mergeWindows(windows: [number, number][]): [number, number][] {
   return merged;
 }
 
-/**
- * Dual accountability: partitions the working days since submission into officer-processing
- * time versus institution deficiency-response time. Derived from Clauseway's own deficiency
- * records, so the officer clock is effectively paused (institution's time) whenever a claim
- * deficiency is open. Inspired by Ao-chuba's `computeDualClock` and SAKSHAM's
- * "who is responsible for this delay?" — but bound to our claim/deficiency loop.
- */
-export function computeDualClock(
-  input: { startAt: string | null | undefined; deficiencies: readonly Pick<Deficiency, 'raised_at' | 'resolved_at' | 'status'>[]; holidays?: readonly string[] },
-  now = Date.now(),
-): DualClock {
-  const holidays = input.holidays ?? [];
-  const startMs = Date.parse(input.startAt ?? '') || now;
-  const totalWorkingDays = Math.max(0, workingDaysBetween(startMs, now, holidays));
-
-  const windows: [number, number][] = input.deficiencies.map(deficiency => {
-    const raised = Date.parse(deficiency.raised_at);
-    const end = deficiency.resolved_at ? Date.parse(deficiency.resolved_at) : now;
-    return [Math.max(startMs, Number.isNaN(raised) ? startMs : raised), Math.min(now, Number.isNaN(end) ? now : end)] as [number, number];
-  });
-
-  const institutionDays = mergeWindows(windows).reduce((sum, [from, to]) => sum + Math.max(0, workingDaysBetween(from, to, holidays)), 0);
-  const clampedInstitution = Math.min(institutionDays, totalWorkingDays);
-
-  return {
-    officerDays: Math.max(0, totalWorkingDays - clampedInstitution),
-    institutionDays: clampedInstitution,
-    paused: input.deficiencies.some(deficiency => ['open', 'escalated'].includes(deficiency.status)),
-    totalWorkingDays,
-  };
+/** Synthetic elapsed weekday time. Intervals are unioned before calculation; no interval rounding. */
+function elapsedWeekdays(from:number,to:number,holidays:readonly string[]){
+  let total=0,cursor=from;
+  while(cursor<to){const dayStart=Math.floor((cursor+IST)/DAY)*DAY-IST;const next=Math.min(to,dayStart+DAY);
+    if(isWorkingDay(new Date(dayStart),holidays))total+=(next-cursor)/DAY;
+    cursor=next;
+  }
+  return total;
+}
+export function computeDualClock(input:{startAt:string|null|undefined;closedAt?:string|null;events?:readonly AuditEvent[];historyComplete?:boolean;deficiencies?:readonly Pick<Deficiency,'raised_at'|'resolved_at'|'status'>[];holidays?:readonly string[]},now=Date.now()):DualClock{
+  const start=Date.parse(input.startAt??'');const end=Math.min(now,input.closedAt?Date.parse(input.closedAt):now);
+  const empty={officerDays:0,institutionDays:0,paused:false,totalWorkingDays:0,complete:false,coverageStart:null};
+  if(!Number.isFinite(start)||!Number.isFinite(end)||end<start)return empty;
+  const holidays=input.holidays??[];
+  if(input.events===undefined){
+    // Legacy callers get an explicitly incomplete approximation, never a complete history claim.
+    const windows=mergeWindows((input.deficiencies??[]).flatMap(item=>{const raised=Date.parse(item.raised_at),resolved=item.resolved_at?Date.parse(item.resolved_at):end;return [[Math.max(start,raised),Math.min(end,resolved)] as [number,number]];}));
+    const total=elapsedWeekdays(start,end,holidays),institution=windows.reduce((sum,[from,to])=>sum+elapsedWeekdays(from,to,holidays),0);
+    return {...empty,officerDays:Math.max(0,total-institution),institutionDays:Math.min(total,institution),totalWorkingDays:total,paused:!input.closedAt&&(input.deficiencies??[]).some(item=>['open','escalated'].includes(item.status))};
+  }
+  const events=[...input.events].sort((a,b)=>(a.sequence??0)-(b.sequence??0));
+  const first=events.find(event=>recordedSnapshot(event));if(!first)return empty;
+  if(!input.historyComplete||events.some((event,index)=>event.sequence!==index+1)||events.slice(events.indexOf(first)).some(event=>!recordedSnapshot(event)))return empty;
+  const coverageStart=Math.max(start,Date.parse(first.created_at));if(coverageStart>end)return empty;
+  const complete=first.sequence===1;
+  const open=new Map<string,number>();const windows:[number,number][]=[];
+  for(const event of events){
+    const snapshot=recordedSnapshot(event);if(!snapshot)continue;
+    const at=Math.min(end,Math.max(coverageStart,Date.parse(event.created_at)));
+    if(Date.parse(event.created_at)>end)break;
+    const waiting=new Set(snapshot.deficiencies.filter(item=>['open','escalated'].includes(item.status)).map(item=>item.id));
+    for(const [id,from] of open)if(!waiting.has(id)){windows.push([from,at]);open.delete(id);}
+    for(const id of waiting)if(!open.has(id))open.set(id,at);
+  }
+  for(const from of open.values())windows.push([from,end]);
+  const total=elapsedWeekdays(coverageStart,end,holidays);
+  const institution=Math.min(total,mergeWindows(windows).reduce((sum,[from,to])=>sum+elapsedWeekdays(from,to,holidays),0));
+  const round=(value:number)=>Math.round(value*1000000)/1000000;
+  return {officerDays:round(Math.max(0,total-institution)),institutionDays:round(institution),totalWorkingDays:round(total),paused:!input.closedAt&&open.size>0,complete,coverageStart:new Date(coverageStart).toISOString()};
 }

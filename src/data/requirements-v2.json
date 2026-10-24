@@ -6,11 +6,14 @@
     "code": "INSTITUTION_IDENTITY",
     "clause": "APH identity",
     "statement": "Institution name and AICTE reference match the trust record",
-    "evidence_types": ["Affidavit"],
+    "evidence_types": [
+      "Affidavit"
+    ],
     "verification_method": "cross_check",
     "is_mandatory": true,
     "sort_order": 10,
-    "active": true
+    "active": true,
+    "input_fields": []
   },
   {
     "id": "demo-req-v2-2",
@@ -19,11 +22,16 @@
     "code": "SANCTIONED_INTAKE",
     "clause": "APH intake",
     "statement": "Sanctioned intake matches the previous approval",
-    "evidence_types": ["Affidavit"],
+    "evidence_types": [
+      "Affidavit"
+    ],
     "verification_method": "cross_check",
     "is_mandatory": true,
     "sort_order": 30,
-    "active": true
+    "active": true,
+    "input_fields": [
+      "intake"
+    ]
   },
   {
     "id": "demo-req-v2-3",
@@ -32,11 +40,16 @@
     "code": "FACULTY_STRENGTH",
     "clause": "APH faculty",
     "statement": "Faculty count and 1:15 cadre ratio meet the declared norm",
-    "evidence_types": ["Faculty List"],
+    "evidence_types": [
+      "Faculty List"
+    ],
     "verification_method": "document_review",
     "is_mandatory": true,
     "sort_order": 40,
-    "active": true
+    "active": true,
+    "input_fields": [
+      "faculty_count"
+    ]
   },
   {
     "id": "demo-req-v2-4",
@@ -45,12 +58,21 @@
     "code": "STUDENT_FACULTY_RATIO",
     "clause": "APH ratio",
     "statement": "Student-faculty ratio is within the declared norm",
-    "evidence_types": ["Faculty List"],
+    "evidence_types": [
+      "Faculty List"
+    ],
     "verification_method": "system_check",
-    "system_fields": ["intake", "faculty_count"],
+    "system_fields": [
+      "intake",
+      "faculty_count"
+    ],
     "is_mandatory": true,
     "sort_order": 50,
-    "active": true
+    "active": true,
+    "input_fields": [
+      "intake",
+      "faculty_count"
+    ]
   },
   {
     "id": "demo-req-v2-5",
@@ -59,11 +81,14 @@
     "code": "LAND_OWNERSHIP",
     "clause": "APH land",
     "statement": "Land ownership or lease is valid for the academic year",
-    "evidence_types": ["Land Document"],
+    "evidence_types": [
+      "Land Document"
+    ],
     "verification_method": "document_review",
     "is_mandatory": true,
     "sort_order": 60,
-    "active": true
+    "active": true,
+    "input_fields": []
   },
   {
     "id": "demo-req-v2-6",
@@ -72,11 +97,14 @@
     "code": "BUILT_UP_AREA",
     "clause": "APH infrastructure",
     "statement": "Built-up and instructional area meet the declared norm",
-    "evidence_types": ["Building Plan"],
+    "evidence_types": [
+      "Building Plan"
+    ],
     "verification_method": "document_review",
     "is_mandatory": true,
     "sort_order": 70,
-    "active": true
+    "active": true,
+    "input_fields": []
   },
   {
     "id": "demo-req-v2-7",
@@ -85,11 +113,15 @@
     "code": "FIRE_SAFETY",
     "clause": "APH safety",
     "statement": "Fire safety certificate is valid on the scrutiny date",
-    "evidence_types": ["Fire Safety Certificate", "Insurance"],
+    "evidence_types": [
+      "Fire Safety Certificate",
+      "Insurance"
+    ],
     "verification_method": "document_review",
     "is_mandatory": true,
     "sort_order": 80,
-    "active": true
+    "active": true,
+    "input_fields": []
   },
   {
     "id": "demo-req-v2-8",
@@ -98,11 +130,16 @@
     "code": "UNDERTAKING",
     "clause": "APH undertaking",
     "statement": "Institution accepts the post-approval undertakings",
-    "evidence_types": ["Undertaking"],
+    "evidence_types": [
+      "Undertaking"
+    ],
     "verification_method": "document_review",
     "is_mandatory": true,
     "sort_order": 90,
-    "active": true
+    "active": true,
+    "input_fields": [
+      "declaration"
+    ]
   },
   {
     "id": "demo-req-v2-9",
@@ -111,10 +148,13 @@
     "code": "ACCREDITATION",
     "clause": "APH accreditation",
     "statement": "Current NBA or NAAC accreditation evidence is on file",
-    "evidence_types": ["Accreditation Certificate"],
+    "evidence_types": [
+      "Accreditation Certificate"
+    ],
     "verification_method": "document_review",
     "is_mandatory": true,
     "sort_order": 45,
-    "active": true
+    "active": true,
+    "input_fields": []
   }
 ]

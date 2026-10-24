@@ -24,6 +24,7 @@ export interface Requirement {
   verification_method: VerificationMethod;
   /** Declared application fields a system check evaluates; document checks leave this unset. */
   system_fields?: string[];
+  input_fields?: string[];
   is_mandatory: boolean;
   sort_order: number;
   active: boolean;
@@ -39,8 +40,14 @@ export interface Claim {
   clause_snapshot: string;
   evidence_types_snapshot: string[];
   verification_method: VerificationMethod;
+  input_fields_snapshot?: string[];
+  requirement_version_snapshot?: number;
+  is_mandatory_snapshot?: boolean;
+  verification_basis?: ReviewBasis | null;
   /** Inputs the system check evaluated, for claims verified without a document link. */
   system_inputs?: ClaimSystemInput[];
+  system_rule_snapshot?: {id:string;version:number;max_ratio:number;source:string} | null;
+  system_result?: {passed:boolean;ratio?:number;reason?:string;inputs:ClaimSystemInput[];rule?:{id:string;version:number;max_ratio:number;source:string}} | null;
   verified_by: string | null;
   verified_at: string | null;
   verification_note: string | null;
@@ -74,6 +81,15 @@ export interface Deficiency {
   rechecked_by: string | null;
   rechecked_at: string | null;
   recheck_note: string | null;
+  response_revision?: number;
+}
+
+export interface ReviewBasis {
+  schema: 1; result: 'verified'|'not_applicable'; method: VerificationMethod; clause: string;
+  requirement_version: number; mandatory: boolean; evidence_types: string[];
+  inputs: Record<string,string|null>;
+  documents: {id:string;sha256:string|null;doc_type:string;expires_on:string|null;scan_status:string}[];
+  system_result: Claim['system_result'] | null;
 }
 
 export interface IntegritySignal {
@@ -136,7 +152,7 @@ export interface AuditVerification {
   broken_at: number | null;
 }
 
-function stableJson(value: unknown): string {
+export function stableJson(value: unknown): string {
   if (value === null) return 'null';
   if (Array.isArray(value)) return `[${value.map(item => item === undefined ? 'null' : stableJson(item)).join(',')}]`;
   if (typeof value === 'object') {

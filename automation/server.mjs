@@ -10,7 +10,7 @@ function equal(a,b){if(!a||!b)return false;const x=Buffer.from(a),y=Buffer.from(
 export function createAutomationServer(config){
   if(!config.allowDemo&&(!config.url||!config.key))throw new Error('Supabase project URL and publishable key required');
   if(config.token&&config.token.length<32)throw new Error('Use a random automation token of at least 32 characters');
-  const store=config.store??new AutomationStore(config.storePath??'automation/clauseway.sqlite');
+  const store=config.store??new AutomationStore(config.storePath??'.runtime/automation.sqlite');
   const limit=new Map();let delivering=false;
   async function deliver(){if(delivering||!config.webhook||!config.token)return;delivering=true;try{for(const job of store.pending()){store.attempt(job.id);try{const response=await fetch(config.webhook,{method:'POST',headers:{'Content-Type':'application/json','X-Clauseway-Automation':config.token},body:job.event,signal:AbortSignal.timeout(10000),redirect:'error'});if(!response.ok)store.retry(job.id);}catch{store.retry(job.id);}}}finally{delivering=false;}}
   async function actor(req){const header=req.headers.authorization;if(!header?.startsWith('Bearer '))throw Object.assign(new Error('Authentication required'),{status:401});const token=header.slice(7);const client=createClient(config.url,config.key,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:`Bearer ${token}`}}});const {data:{user},error}=await client.auth.getUser(token);if(error||!user||user.is_anonymous)throw Object.assign(new Error('Invalid session'),{status:401});return {client,id:user.id};}

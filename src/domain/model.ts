@@ -1,4 +1,5 @@
 import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
+import type {CaseHistory} from './review';
 
 export type { Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
 export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'regional_officer', 'national_admin'] as const;
@@ -73,26 +74,27 @@ export interface Repository {
   mode: 'demo' | 'connected'; identity(): Promise<Identity | null>; subscribeAuth(callback: () => void): () => void;
   signIn(email: string, password: string): Promise<void>; signOut(): Promise<void>; workspace(): Promise<Workspace>;
   createInstitution(input: Omit<Institution, 'id' | 'owner_id'>): Promise<void>;
-  createApplication(type: AppType, title: string): Promise<string>;
+  createApplication(type: AppType, title: string, initialForm?: Record<string,string>): Promise<string>;
   saveDraft(application: Application, title: string, form: Record<string, string>): Promise<void>;
   transition(input: Transition): Promise<void>; checklist(application: Application, item: string, passed: boolean, note: string): Promise<void>;
-  verifyClaim(application: Application, claim: Claim, result: 'verified' | 'not_applicable', note: string): Promise<void>;
-  linkClaimEvidence(application: Application, claim: Claim, document: DocumentRecord, note: string): Promise<void>;
-  raiseClaimDeficiency(application: Application, claim: Claim, observation: string, remedy: string, dueAt: string): Promise<void>;
-  resolveClaimDeficiency(application: Application, deficiency: Deficiency, evidence: DocumentRecord, note: string): Promise<void>;
-  recheckClaimDeficiency(application: Application, deficiency: Deficiency, result: 'accepted' | 'reopened', note: string): Promise<void>;
+  verifyClaim(application: Application, claim: Claim, result: 'verified' | 'not_applicable', note: string, requestId?: string): Promise<void>;
+  linkClaimEvidence(application: Application, claim: Claim, document: DocumentRecord, note: string, requestId?: string): Promise<void>;
+  raiseClaimDeficiency(application: Application, claim: Claim, observation: string, remedy: string, dueAt: string, requestId?: string): Promise<void>;
+  resolveClaimDeficiency(application: Application, deficiency: Deficiency, evidence: DocumentRecord, note: string, requestId?: string): Promise<void>;
+  recheckClaimDeficiency(application: Application, deficiency: Deficiency, result: 'accepted' | 'reopened', note: string, requestId?: string): Promise<void>;
   verifyAudit(application: Application): Promise<AuditVerification>;
+  history(application: Application): Promise<CaseHistory>;
   tamperReplay(application: Application): Promise<AuditVerification>;
   upload(application: Application, type: string, file: File): Promise<void>; download(document: DocumentRecord): Promise<void>;
   markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>;
   advisory(application:Application,documents:DocumentRecord[]):Promise<Advisory>;
 }
-export function allowedActions(app: Application, identity: Identity): Action[] {
+export function allowedActions(app: Application, identity: Identity, mode: 'demo'|'connected' = 'connected'): Action[] {
   const has = (role: Role) => identity.roles.some(r => r.role === role && (r.region === app.region || role === 'national_admin'));
   if (app.owner_id === identity.id) {
     if (app.status === 'draft') return ['submit'];
     if (app.status === 'deficiency_raised') return ['resubmit'];
-    if (app.status === 'rejected' && !app.form_data['shc_appeal_submitted']) return ['request_shc'];
+    if (mode === 'demo' && app.status === 'rejected' && !app.form_data['shc_appeal_submitted']) return ['request_shc'];
     return [];
   }
   if (['submitted', 'resubmitted'].includes(app.status) && has('scrutiny_officer')) return ['start_scrutiny'];

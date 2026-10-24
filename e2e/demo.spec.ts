@@ -69,7 +69,7 @@ test('institution creates and saves a synthetic draft; unsafe upload is rejected
   await page.getByRole('textbox',{name:'Proposed intake',exact:true}).fill('60');
   await page.getByRole('textbox',{name:'Laboratory infrastructure',exact:true}).fill('Synthetic laboratory inventory');
   await page.getByRole('button',{name:'Save draft',exact:true}).click();
-  await expect(page.locator('.toast')).toContainText('Draft saved');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Draft saved');
   await expect(page.getByRole('button',{name:'Submit application',exact:true})).toBeDisabled();
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await page.getByLabel('Upload Building Plan').setInputFiles({name:'active.html',mimeType:'text/html',buffer:Buffer.from('<script>alert(1)</script>')});
@@ -110,12 +110,23 @@ test('scrutiny verifies a claim and records a reasoned deficiency',async({page})
   await claim.getByRole('button',{name:'Verify',exact:true}).click();
   await page.getByRole('textbox',{name:'Verification note'}).fill('Synthetic faculty list reviewed for this demonstration.');
   await page.getByRole('button',{name:'Record verification'}).click();
-  await expect(page.locator('.toast')).toContainText('Claim verified');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Claim verified');
   await page.getByRole('button',{name:'Return for deficiency',exact:true}).click();
+  await page.getByRole('combobox',{name:'Affected claim'}).selectOption('demo-claim-3');
   await page.getByRole('textbox',{name:'Reason',exact:true}).fill('Please update the synthetic fire certificate for this demonstration.');
   await page.getByRole('button',{name:'Confirm return for deficiency'}).click();
   await expect(page.getByText('Clarification required',{exact:true})).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+test('an institution can upload only the replacement type for an open claim deficiency',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
+  await expect(page.getByLabel('Upload Affidavit')).toHaveCount(0);
+  await expect(page.getByLabel('Upload Faculty List')).toHaveCount(0);
+  await page.getByLabel('Upload Fire Safety Certificate').setInputFiles({name:'replacement.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7\nsynthetic demo only')});
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('No file bytes were uploaded');
+  await expect(page.getByText('replacement.pdf',{exact:true})).toBeVisible();
 });
 test('claims raise, resolve, and re-check across institution and scrutiny',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
@@ -126,7 +137,7 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
   await raise.getByLabel('Observation').fill('The faculty list does not reconcile with the sanctioned intake.');
   await raise.getByLabel('Remedy requested').fill('Provide a reconciled faculty list signed by the registrar.');
   await raise.getByRole('button',{name:'Raise deficiency'}).click();
-  await expect(page.locator('.toast')).toContainText('Deficiency raised');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Deficiency raised');
   await expect(scrutinyRow()).toContainText('Deficiency open');
 
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
@@ -137,7 +148,7 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
   await resolve.getByLabel('Replacement evidence').selectOption({label:'Faculty List · faculty_list.pdf'});
   await resolve.getByLabel('Resolution note').fill('Reconciled faculty list signed by the registrar is attached.');
   await resolve.getByRole('button',{name:'Resolve deficiency'}).click();
-  await expect(page.locator('.toast')).toContainText('Deficiency resolved');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Deficiency resolved');
   await expect(institutionRow()).toContainText('awaiting re-check');
 
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
@@ -146,7 +157,7 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
   const recheck=page.getByRole('dialog');
   await recheck.getByLabel('Re-check note').fill('Reconciled register checked; the faculty list now matches.');
   await recheck.getByRole('button',{name:'Record re-check'}).click();
-  await expect(page.locator('.toast')).toContainText('Re-check accepted');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Re-check accepted');
   await expect(scrutinyRow()).toContainText('Verified');
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
@@ -161,7 +172,7 @@ test('behavioral: replacement certificate clears the fire claim while missing in
   await resolve.getByLabel('Replacement evidence').selectOption({label:'Fire Safety Certificate · fire_safety_certificate_valid.pdf'});
   await resolve.getByLabel('Resolution note').fill('Uploaded the current synthetic certificate for this demonstration.');
   await resolve.getByRole('button',{name:'Resolve deficiency'}).click();
-  await expect(page.locator('.toast')).toContainText('Deficiency resolved');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Deficiency resolved');
   await expect(fire()).toContainText('Resolution submitted · awaiting re-check');
   await expect(page.locator('.claim-summary')).toContainText('6 of 9 verified or not applicable');
   const ratio=page.locator('.claim-row').filter({hasText:'Student-faculty ratio'});
@@ -174,14 +185,14 @@ test('behavioral: replacement certificate clears the fire claim while missing in
   const recheck=page.getByRole('dialog');
   await recheck.getByLabel('Re-check note').fill('Current replacement certificate checked for this demonstration.');
   await recheck.getByRole('button',{name:'Record re-check'}).click();
-  await expect(page.locator('.toast')).toContainText('Re-check accepted');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Re-check accepted');
   await expect(fire()).toContainText('Verified');
   await expect(page.locator('.claim-summary')).toContainText('7 of 9 verified or not applicable');
   const faculty=page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
   await faculty.getByRole('button',{name:'Verify',exact:true}).click();
   await page.getByRole('textbox',{name:'Verification note'}).fill('Synthetic faculty list reviewed for this demonstration.');
   await page.getByRole('button',{name:'Record verification'}).click();
-  await expect(page.locator('.toast')).toContainText('Claim verified');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Claim verified');
   await expect(page.locator('.claim-summary')).toContainText('8 of 9 verified or not applicable');
   await expect(page.locator('.preflight-panel')).toContainText('Evidence missing · APH infrastructure');
   await expect(page.locator('.dossier-readiness')).toContainText('Claims8 of 9 verified or not applicable');
@@ -200,6 +211,76 @@ test('claim dialogs hold focus and close with Escape',async({page})=>{
   expect(await page.evaluate(()=>Boolean(document.activeElement?.closest('dialog')))).toBe(true);
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
+});
+test('dossier tabs preserve the case route and open the selected view',async({page})=>{
+  await page.goto('/#case/demo-app-0');
+  await expect(page.getByRole('heading',{name:'Claim ledger',exact:true})).toBeVisible();
+  const route=page.url();
+  await page.getByRole('tab',{name:'Policy',exact:true}).click();
+  await expect(page).toHaveURL(route);
+  await expect(page.getByRole('heading',{name:'Policy change impact',exact:true})).toBeVisible();
+  await page.getByRole('tab',{name:/^History/}).click();
+  await expect(page).toHaveURL(route);
+  await expect(page.getByRole('heading',{name:'Replayable review record',exact:true})).toBeVisible();
+});
+test('wizard intake is retained in the saved draft after reload',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await page.getByRole('button',{name:'New application',exact:true}).first().click();
+  await page.getByRole('textbox',{name:'Application title'}).fill('Synthetic saved intake verification');
+  await page.getByLabel('Proposed Annual Intake (Seats)').fill('120');
+  await page.getByRole('button',{name:'Continue to institution details'}).click();
+  await page.getByRole('button',{name:'Save draft & continue to evidence'}).click();
+  await expect(page.getByRole('textbox',{name:'Proposed intake',exact:true})).toHaveValue('120');
+  const savedRoute=page.url();
+  await page.reload();
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await page.goto(savedRoute);
+  await expect(page.getByRole('textbox',{name:'Proposed intake',exact:true})).toHaveValue('120');
+});
+test('a second correction response can be rechecked and both responses remain in history',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');await page.goto('/#case/demo-app-0');
+  const fire=()=>page.locator('.claim-row').filter({hasText:'Fire safety certificate is valid on the scrutiny date'});
+  await fire().getByRole('button',{name:'Resolve',exact:true}).click();
+  await page.getByRole('dialog').getByLabel('Replacement evidence').selectOption('demo-doc-demo-app-0-5');
+  await page.getByRole('dialog').getByLabel('Resolution note').fill('First synthetic fire certificate response.');
+  await page.getByRole('dialog').getByRole('button',{name:'Resolve deficiency',exact:true}).click();
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Deficiency resolved');
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');await page.goto('/#case/demo-app-0');
+  await fire().getByRole('button',{name:'Re-check',exact:true}).click();
+  await page.getByRole('dialog').getByRole('radio',{name:'Reopen the deficiency'}).check();
+  await page.getByRole('dialog').getByLabel('Re-check note').fill('Please clarify the synthetic registration number.');
+  await page.getByRole('dialog').getByRole('button',{name:'Record re-check',exact:true}).click();
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('reopened');
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');await page.goto('/#case/demo-app-0');
+  await fire().getByRole('button',{name:'Resolve',exact:true}).click();
+  await page.getByRole('dialog').getByLabel('Replacement evidence').selectOption('demo-doc-demo-app-0-5');
+  await page.getByRole('dialog').getByLabel('Resolution note').fill('Second synthetic response clarifies the registration.');
+  await page.getByRole('dialog').getByRole('button',{name:'Resolve deficiency',exact:true}).click();
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Deficiency resolved');
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');await page.goto('/#case/demo-app-0');
+  await fire().getByRole('button',{name:'Re-check',exact:true}).click();
+  await page.getByRole('dialog').getByLabel('Re-check note').fill('The second response is accepted after human review.');
+  await page.getByRole('dialog').getByRole('button',{name:'Record re-check',exact:true}).click();
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Re-check accepted');
+  await expect(fire()).toContainText('Verified');
+  await expect(page.locator('.claim-summary')).toContainText('7 of 9 verified or not applicable');
+  await page.getByRole('tab',{name:/^History/}).click();
+  const history=page.locator('#replay');
+  await expect(history.getByLabel('Recorded event')).toBeVisible();
+  const responses=history.getByLabel('Recorded event').locator('option').filter({hasText:'Response submitted'});
+  await expect(responses).toHaveCount(2);
+  await history.getByLabel('Recorded event').selectOption(await responses.first().getAttribute('value')??'');
+  await expect(history).toContainText('First synthetic fire certificate response.');
+});
+test('dark review, history and policy views have no serious accessibility violations',async({page})=>{
+  await page.getByRole('button',{name:'Switch to dark theme',exact:true}).first().click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+  await page.goto('/#case/demo-app-0');
+  for(const view of ['Review','History','Policy']){
+    await page.getByRole('tab',{name:view==='History'?/^History/:view,exact:view!=='History'}).click();
+    const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
+    expect(results.violations.filter(item=>item.impact==='serious'||item.impact==='critical'),view).toEqual([]);
+  }
 });
 test('mobile navigation and Applications screen have no serious automated accessibility violations',async({page})=>{
   await page.setViewportSize({width:390,height:844});

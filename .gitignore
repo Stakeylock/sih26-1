@@ -14,3 +14,6 @@ supabase/.branches/
 automation/*.sqlite*
 automation/*.local.json
 automation/*.local.env
+.runtime/
+local/supabase/.temp/
+local/supabase/.branches/

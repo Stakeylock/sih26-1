@@ -2,7 +2,8 @@ import {createClient} from '@supabase/supabase-js';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {createHash,randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
-process.loadEnvFile('.env.local');process.loadEnvFile('.env.integration.local');
+process.loadEnvFile(process.env.FP_INTEGRATION_ENV??'.env.connected.local');process.loadEnvFile('.env.integration.local');
+if(!['127.0.0.1','localhost'].includes(new URL(process.env.VITE_SUPABASE_URL).hostname)&&process.env.FP_ALLOW_HOSTED_TESTS!=='true')throw new Error('Integration tests default to the local stack. Hosted tests require explicit opt-in.');
 const accounts=JSON.parse(process.env.FP_TEST_ACCOUNTS);const clients={};let checks=0;
 const fixtureFile='.env.integration-fixtures.local';
 function ok(value,message){assert.ok(value,message);checks++;}
@@ -49,7 +50,7 @@ try{
     ok(Boolean((await anon.storage.from('application-docs').download(docs[0].path)).error),'Anonymous private download denied');
     ok(Boolean((await clients.institution.from('profiles').update({email:'forged@example.test'}).eq('id',accounts.institution.id)).error),'Protected email update denied');
     ok(Boolean((await clients.institution.from('applications').update({status:'approved'}).eq('id',id)).error),'Direct status changes denied');
-    const report={phase:'integration',passed:checks,actualSupabaseAuth:true,roles:Object.keys(clients).length,concurrency:'one winner',auditEvents:events.length,privateStorage:'upload and authorized download verified',malwareScan:'Trusted synthetic fixture only; production scanner NOT validated'};
+    const report={phase:'integration',environment:new URL(process.env.VITE_SUPABASE_URL).hostname,passed:checks,actualSupabaseAuth:true,roles:Object.keys(clients).length,concurrency:'one winner',auditEvents:events.length,privateStorage:'upload and authorized download verified',malwareScan:'Trusted synthetic fixture only; production scanner NOT validated'};
     writeFileSync('docs/integration-results.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
   }
 }finally{await Promise.all(Object.values(clients).map(c=>c.auth.signOut({scope:'local'})));}

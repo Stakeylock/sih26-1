@@ -1,27 +1,39 @@
-import {useState} from 'react';
-import {Check,CircleAlert,Clock3,FileCheck2,Link2,RotateCcw} from 'lucide-react';
-import type {Claim,ClaimEvidence,Deficiency} from '../domain/integrity';
-import {reviewTimeline,replayClaimState} from '../domain/policy';
+import {useEffect,useState} from 'react';
+import {historyCoverage,reviewTimeline,replayClaimState,type CaseHistory} from '../domain/review';
 import type {Application} from '../domain/model';
 
-const kindLabels: Record<string,string> = {evidence_linked:'Evidence linked',verified:'Claim verified',not_applicable:'Marked not applicable',deficiency_raised:'Deficiency raised',deficiency_resolved:'Deficiency resolved',rechecked:'Re-check recorded'};
-const kindIcons: Record<string,typeof Check> = {evidence_linked:Link2,verified:Check,not_applicable:FileCheck2,deficiency_raised:CircleAlert,deficiency_resolved:RotateCcw,rechecked:Clock3};
+const kindLabels:Record<string,string>={review_baseline:'Current-state baseline',claim_verified:'Review recorded',claim_evidence_linked:'Evidence linked',claim_evidence_unlinked:'Evidence unlinked',review_invalidated:'Review requires reconsideration',deficiency_raised:'Correction requested',deficiency_resolved:'Response submitted',deficiency_rechecked:'Response rechecked'};
 
 function stamp(value:string){return new Date(value).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+' · '+new Date(value).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});}
 
-export function ReviewReplay({app,claims,deficiencies,claimEvidence}:{app:Application;claims:Claim[];deficiencies:Deficiency[];claimEvidence:ClaimEvidence[]}){
-  const entries=reviewTimeline(claims,deficiencies,claimEvidence);
-  const [index,setIndex]=useState(entries.length-1);
-  const snapshot=replayClaimState(claims,entries,index);
+export function ReviewReplay({app,history,error,retry}:{app:Application;history:CaseHistory|null;error:string;retry:()=>void}){
+  const entries=reviewTimeline(history?.events??[]);
+  const [index,setIndex]=useState(-1);
+  useEffect(()=>setIndex(entries.length-1),[history?.through,entries.length]);
+  const snapshot=replayClaimState([],entries,index);
   const selected=entries[index];
-
-  return <section id="replay" className="dossier-paper"><div className="dossier-paper-heading"><div><span className="section-index">07</span><div><h2>Replayable review record</h2><p>Step through the recorded reasoning to see the claim state the reviewer saw at each moment.</p></div></div><span className="mono">POLICY v{app.template_version} · {entries.length} ENTRIES</span></div>
-    {entries.length?<div className="replay-body">
-      <ol className="replay-track">{entries.map((entry,i)=>{const Icon=kindIcons[entry.kind]??Check;return <li key={i}><button type="button" className={`replay-node ${entry.kind}${i===index?' active':''}`} aria-pressed={i===index} onClick={()=>setIndex(i)}><Icon size={13}/><span><strong>{kindLabels[entry.kind]}</strong><small>{entry.clause}{entry.result?` · ${entry.result}`:''}</small></span></button></li>;})}</ol>
-      <div className="replay-panel">
-        <div className="replay-snapshot"><span className="replay-snapshot-label">Reconstructed state · as of entry {index+1} of {entries.length}</span><div className="replay-counts"><span><b>{snapshot.verified}</b>verified or n/a</span><span><b>{snapshot.deficient}</b>deficient</span><span><b>{snapshot.unverified}</b>awaiting</span><span><b>{snapshot.total}</b>total claims</span></div></div>
-        {selected&&<div className="replay-detail"><div className="replay-detail-head"><span className={`replay-chip ${selected.kind}`}>{kindLabels[selected.kind]}</span><span className="mono">{stamp(selected.at)}</span></div><strong>{selected.statement}</strong>{selected.actor&&<small>by {selected.actor.replaceAll('-',' ')}</small>}{selected.note&&<p>{selected.note}</p>}<small className="replay-basis">Recorded against policy snapshot v{app.template_version}. Replaying does not change stored state.</small></div>}
-      </div>
-    </div>:<p className="policy-none replay-empty">No review reasoning has been recorded on this case yet.</p>}
+  const coverage=history?historyCoverage(history):null;
+  return <section id="replay" className="dossier-paper"><div className="dossier-paper-heading"><div><span className="section-index">07</span><div><h2>Replayable review record</h2><p>Inspect recorded snapshots. Earlier actions without a snapshot remain limited records.</p></div></div><span className="mono">WORKFLOW v{app.template_version} · {entries.length} EVENTS</span></div>
+    <div className="replay-body">
+      {error?<div className="callout warning"><strong>History unavailable</strong><p>{error}</p><button className="button outline" onClick={retry}>Retry history</button></div>:!history?<p role="status">Loading case history…</p>:<>
+        {coverage?.message&&<p className="callout warning">{coverage.message}</p>}
+        {coverage?.baseline&&<p className="history-coverage">History includes a current-state baseline. Earlier review evidence was not reconstructed. A recorded action does not establish its missing evidence basis.</p>}
+        {history.message&&<p className="history-coverage">{history.message}</p>}
+        {entries.length?<>
+          <label className="field">Recorded event<select value={index} onChange={event=>setIndex(Number(event.target.value))}>{entries.map((entry,i)=><option value={i} key={entry.sequence}>#{entry.sequence} · {kindLabels[entry.kind]??entry.kind.replaceAll('_',' ')}{entry.result?' · '+entry.result:''}</option>)}</select></label>
+          <div className="inline"><button className="button outline" disabled={index<=0} onClick={()=>setIndex(value=>value-1)}>Previous event</button><button className="button outline" disabled={index>=entries.length-1} onClick={()=>setIndex(value=>value+1)}>Next event</button></div>
+          <div className="replay-panel">
+            {snapshot?<div className="replay-snapshot"><span className="replay-snapshot-label">Recorded claim state · event {selected?.sequence}</span><div className="replay-counts"><span><b>{snapshot.verified}</b>recorded verified or n/a</span><span><b>{snapshot.current}</b>basis current at that event</span><span><b>{snapshot.deficient}</b>deficient</span><span><b>{snapshot.unverified}</b>awaiting review</span></div></div>:<p className="history-coverage">Recorded action only. Its historical claim state and evidence basis are unavailable.</p>}
+            {selected&&<div className="replay-detail"><div className="replay-detail-head"><span className="replay-chip">{kindLabels[selected.kind]??selected.kind.replaceAll('_',' ')}</span><span className="mono">{stamp(selected.at)}</span></div><strong>{selected.statement}</strong>{selected.actor&&<small>Recorded actor: {selected.actor}</small>}{selected.note&&<p>{selected.note}</p>}
+              {selected.snapshot&&<><small>Requirement pack versions: {[...new Set(selected.snapshot.claims.map(claim=>claim.requirement_version_snapshot??1))].join(', ')||'Not recorded'} · workflow v{selected.snapshot.application.workflow_version}</small>
+                <details><summary>Claims and evidence at this event</summary><ul className="review-basis-list">{selected.snapshot.claims.map(claim=><li key={claim.id}><strong>{claim.statement_snapshot}</strong><span>{claim.status.replaceAll('_',' ')} · {claim.basis_current?'basis current when recorded':'review basis unavailable or stale when recorded'}</span><small>{claim.verification_basis?.documents.map(document=>document.doc_type+' · '+document.id).join('; ')||'No document review basis recorded'}{claim.verification_note?' · '+claim.verification_note:''}</small></li>)}</ul></details>
+                {selected.snapshot.deficiencies.length>0&&<ul className="review-basis-list">{selected.snapshot.deficiencies.map(item=><li key={item.id}><strong>{item.observation}</strong><span>Response {item.response_revision??0} · {item.status}{item.rechecked_at?' · rechecked':''}</span><p>{item.resolution_note??item.remedy}</p>{item.evidence_id&&<small>Response evidence: {selected.snapshot!.documents.find(document=>document.id===item.evidence_id)?.file_name??item.evidence_id}</small>}{item.recheck_note&&<p>Reviewer: {item.recheck_note}</p>}</li>)}</ul>}
+              </>}
+              <small className="replay-basis">This view does not change stored state or assert document authenticity.</small>
+            </div>}
+          </div>
+        </>:<p>No case events are available.</p>}
+      </>}
+    </div>
   </section>;
 }

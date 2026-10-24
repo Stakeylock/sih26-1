@@ -55,7 +55,7 @@ export function PrototypeDossier({
   const events = data.events.filter(e => e.application_id === app.id);
   const verifiedClaims = claims.filter(c => ['verified', 'not_applicable'].includes(c.status)).length;
   const openDeficiencies = deficiencies.filter(d => ['open', 'escalated'].includes(d.status)).length;
-  const actions = allowedActions(app, identity);
+  const actions = allowedActions(app, identity, repo.mode);
   const institution = data.institutions.find(i => i.id === app.institution_id)?.name ?? 'Demo institution';
   const nextGate = nextAuthority(app.status);
   const roleName = roleLabels[identity.roles[0]?.role ?? 'national_admin'];
