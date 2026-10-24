@@ -1,3 +1,4 @@
+import {neutralCopy} from '../domain/presentation';
 import {Stamp} from 'lucide-react';
 import type {DocumentRecord} from '../domain/model';
 
@@ -9,7 +10,7 @@ import type {DocumentRecord} from '../domain/model';
 export function DocumentPreview({document,claim}:{document:DocumentRecord;claim?:string}){
   const expired=Boolean(document.expires_on&&document.expires_on<new Date().toISOString().slice(0,10));
   const recorded=new Date(document.uploaded_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-  return <figure className="doc-preview" aria-label={`Synthetic specimen preview of ${document.file_name}`}>
+  return <figure className="doc-preview" aria-label={`Synthetic specimen preview of ${neutralCopy(document.file_name)}`}>
     <div className="doc-preview-banner"><strong>SYNTHETIC SPECIMEN</strong><span>Rendered from record metadata · no file bytes are stored or displayed</span></div>
     <div className="doc-preview-paper">
       <div className="doc-preview-watermark" aria-hidden="true">SPECIMEN</div>
@@ -23,7 +24,7 @@ export function DocumentPreview({document,claim}:{document:DocumentRecord;claim?
         {document.expires_on&&<div><dt>Validity</dt><dd className={expired?'expired':''}>{expired?`Expired ${document.expires_on}`:`Valid to ${document.expires_on}`}</dd></div>}
       </dl>
       {claim&&<p className="doc-preview-claim"><b>Supports claim:</b> {claim}</p>}
-      <span className="doc-preview-file mono">{document.file_name}</span>
+      <span className="doc-preview-file mono">{neutralCopy(document.file_name)}</span>
     </div>
   </figure>;
 }

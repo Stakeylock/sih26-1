@@ -1,5 +1,7 @@
 # FlowPilot local stack · 23 October 2026
 
+**25 October 2026:** Docker has been recovered and the current local stack is running. The six new feature migrations and the preceding governance/correction changes have been applied locally. Fresh Auth/Storage/workflow, claim-remediation and recon-capability integration tests now pass. See [current implementation and validation](recon-implementation.md). Earlier Docker-unavailable notes below are historical.
+
 **24 October update:** the correction-review slice adds a ninth migration and mandatory revision/request IDs to review RPCs. The browser demo remains available at port 5174 and the advisory at 8787. Docker is currently unavailable, so the new database migration and revised local HTTP claim test have not been exercised against the connected stack in this session. Once Docker runs, the existing launcher applies checked migrations to the isolated local database. See `ASTRA_REVIEW.md` and the latest section of `VALIDATION.md`; the older results below are historical.
 
 Run `Start-FlowPilot.ps1` or `npm run local:start` with Docker Desktop running. The launcher verifies the local network, starts the isolated Supabase stack, applies migrations with checksums, provisions synthetic identities, and starts the frontends and advisory API.

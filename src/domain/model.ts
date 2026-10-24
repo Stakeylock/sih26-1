@@ -1,3 +1,7 @@
+import type {CaseReview,Delivery,DeliveryAttempt,WorkerHealth,Candidate,Readiness,PolicyRevision} from './operations';
+import type {AnalysisCalendar} from './intelligence';
+import type {InspectionExpert,ExpertAvailability,ExpertConflict,ExpertReservation,PanelSnapshot} from './planning';
+import type {AnalysisSnapshot,SavedScenario,ScenarioParameters} from './intelligence';
 import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
 import type {CaseHistory} from './review';
 import type {ApprovalRecord,ApprovalScopeItem,DeadlineNotice,DeadlineRevision,NoticeImpact,NoticeInput,ReminderIntent,ScopeInput,ScopeRequest,ValidityInput,ValidityMode} from './approvals';
@@ -17,11 +21,12 @@ export type AppType = keyof typeof typeLabels;
 export const roleLabels: Record<Role, string> = { institution: 'Institution', scrutiny_officer: 'Scrutiny officer', evc_coordinator: 'EVC coordinator', regional_officer: 'Regional officer', national_admin: 'National administrator' };
 export interface Identity { id: string; name: string; email: string; roles: { role: Role; region: string | null }[] }
 export interface TemplateDefinition {
+  calendar?:AnalysisCalendar;inspection_planning_required?:boolean;
   evc_mode: 'none' | 'conditional' | 'required'; disclaimer: string;
   stages: { key: string; label: string; role: Role; sla_days: number }[];
   required_fields: { key: string; label: string }[]; required_documents: string[]; checklist: string[]; undertakings: string[];
 }
-export interface Template { id: string; app_type: AppType; version: number; status: string; name: string; definition: TemplateDefinition }
+export interface Template extends Omit<PolicyRevision,'definition'> { id: string; app_type: AppType; version: number; status: string; name: string; definition: TemplateDefinition }
 export interface Institution { id: string; owner_id: string; name: string; aicte_ref: string; region: string; state: string }
 export interface Application {
   academic_year_start?:number|null;scope_revision?:number;scope_reviewed_revision?:number|null;scope_reviewed_by?:string|null;scope_review_note?:string|null;
@@ -41,10 +46,10 @@ export interface ExpertMember {
   institution: string;
   no_conflict_signed: boolean;
 }
-export interface Visit { id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null; committee?: ExpertMember[] }
+export interface Visit { ends_at?:string|null;visit_mode?:'physical'|'online'|'hybrid'|null;planning_state?:'legacy'|'tentative'|'confirmed'|'completed'|'cancelled';resource_planned?:boolean;version?:number;panel_snapshot?:PanelSnapshot[];planning_note?:string|null;report_due_at?:string|null;report_basis?:Record<string,unknown>|null; id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null; committee?: ExpertMember[] }
 export interface Obligation { kind?:string;approval_id?:string|null;document_id?:string|null;document_expiry_on?:string|null;deadline_revision?:number; id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string; escalation_level?: 'normal' | 't_minus_30' | 't_minus_0' | 'escalated_ro' | 'escalated_hq'; statutory_norm?: string; lease_years_remaining?: number; required_evidence?: string[] }
 export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null }
-export interface Workspace { scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[] }
+export interface Workspace { case_reviews?:CaseReview[];delivery_outbox?:Delivery[];delivery_attempts?:DeliveryAttempt[];worker_health?:WorkerHealth[]; inspection_experts?:InspectionExpert[];expert_availability?:ExpertAvailability[];expert_conflicts?:ExpertConflict[];expert_reservations?:ExpertReservation[]; analysis_snapshots?:AnalysisSnapshot[];analysis_scenarios?:SavedScenario[]; scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[] }
 export const routeStages = [
   { key: 'submission', label: 'Submission', statuses: ['draft'] },
   { key: 'scrutiny', label: 'Scrutiny', statuses: ['submitted', 'resubmitted', 'under_scrutiny', 'deficiency_raised'] },
@@ -73,6 +78,12 @@ export const actionLabels: Record<Action, string> = { submit: 'Submit applicatio
 export interface Transition { application: Application; action: Action; reason: string; payload: Record<string, unknown>; requestId: string }
 export interface Advisory {engine:string;advisoryOnly:boolean;model:string;summary:string;warnings:string[];trace:string[];disclaimer:string;automation:{id:string;state:string}}
 export interface Repository {
+  operationsCommand(kind:string,id:string|null,payload:Record<string,unknown>,expected:number|null,requestId?:string):Promise<Record<string,unknown>>;
+  caseCandidates(applicationId:string):Promise<Candidate[]>;readiness():Promise<Readiness>;
+  policyCommand(kind:string,id:string|null,payload:Record<string,unknown>,expected:number|null,requestId?:string):Promise<Record<string,unknown>>;
+  inspectionCommand(kind:string,id:string|null,payload:Record<string,unknown>,expectedVersion:number|null,requestId?:string):Promise<Record<string,unknown>>;
+  captureAnalysis(application:Application,requestId?:string):Promise<AnalysisSnapshot>;
+  saveScenario(snapshot:AnalysisSnapshot,parameters:ScenarioParameters,requestId?:string):Promise<SavedScenario>;
   saveScope(application:Application,year:number,items:ScopeInput[],requestId?:string):Promise<void>;
   reviewScope(application:Application,note:string,requestId?:string):Promise<void>;
   reviewDocumentValidity(application:Application,document:DocumentRecord,input:ValidityInput,requestId?:string):Promise<void>;
@@ -107,7 +118,7 @@ export function allowedActions(app: Application, identity: Identity, mode: 'demo
     if (mode === 'demo' && app.status === 'rejected' && !app.form_data['shc_appeal_submitted']) return ['request_shc'];
     return [];
   }
-  if (['submitted', 'resubmitted'].includes(app.status) && has('scrutiny_officer')) return ['start_scrutiny'];
+  if (['submitted', 'resubmitted'].includes(app.status) && (!app.assigned_officer||app.assigned_officer===identity.id) && has('scrutiny_officer')) return ['start_scrutiny'];
   if (app.status === 'under_scrutiny' && app.assigned_officer === identity.id && has('scrutiny_officer')) return ['raise_deficiency', 'pass_scrutiny'];
   if (app.status === 'evc_pending' && has('evc_coordinator')) return ['schedule_evc'];
   if (app.status === 'evc_scheduled' && has('evc_coordinator')) return ['submit_evc_report'];

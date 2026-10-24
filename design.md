@@ -4,7 +4,7 @@ Status: implementation in progress
 
 ## Product stance
 
-FlowPilot is a routing system for consequential institutional records. It should not look like a generic admin dashboard or a government-service imitation. The product identity comes from a consistent grammar for cases, movement, responsibility, and decisions:
+FlowPilot is a routing system for consequential institutional records. It should not look like a generic admin dashboard or a Public-service imitation. The product identity comes from a consistent grammar for cases, movement, responsibility, and decisions:
 
 > **Every application is a dossier. Every handoff has an owner. Every decision leaves a receipt.**
 
@@ -79,7 +79,7 @@ These are art-direction values, not a substitute for contrast testing:
 - Every primary action is a real button or form control with an accessible name.
 - Color never carries meaning alone; status labels and icons accompany route colors.
 - Synthetic/demo disclosure is available from the persistent Demo environment control; prominent clarification remains beside simulated decisions.
-- No fake signatures, official-looking seals, AICTE certification claims, or unexplained AI scores.
+- No fake signatures, official-looking seals, Institutional Review certification claims, or unexplained AI scores.
 - Keep the existing role policy, evidence quarantine, audit trail, and LangGraph advisory contract unchanged.
 
 ## References consulted

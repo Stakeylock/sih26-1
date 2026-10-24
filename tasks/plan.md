@@ -8,7 +8,7 @@ Make the reproducible demo compelling for SIH26262: an explainable, human-in-the
 
 - Demo mode must work with synthetic localStorage data and no Supabase credentials.
 - Connected mode and server-side authorization remain separate and authoritative.
-- Never claim AICTE approval, regulatory readiness, or production malware scanning.
+- Never claim Institutional Review approval, regulatory readiness, or production malware scanning.
 - Do not enable the disabled n8n runtime until its dependency audit is resolved.
 - Every demo differentiator needs a repeatable browser or unit test.
 

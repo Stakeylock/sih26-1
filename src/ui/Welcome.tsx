@@ -16,7 +16,7 @@ export function Welcome({onEnter,onStory,theme,toggleTheme}:{onEnter:()=>void;on
           <h1 id="landing-title"><span>The file moves.</span><span>The record stays.</span></h1>
           <p className="landing-intro">Evidence, corrections, and the people responsible for the next step. One shared record from the first submission to the final review.</p>
           <div className="landing-actions"><button type="button" className="landing-primary" onClick={onEnter}>Open demo workspace <ArrowRight size={17} aria-hidden="true"/></button><button type="button" className="landing-tour" onClick={onStory}><Play size={15} aria-hidden="true"/>Take a guided tour</button></div>
-          <p className="landing-disclosure">SIH26262 prototype. Synthetic cases only.<br/>No real AICTE data or regulatory decisions.</p>
+          <p className="landing-disclosure">SIH26262 prototype. Synthetic cases only.<br/>No real institutional data or approval decisions.</p>
           <ul className="landing-proof" aria-label="Core workflow capabilities"><li><FileCheck2 size={16} aria-hidden="true"/>Versioned evidence</li><li><ShieldCheck size={16} aria-hidden="true"/>Human review</li><li><History size={16} aria-hidden="true"/>Recorded history</li></ul>
         </div><Suspense fallback={<div className="landing-journey-loading" role="status">Loading review illustration…</div>}><LandingJourney/></Suspense>
       </section>
@@ -29,6 +29,6 @@ export function Welcome({onEnter,onStory,theme,toggleTheme}:{onEnter:()=>void;on
         </div>
       </section>
     </main>
-    <footer className="landing-footer"><span>FlowPilot <span aria-hidden="true">/</span> Evidence review, with a record.</span><span><ShieldCheck size={14} aria-hidden="true"/>Independent prototype. Not an AICTE service.</span></footer>
+    <footer className="landing-footer"><span>FlowPilot <span aria-hidden="true">/</span> Evidence review, with a record.</span><span><ShieldCheck size={14} aria-hidden="true"/>Independent prototype. No real approval authority.</span></footer>
   </div>;
 }

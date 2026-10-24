@@ -19,8 +19,10 @@ test('real Supabase login, persisted draft editing, scoped LangGraph advisory an
   await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Draft saved',{timeout:30000});
   await page.reload();await expect(page.getByRole('textbox',{name:'Programme name',exact:true})).toHaveValue('Demo browser robotics',{timeout:30000});
   await page.getByRole('tab',{name:'Policy',exact:true}).click();
-  await page.getByRole('button',{name:'Run compliance engine',exact:true}).click();
-  await expect(page.getByText('LangGraph Advisory',{exact:true})).toBeVisible({timeout:30000});
+  const advisoryResponse=page.waitForResponse(response=>response.url().endsWith('/api/advisories')&&response.request().method()==='POST');
+  await page.getByRole('button',{name:'Run document check',exact:true}).click();
+  expect((await (await advisoryResponse).json()).engine).toBe('langgraph-rules-v1');
+  await expect(page.getByText('Pre-check result',{exact:true})).toBeVisible({timeout:30000});
   await page.screenshot({path:'../../work/flowpilot-connected.png',fullPage:true});
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible({timeout:30000});

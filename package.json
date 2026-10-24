@@ -1,6 +1,6 @@
 {
   "name": "flowpilot-sih26262",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,14 +10,18 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "check": "npm run build && npm test",
-    "test:integration": "node scripts/integration.mjs",
+    "test:integration": "node scripts/run-integration.mjs",
     "dev:connected": "vite --mode connected --host 127.0.0.1 --port 5173",
     "build:connected": "tsc -b && vite build --mode connected --outDir .runtime/connected-build",
     "local:start": "node scripts/start-local.mjs",
     "local:setup": "node scripts/local-setup.mjs",
     "test:connected": "playwright test --config playwright.connected.config.ts",
     "deadlines:process": "node scripts/process-deadlines.mjs",
-    "test:claims:local": "node scripts/local-claims-smoke.mjs"
+    "test:claims:local": "node scripts/local-claims-smoke.mjs",
+    "outbox:process": "node scripts/process-outbox.mjs",
+    "mail:sink": "node scripts/local-mail-sink.mjs",
+    "test:recon:local": "node scripts/recon-integration.mjs",
+    "worker:setup:local": "node scripts/setup-local-worker.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",
@@ -27,6 +31,7 @@
     "lucide-react": "1.61.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "three": "0.186.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -36,6 +41,7 @@
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0",
     "@vitejs/plugin-react": "6.1.2",
     "supabase": "2.121.0",
     "typescript": "7.0.2",

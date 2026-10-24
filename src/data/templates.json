@@ -7,7 +7,7 @@
     "name": "Extension of Approval — Self Disclosure",
     "definition": {
       "evc_mode": "none",
-      "disclaimer": "Prototype route modelled on APH 2024-27; exemplary only, to be verified by AICTE.",
+      "disclaimer": "Prototype workflow with synthetic targets. Apply only a reviewed organisation policy.",
       "stages": [
         {
           "key": "submission",
@@ -69,7 +69,7 @@
     "name": "Change in Name of Institution",
     "definition": {
       "evc_mode": "none",
-      "disclaimer": "Prototype route modelled on APH 2024-27; exemplary only, to be verified by AICTE.",
+      "disclaimer": "Prototype workflow with synthetic targets. Apply only a reviewed organisation policy.",
       "stages": [
         {
           "key": "submission",
@@ -128,7 +128,7 @@
     "name": "Introduction of New Programme",
     "definition": {
       "evc_mode": "conditional",
-      "disclaimer": "Prototype route modelled on APH 2024-27; exemplary only, to be verified by AICTE.",
+      "disclaimer": "Prototype workflow with synthetic targets. Apply only a reviewed organisation policy.",
       "stages": [
         {
           "key": "submission",

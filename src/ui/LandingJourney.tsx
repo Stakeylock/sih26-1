@@ -1,3 +1,4 @@
+import {neutralCopy} from '../domain/presentation';
 import {useEffect,useId,useRef,useState,type CSSProperties,type KeyboardEvent} from 'react';
 import {ArrowDown,ArrowRight,Check,CheckCheck,FileCheck2,FileText,Fingerprint,History,LockKeyhole,Pause,Play,RotateCcw,ShieldCheck,TriangleAlert} from 'lucide-react';
 
@@ -35,9 +36,9 @@ export function LandingJourney(){
         <div className="journey-document-bottom"><span className="journey-status">{step===0?<TriangleAlert size={12}/>:step===1?<ShieldCheck size={12}/>:<CheckCheck size={13}/>} {current.status}</span><Fingerprint size={16} aria-label="Document version provenance"/></div>
       </div>
       <div className="journey-connector" aria-hidden="true"><span/><ArrowDown size={13}/><span/></div>
-      <div className="journey-step-caption" key={current.id+'-caption'}><span className="journey-step-number">{String(step+1).padStart(2,'0')} / 03</span><div><strong>{current.title}</strong><p>{current.description}</p></div></div>
+      <div className="journey-step-caption" key={current.id+'-caption'}><span className="journey-step-number">{String(step+1).padStart(2,'0')} / 03</span><div><strong>{neutralCopy(current.title)}</strong><p>{current.description}</p></div></div>
       <div className="journey-tabs" role="tablist" aria-label="Illustration steps" onFocusCapture={()=>setPlaying(false)} onKeyDown={keys} style={{'--journey-step':step} as CSSProperties}>
-        <span className="journey-tab-indicator" aria-hidden="true"/>{steps.map((item,index)=><button key={item.id} type="button" role="tab" id={`${id}-${item.id}`} aria-controls={`${id}-panel`} aria-selected={index===step} tabIndex={index===step?0:-1} ref={element=>{tabRefs.current[index]=element;}} onClick={()=>choose(index)}>{index<step?<Check size={12} aria-hidden="true"/>:<span className="journey-tab-dot" aria-hidden="true"/>}{item.label}</button>)}
+        <span className="journey-tab-indicator" aria-hidden="true"/>{steps.map((item,index)=><button key={item.id} type="button" role="tab" id={`${id}-${item.id}`} aria-controls={`${id}-panel`} aria-selected={index===step} tabIndex={index===step?0:-1} ref={element=>{tabRefs.current[index]=element;}} onClick={()=>choose(index)}>{index<step?<Check size={12} aria-hidden="true"/>:<span className="journey-tab-dot" aria-hidden="true"/>}{neutralCopy(item.label)}</button>)}
       </div>
       <p className="journey-accessible-caption">{current.caption}</p>
     </div>

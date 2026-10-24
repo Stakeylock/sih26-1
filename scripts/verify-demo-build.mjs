@@ -1,20 +1,21 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const asset = readdirSync('dist/assets').find((file) => file.endsWith('.js'));
+const assets = readdirSync('dist/assets').filter((file) => file.endsWith('.js'));
 
-if (!asset) {
+if (!assets.length) {
   throw new Error('Demo build verification failed: no JavaScript asset was emitted.');
 }
 
-const bundle = readFileSync(join('dist/assets', asset), 'utf8');
+const bundles = assets.map(asset => ({asset,text:readFileSync(join('dist/assets',asset),'utf8')}));
+const demo = bundles.find(bundle=>bundle.text.includes('createDemoRepository'));
 
-if (!bundle.includes('createDemoRepository')) {
+if (!demo) {
   throw new Error('Demo build verification failed: the demo adapter is missing from the bundle.');
 }
 
-if (bundle.includes('Set VITE_APP_MODE to demo or connected.')) {
+if (bundles.some(bundle=>bundle.text.includes('Set VITE_APP_MODE to demo or connected.'))) {
   throw new Error('Demo build verification failed: the runtime mode guard is still present.');
 }
 
-console.log(`Demo build verified: ${asset}`);
+console.log(`Demo build verified across ${assets.length} chunks: ${demo.asset}`);

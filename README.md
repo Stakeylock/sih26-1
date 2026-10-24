@@ -1,6 +1,10 @@
 # FlowPilot SIH26262 · local continuation
 
-A locally editable React/TypeScript application continuing the existing Lovable database and Figma design. All accounts, evidence and decisions in this workspace are synthetic. This is not an AICTE service and is not approved for real regulatory work.
+A locally editable React/TypeScript application continuing the existing Lovable database and Figma design. All accounts, evidence and decisions in this workspace are synthetic. This is not an Institutional Review service and is not approved for real regulatory work.
+
+## 25 October implementation
+
+The app now includes source-pinned scenarios, actual-history exploration, optional 3D evidence navigation, expert reservations, reviewed workflow publication/adoption, independent recommendations and delivery attempt history. [Implementation inventory and validation](docs/recon-implementation.md) · [Judges’ walkthrough](docs/judges-walkthrough.md). The local Auth/Storage/REST stack and authenticated LangGraph service have been exercised with fresh synthetic fixtures. The nested n8n runtime remains disabled because of its critical dependency findings.
 
 ## Open the app
 

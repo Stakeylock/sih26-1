@@ -1,0 +1,25 @@
+import {addCalendarDays} from '../domain/intelligence';
+import type {Application,Identity,Repository,Workspace} from '../domain/model';
+import {workflowSchema,workflowShape,type PolicyRevision} from '../domain/operations';
+import {sha256Hex,stableJson} from '../domain/integrity';
+export function demoPolicy(o:{state:()=>Workspace;actor:Identity;find:(id:string)=>Application;persist:()=>void;log:(app:Application,action:string,old:Application['status']|null,note?:string|null,detail?:Record<string,unknown>)=>void}):Pick<Repository,'policyCommand'>{
+ const receipts=new Map<string,{body:string;result:Record<string,unknown>}>();
+ return {async policyCommand(kind,id,payload,expected,key=crypto.randomUUID()){
+  if(!o.actor.roles.some(role=>role.role==='national_admin'||kind==='adopt'&&role.role==='institution'))throw new Error('Policy administrator required.');const state=o.state(),body=stableJson({kind,id,payload,expected}),receipt=receipts.get(key);if(receipt){if(receipt.body!==body)throw new Error('Request ID already used.');return structuredClone(receipt.result);}
+  const note=String(payload.note??'').trim();if(note.length<10||note.length>2000)throw new Error('Source review or adoption reason of 10–2000 characters required.');
+  let row=state.templates.find(item=>item.id===(kind==='adopt'?payload.policy_id:id)) as PolicyRevision|undefined;
+  if(kind==='create'){const source=state.templates.filter(item=>item.app_type===payload.app_type&&item.status==='published').sort((a,b)=>b.version-a.version)[0];if(!source)throw new Error('Published source unavailable.');if(state.templates.some(item=>item.app_type===source.app_type&&item.status==='draft'))throw new Error('Continue the existing draft.');row={...structuredClone(source),id:'demo-policy-'+crypto.randomUUID(),version:Math.max(...state.templates.filter(item=>item.app_type===source.app_type).map(item=>item.version))+1,revision:1,status:'draft',source_url:null,source_hash:null,definition_hash:null,reviewed_at:null,reviewed_by:null,review_note:null};state.templates.push(row);}
+  else if(kind==='adopt'){
+   const app=o.find(id!);if(!row||row.status!=='published'||row.app_type!==app.app_type||(row.revision??1)!==payload.policy_revision||app.version!==expected||['approved','rejected'].includes(app.status)||(app.owner_id===o.actor.id&&app.status!=='draft'))throw new Error('Current published matching policy and open case required.');
+   if(app.status!=='draft'&&workflowShape(app.template_snapshot)!==workflowShape(row.definition))throw new Error('Structural changes require a draft case; active cases permit calendar and target changes only.');
+   const oldDue=app.sla_due_at;app.template_snapshot=structuredClone(row.definition);if(app.status==='draft')app.form_data=Object.fromEntries(Object.entries(app.form_data).filter(([key])=>row!.definition.required_fields.some(field=>field.key===key)));app.template_version=row.version;app.version++;app.updated_at=new Date().toISOString();if(app.sla_due_at){const stage=app.status==='pending_decision'?'decision':['evc_pending','evc_scheduled'].includes(app.status)?'evc':'scrutiny',days=row.definition.stages.find(item=>item.key===stage)?.sla_days??7;app.sla_due_at=row.definition.calendar?addCalendarDays(new Date().toISOString(),days,row.definition.calendar):new Date(Date.now()+days*86400000).toISOString();}o.log(app,'policy_adopted',app.status,note,{policy_id:row.id,definition_hash:row.definition_hash,old_due_at:oldDue,new_due_at:app.sla_due_at,target_anchor:'explicit adoption time'});
+  }else{
+   if(!row||(row.revision??1)!==expected)throw new Error('Policy changed; reload before applying.');
+   if(kind==='edit'){if(row.status!=='draft'||typeof payload.source_url!=='string'||! /^(https:\/\/|demo:\/\/)/.test(payload.source_url)||! /^[a-f0-9]{64}$/.test(String(payload.source_hash))||String(payload.name??'').trim().length<3)throw new Error('Valid editable draft and supplied source fingerprint required.');row.definition=workflowSchema.parse(payload.definition);row.name=String(payload.name).trim();row.source_url=payload.source_url;row.source_hash=String(payload.source_hash);row.definition_hash=await sha256Hex(stableJson(row.definition));row.reviewed_by=null;row.reviewed_at=null;row.review_note=null;}
+   else if(kind==='review'){if(row.status!=='draft'||!row.source_hash)throw new Error('Save a valid sourced draft before reviewing.');workflowSchema.parse(row.definition);row.reviewed_by=o.actor.id;row.reviewed_at=new Date().toISOString();row.review_note=note;}
+   else if(kind==='publish'){if(row.status!=='draft'||!row.reviewed_by||!row.definition_hash)throw new Error('Current sourced and reviewed draft required.');workflowSchema.parse(row.definition);for(const item of state.templates)if(item.app_type===row.app_type&&item.status==='published')item.status='archived';row.status='published';}
+   else throw new Error('Unsupported policy command.');row.revision=(row.revision??1)+1;
+  }
+  o.persist();const result={...row} as Record<string,unknown>;receipts.set(key,{body,result:structuredClone(result)});return result;
+ }};
+}

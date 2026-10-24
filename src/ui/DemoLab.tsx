@@ -1,3 +1,4 @@
+import {neutralCopy} from '../domain/presentation';
 import {useState} from 'react';
 import {FastForward,Play,RefreshCw,RotateCcw,TriangleAlert} from 'lucide-react';
 import {ViewHeader} from './common';
@@ -42,7 +43,7 @@ export function DemoLab({onStartTour,onOpenPrototype}:{onStartTour:()=>void;onOp
       </div>
       <div className="demo-lab-rehearsal-body">
         <div className="demo-lab-milestones" role="group" aria-label="Escalation milestones">
-          {rehearsalStages.map((stage,index)=><button key={stage.stage} type="button" className={`button small ${rehearsalStep===index?'':'outline'}`} aria-pressed={rehearsalStep===index} onClick={()=>setRehearsalStep(index)}><strong>{stage.badge}</strong> · {stage.label}</button>)}
+          {rehearsalStages.map((stage,index)=><button key={stage.stage} type="button" className={`button small ${rehearsalStep===index?'':'outline'}`} aria-pressed={rehearsalStep===index} onClick={()=>setRehearsalStep(index)}><strong>{stage.badge}</strong> · {neutralCopy(stage.label)}</button>)}
         </div>
         {rehearsalStep!==null ? (
           <div className="demo-lab-result" role="status">
@@ -54,6 +55,6 @@ export function DemoLab({onStartTour,onOpenPrototype}:{onStartTour:()=>void;onOp
       )}
       </div>
     </section>
-    <p className="support-footnote demo-lab-footnote">Use Preview as in the top bar to test a role boundary. All controls operate on synthetic local data; no real AICTE data or regulatory decision is used.</p>
+    <p className="support-footnote demo-lab-footnote">Use Preview as in the top bar to test a role boundary. All controls operate on synthetic local data; no real Institutional Review data or regulatory decision is used.</p>
   </>;
 }

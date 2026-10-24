@@ -1,3 +1,4 @@
+import {neutralCopy} from '../domain/presentation';
 import {ArrowRight,BarChart3,Building2,ClipboardClock,Clock3,FileStack,Plus,ShieldCheck,TrendingUp} from 'lucide-react';
 import { actionLabels, allowedActions, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace } from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
@@ -122,7 +123,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
             <div className="dispatch-case-main">
               <div className="inline"><span className="mono">{app.ref_no}</span><Badge status={app.status}/></div>
               <h3>{data.institutions.find(i=>i.id===app.institution_id)?.name??'Demo institution'}</h3>
-              <p>{app.title}</p>
+              <p>{neutralCopy(app.title)}</p>
               <div className="dispatch-case-meta">
                 <span><Clock3 size={13}/>{priorityReason(app)}</span>
                 <span><ShieldCheck size={13}/>{nextAction(app,identity)}</span>
@@ -145,7 +146,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
             return (
               <div className="stage-bar-item" key={stage.key}>
                 <div className="stage-bar-header">
-                  <strong><span className="section-index">{String(index+1).padStart(2,'0')}</span> {stage.label}</strong>
+                  <strong><span className="section-index">{String(index+1).padStart(2,'0')}</span> {neutralCopy(stage.label)}</strong>
                   <span className="mono" style={{fontSize:'11px',fontWeight:600}}>{count} {count===1?'case':'cases'}</span>
                 </div>
                 <div className="stage-bar-track">
@@ -170,4 +171,4 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   </>;
 }
 
-export function ApplicationRow({app,institution,open,selectedId}:{app:Application;institution:string;open:(id:string)=>void;selectedId?:string}){const stage=routeStage(app.status);const isSelected=selectedId===app.id;return <tr data-selected={isSelected}><td><button className={`case-link${isSelected?' selected':''}`} aria-pressed={isSelected} onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{app.title}</small></td><td>{app.region}</td><td><span className="station-label"><span className="station-number">{String(routeStageIndex(app.status)+1).padStart(2,'0')}</span>{stage.label}</span></td><td><span className="status-annotation"><Badge status={app.status}/><small>{operationalStatus[app.status]}</small></span></td><td><Due app={app}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}
+export function ApplicationRow({app,institution,open,selectedId}:{app:Application;institution:string;open:(id:string)=>void;selectedId?:string}){const stage=routeStage(app.status);const isSelected=selectedId===app.id;return <tr data-selected={isSelected}><td><button className={`case-link${isSelected?' selected':''}`} aria-pressed={isSelected} onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{neutralCopy(app.title)}</small></td><td>{app.region}</td><td><span className="station-label"><span className="station-number">{String(routeStageIndex(app.status)+1).padStart(2,'0')}</span>{neutralCopy(stage.label)}</span></td><td><span className="status-annotation"><Badge status={app.status}/><small>{operationalStatus[app.status]}</small></span></td><td><Due app={app}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}

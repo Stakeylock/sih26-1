@@ -199,7 +199,7 @@ create index on public.user_roles(expires_at) where active;
 
 | Code | Clause | Claim | Evidence | Method |
 |---|---|---|---|---|
-| `INSTITUTION_IDENTITY` | APH identity | Institution name and AICTE reference match the trust record | Affidavit | `cross_check` |
+| `INSTITUTION_IDENTITY` | APH identity | Institution name and reference match the trust record | Affidavit | `cross_check` |
 | `ACADEMIC_YEAR` | APH year | Academic year matches the application year | Affidavit | `cross_check` |
 | `SANCTIONED_INTAKE` | APH intake | Sanctioned intake matches the previous approval | Affidavit | `cross_check` |
 | `FACULTY_STRENGTH` | APH faculty | Faculty count and cadre ratio meet the declared norm | Faculty List | `document_review` |
@@ -641,6 +641,6 @@ This assumes one builder plus an AI agent. If two people are available, split Tr
 
 ## Open Questions
 
-- Confirm the nine claim statements and clause labels with a domain reviewer before the demo. The wording is synthetic and should not be presented as official AICTE criteria.
+- Confirm the nine claim statements and clause labels with a domain reviewer before the demo. The wording is synthetic and should not be presented as official Institutional Review criteria.
 - Decide whether the Trust Center is visible to all roles or national admin only. Default: visible to all authenticated demo roles, read-only for non-admins.
 - Decide whether to keep the legacy checklist visible for claim routes as a secondary record. Default: hide it to avoid two competing review models.

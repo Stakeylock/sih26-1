@@ -125,7 +125,7 @@ test('scrutiny verifies a claim and records a reasoned deficiency',async({page})
   await openCase(page,'DEMO-2026-1001');
   await expect(page.getByRole('button',{name:'Accept scrutiny',exact:true})).toBeDisabled();
   await expect(page.getByText('Resolve 3 unresolved items before accepting scrutiny.',{exact:true})).toBeVisible();
-  const verified=page.locator('.claim-row').filter({hasText:'Institution name and AICTE reference match the trust record'});
+  const verified=page.locator('.claim-row').filter({hasText:'Institution name and reference match the trust record'});
   await expect(verified.getByRole('button',{name:'Verify',exact:true})).toHaveCount(0);
   await expect(verified).toContainText('Finding recorded');
   const claim=page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
@@ -319,7 +319,7 @@ test('shell owns one contextual header and an expandable demo disclosure',async(
   await expect(disclosure).toBeVisible();
   await expect(disclosure.getByText(/synthetic cases only/i)).toBeVisible();
   await disclosure.locator('summary').click();
-  await expect(disclosure.getByText(/No real AICTE data or regulatory decisions are used here/i)).toBeVisible();
+  await expect(disclosure.getByText(/No real Institutional Review data or regulatory decisions are used here/i)).toBeVisible();
   await expect(page.getByText('Start with the dossier closest to a missed handoff.',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Where visible cases are waiting now.',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Cases closest to their next deadline.',{exact:true})).toBeVisible();

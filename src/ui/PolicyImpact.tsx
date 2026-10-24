@@ -24,7 +24,7 @@ export function PolicyImpact({data, app}:{data:Workspace; app:Application}){
 
       <div className="policy-cases"><span className="policy-cases-label">Affected live cases · {impacts.length}</span>{impacts.length?impacts.map(impact=><div className="policy-case" key={impact.application_id}><span className="mono">{impact.ref_no}</span><div className="policy-case-tags">{impact.added.map(a=><b key={a.code} className="tag add">+ {a.code}</b>)}{impact.removed.map(r=><b key={r.code} className="tag remove">− {r.code}</b>)}{impact.changed.map(c=><b key={c.code} className="tag change">~ {c.code}</b>)}</div></div>):<p className="policy-none">No live case on this route is affected.</p>}</div>
 
-      <p className="policy-note"><strong>Preview only.</strong> {changedCodes.size?`Changed checks: ${[...changedCodes].join(', ')}. `:''}No requirement snapshot or recorded verification is changed. A reviewed adoption workflow is not implemented.</p>
+      <p className="policy-note"><strong>Preview only.</strong> {changedCodes.size?`Changed checks: ${[...changedCodes].join(', ')}. `:''}No requirement snapshot or recorded verification is changed. This requirement sample needs a separately reviewed registry migration. Workflow and calendar adoption are available in Policy notices.</p>
     </div>
   </section>;
 }

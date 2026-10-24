@@ -1,0 +1,11 @@
+{
+  "passed": 18,
+  "environment": "loopback local stack",
+  "syntheticOnly": true,
+  "concurrency": "one real PostgreSQL booking winner",
+  "privateStorage": "fresh uploads through Auth and Storage",
+  "recommendations": "source-bound human review",
+  "transport": "actual local SMTP test sink; no external delivery",
+  "auditIntact": true,
+  "scanner": "known PNG test fixtures; production scanner remains a release gate"
+}

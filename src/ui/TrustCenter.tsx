@@ -1,3 +1,4 @@
+import {neutralCopy} from '../domain/presentation';
 import {useState} from 'react';
 import {Activity,AlertTriangle,CheckCircle2,Clock3,FileCheck2,Fingerprint,LockKeyhole,Play,ShieldCheck,ShieldX} from 'lucide-react';
 import {daysUntil,roleLabels,type DocumentRecord,type Identity,type Repository,type Workspace} from '../domain/model';
@@ -85,7 +86,7 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
         <div className="trust-agent-summary"><span>{data.agents.length} registered</span><span>{enabledAgents.length} enabled</span><span className={approvalAgents.length?'warning':''}>{approvalAgents.length} with approval authority</span></div>
         <div className="trust-agents">
           {data.agents.map(agent=><article key={agent.id} className="trust-agent">
-            <div className="spread"><strong>{agent.name}</strong><span className={`trust-pill ${agent.enabled?'ok':'off'}`}>{agent.enabled?'Enabled':'Disabled'}</span></div>
+            <div className="spread"><strong>{neutralCopy(agent.name)}</strong><span className={`trust-pill ${agent.enabled?'ok':'off'}`}>{agent.enabled?'Enabled':'Disabled'}</span></div>
             <p>{agent.purpose}</p>
             <div className="trust-scopes">{agent.scopes.map(scope=><span key={scope}>{scope}</span>)}</div>
             <small>{agent.can_approve?'Can approve':'Cannot approve'} · {agent.last_run_at?`Last run ${dateLabel(agent.last_run_at)}`:'Never run'}</small>

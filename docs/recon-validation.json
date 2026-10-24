@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-25",
+  "unitAndSql": 206,
+  "demoBrowser": 61,
+  "connectedBrowser": 1,
+  "liveChecks": {
+    "prepare": 5,
+    "authStorageWorkflow": 12,
+    "claimRemediation": 13,
+    "newCapabilities": 18
+  },
+  "mainAudit": {
+    "total": 0
+  },
+  "n8nDisabled": {
+    "total": 174,
+    "critical": 12,
+    "high": 81
+  },
+  "realData": false,
+  "productionReady": false
+}

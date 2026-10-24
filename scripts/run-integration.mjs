@@ -1,0 +1,4 @@
+import {execFileSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
+import {completeKnownPng} from './local-test-support.mjs';
+try{for(const phase of ['prepare','validate']){if(phase==='validate'){const fixture=JSON.parse(readFileSync('.env.integration-fixtures.local','utf8').split('FP_INTEGRATION_FIXTURES=')[1]);completeKnownPng(fixture.docs);}const output=execFileSync(process.execPath,['scripts/integration.mjs',...(phase==='prepare'?['prepare']:[])],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']});process.stdout.write(output);}}catch(error){console.error('Fresh local Auth/Storage/workflow integration failed. '+(error.stderr?String(error.stderr).split('\n').find(line=>line.startsWith('Error:'))??'Inspect the local test failure.':error.message));process.exitCode=1;}

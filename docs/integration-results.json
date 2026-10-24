@@ -1,10 +1,11 @@
 {
   "phase": "integration",
-  "passed": 11,
+  "environment": "127.0.0.1",
+  "passed": 12,
   "actualSupabaseAuth": true,
   "roles": 8,
   "concurrency": "one winner",
-  "auditEvents": 19,
+  "auditEvents": 22,
   "privateStorage": "upload and authorized download verified",
   "malwareScan": "Trusted synthetic fixture only; production scanner NOT validated"
 }

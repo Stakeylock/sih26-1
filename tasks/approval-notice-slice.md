@@ -21,4 +21,4 @@ Synthetic data only. No official rule, deadline, committee power or external int
 
 Validation: 171 unit/PostgreSQL-PGlite tests; 38 Playwright browser checks; separate demo and connected builds. Docker's Linux engine is unavailable, so live Supabase Auth/storage/concurrency and a running outbox processor remain unverified. See `docs/approval-scope-and-notices.md`.
 
-General hearing/appeal eligibility, hibernation, disclosure scraping and live AICTE/NSWS integrations remain outside this implementation. Real connected validation and concurrency remain separately reported when Docker is unavailable.
+General hearing/appeal eligibility, hibernation, disclosure scraping and live Institutional Review/NSWS integrations remain outside this implementation. Real connected validation and concurrency remain separately reported when Docker is unavailable.

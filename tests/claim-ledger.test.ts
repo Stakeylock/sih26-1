@@ -28,7 +28,7 @@ describe('claim ledger schema', () => {
     `, [id]);
     expect(row.rows[0]).toEqual({
       code: 'INSTITUTION_IDENTITY',
-      statement_snapshot: 'Institution name and AICTE reference match the trust record',
+      statement_snapshot: 'Institution name and reference match the trust record',
       clause_snapshot: 'APH identity',
       verification_method: 'cross_check',
     });

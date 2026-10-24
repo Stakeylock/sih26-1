@@ -1,5 +1,7 @@
 # Validation record
 
+**25 October 2026:** Docker has been recovered and the current local stack is running. The six new feature migrations and the preceding governance/correction changes have been applied locally. Fresh Auth/Storage/workflow, claim-remediation and recon-capability integration tests now pass. See [current implementation and validation](recon-implementation.md). Earlier Docker-unavailable notes below are historical.
+
 Correction-review slice, **24 October 2026**: both demo and connected builds pass; 151 automated unit/SQL/domain tests and 31 demo browser checks, including the merged dark-mode history and policy views cover the revised source. The main application dependency audit previously reported zero findings and no dependencies were added in this slice. The ninth migration records review bases and immutable snapshots; its SQL is exercised in PGlite with explicit authenticated roles. Read [ASTRA_REVIEW.md](ASTRA_REVIEW.md) for the exact scope and remaining boundary.
 
 The latest upstream top navigation, dark mode and specimen previews were pulled at `f63a8fe` before reapplying this slice. The Docker engine is unavailable in this session. The ninth migration has **not** been applied to the previously provisioned local PostgreSQL stack or any hosted project. New real Auth/REST/Storage and concurrent-session checks remain unverified. Earlier connected results below are historical. The isolated demo and deterministic advisory can run independently; n8n remains disabled.

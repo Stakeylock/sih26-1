@@ -1,3 +1,4 @@
+import {neutralCopy} from '../domain/presentation';
 import { useState } from 'react';
 import {
   ArrowLeft,
@@ -122,7 +123,7 @@ export function PrototypeDossier({
         <h1 className="prototype-institution" id="prototype-dossier-title">
           {institution}
         </h1>
-        <p className="prototype-case-subtitle">{app.title}</p>
+        <p className="prototype-case-subtitle">{neutralCopy(app.title)}</p>
         <div className="prototype-dossier-meta">
           <span>{app.region} region</span>
           <span>Next authority: {nextGate}</span>
@@ -166,7 +167,7 @@ export function PrototypeDossier({
               <span className="prototype-route-dot" aria-hidden="true">
                 {idx < current ? <Check size={11} /> : idx === current ? '•' : idx + 1}
               </span>
-              <span>{stage.label}</span>
+              <span>{neutralCopy(stage.label)}</span>
             </li>
           );
         })}
@@ -241,7 +242,7 @@ export function PrototypeDossier({
                       onClick={() => setSelectedDocId(d.id)}
                     >
                       <FileText size={13} />
-                      <span>{d.file_name}</span>
+                      <span>{neutralCopy(d.file_name)}</span>
                     </button>
                   ))}
                 </div>
@@ -336,7 +337,7 @@ export function PrototypeDossier({
                       <ul>
                         {docClaims.map(c => (
                           <li key={c.id}>
-                            <span>{c.statement_snapshot}</span>
+                            <span>{neutralCopy(c.statement_snapshot)}</span>
                             <Badge status={c.status as any} />
                           </li>
                         ))}
@@ -410,10 +411,10 @@ export function PrototypeDossier({
                     return (
                       <li key={c.id} className="prototype-claim">
                         <div className="prototype-claim-head">
-                          <span>{c.statement_snapshot}</span>
+                          <span>{neutralCopy(c.statement_snapshot)}</span>
                           <Badge status={c.status as any} />
                         </div>
-                        <small className="quiet">{c.clause_snapshot}</small>
+                        <small className="quiet">{neutralCopy(c.clause_snapshot)}</small>
                         {c.verified_by && (
                           <small className="quiet">Verified by {c.verified_by}</small>
                         )}
