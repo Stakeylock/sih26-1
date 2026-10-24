@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Clock3, FileStack, MapPin, Plus, ShieldCheck, TrendingUp, Search } from 'lucide-react';
+import { ArrowRight, BarChart3, Clock3, FileStack, Plus, ShieldCheck, TrendingUp } from 'lucide-react';
 import { actionLabels, allowedActions, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace } from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
 // Station label for a status. Same facts as statusLabels, phrased as the work in progress at the station.
@@ -9,8 +9,7 @@ const operationalStatus: { [key in Status]: string } = {
   pending_decision: 'Awaiting decision', approved: 'Approved', rejected: 'Rejected',
 };
 import {Badge,Due,Empty} from './common';
-import {useState} from 'react';
-import {missingInputs} from '../domain/model';
+import {attentionReasons} from './caseAttention';
 
 function priorityReason(app:Application){const days=workingDaysUntil(app.sla_due_at);if(days!==null&&days<0)return `Overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return 'Due today';if(days!==null)return `Due in ${days} day${days===1?'':'s'}`;return 'No demo SLA recorded';}
 function nextAction(app:Application,identity:Identity){const action=allowedActions(app,identity)[0];return action?`Your next action: ${actionLabels[action].toLowerCase()}`:'Next authority: '+nextAuthorityLabel(app.status);}
@@ -22,17 +21,9 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   const atRisk=active.filter(a=>(workingDaysUntil(a.sla_due_at)??99)<=3);
   const canCreate=identity.roles.some(r=>r.role==='institution');
   const onTime=active.filter(a=>(workingDaysUntil(a.sla_due_at)??99)>=0).length;
-  const [filterScope,setFilterScope]=useState<'assigned'|'at_risk'|'all'>('all');
-  const [searchQuery,setSearchQuery]=useState('');
-  const [selectedRegion,setSelectedRegion]=useState<string|null>(null);
-  const [filterSelectedId, _setFilterSelectedId]=useState<string|null>(null);
-  const assigned=active.filter(a=>a.owner_id===identity.id||a.assigned_officer===identity.id);
-  const scoped=filterScope==='assigned'?assigned:filterScope==='at_risk'?atRisk:active;
-  const needle=searchQuery.trim().toLowerCase();
-  const filtered=needle?scoped.filter(a=>{const institution=data.institutions.find(i=>i.id===a.institution_id)?.name??'';return a.ref_no.toLowerCase().includes(needle)||a.title.toLowerCase().includes(needle)||institution.toLowerCase().includes(needle);}):scoped;
-  const regionFiltered=selectedRegion?filtered.filter(a=>a.region===selectedRegion):filtered;
-  const list=regionFiltered.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at)??9999)-(workingDaysUntil(b.sla_due_at)??9999));
-  const selected=list.find(a=>a.id===filterSelectedId)??list[0]??null;
+  const priority=active.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at)??9999)-(workingDaysUntil(b.sla_due_at)??9999)).slice(0,3);
+  const selected=priority[0]??null;
+  const attention=selected?attentionReasons(selected,data.documents,data.claims,data.deficiencies):[];
 
   const sla=active.length?`${Math.round(onTime/active.length*100)}%`:'—';
 
@@ -40,8 +31,6 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   const authorityHolding=active.filter(a=>a.status!=='deficiency_raised');
   const instAvgDays=institutionHolding.length?Math.round(institutionHolding.reduce((s,a)=>s+holdDays(a),0)/institutionHolding.length):0;
   const authAvgDays=authorityHolding.length?Math.round(authorityHolding.reduce((s,a)=>s+holdDays(a),0)/authorityHolding.length):0;
-
-  const priority=active.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at)??9999)-(workingDaysUntil(b.sla_due_at)??9999)).slice(0,3);
 
   return <>
     <section className="dispatch-header" aria-labelledby="dispatch-title">
@@ -99,20 +88,8 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       </section>
     </div>
 
-    <div className="overview-filter-bar" role="group" aria-label="Worklist scope">
-      <div className="overview-scope-chips">
-        {([['assigned','Assigned to me',assigned.length],['at_risk','At risk',atRisk.length],['all','All open',active.length]] as const).map(([key,label,count])=>(
-          <button key={key} type="button" aria-pressed={filterScope===key} className={filterScope===key?'overview-scope-chip active':'overview-scope-chip'} onClick={()=>setFilterScope(key)}>{label} <b>{count}</b></button>
-        ))}
-      </div>
-      <label className="overview-search">
-        <Search size={14}/>
-        <input aria-label="Search cases" placeholder="Search by reference, institution, or title" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
-      </label>
-    </div>
-
     <div className="overview-work-layout">
-    {selected&&list.length>1&&(
+    {selected&&active.length>1&&(
       <aside className="overview-preview" aria-label="Selected case preview">
         <div><span className="mono">{selected.ref_no}</span><Badge status={selected.status}/></div>
         <h2>{data.institutions.find(i=>i.id===selected.institution_id)?.name??'Demo institution'}</h2>
@@ -125,7 +102,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
         </dl>
         <div className="overview-preview-block">
           <h3>Why it needs attention</h3>
-          {missingInputs(selected,[]).length>0?(<ul>{missingInputs(selected,[]).slice(0,4).map(item=><li key={item}>{item}</li>)}</ul>):<p className="quiet">Submission is complete; the case is waiting on the current authority.</p>}
+          {attention.length>0?<ul>{attention.map(item=><li key={item}>{item}</li>)}</ul>:<p className="quiet">No recorded submission or evidence blocker; the case is waiting on the current authority.</p>}
         </div>
         <div className="overview-preview-actions">
           <button className="button" onClick={()=>open(selected.id)}>Open dossier <ArrowRight size={15}/></button>
@@ -155,8 +132,10 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
           </article>
         )):<Empty title="The priority queue is clear">No active cases need intervention right now.</Empty>}
       </div>
+    </section>
 
-      <aside className="dispatch-column dispatch-handoff-column">
+    <section className="stage-board" aria-label="Work by stage">
+      <div className="dispatch-handoff-column">
         <div className="dispatch-column-heading">
           <div><div><h2>Work by stage</h2><p>Active cases across approval stages.</p></div></div>
           <span className="quiet-label"><span className="live-dot"/>Live</span>
@@ -184,7 +163,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
           })}
         </div>
         <div className="handoff-footer"><ShieldCheck size={14}/>Visible active scope<strong>{active.length}</strong></div>
-      </aside>
+      </div>
     </section>
     </div>
 
@@ -192,68 +171,6 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       <span><ShieldCheck size={14}/> Evidence provenance, record checks, and automation permissions.</span>
       <button className="text-button small" onClick={()=>navigate('trust')}>Open Trust Center <ArrowRight size={13}/></button>
     </div>
-
-    {/* Pan-India Regional Heatmap Grid */}
-    <section className="regional-control-section" aria-label="Regional Workload Matrix">
-      <div className="regional-control-head">
-        <h3><MapPin size={16}/> Active cases by region {selectedRegion&&<span className="quiet-label" style={{fontWeight:500}}>(Filtered to {selectedRegion} Region)</span>}</h3>
-        {selectedRegion&&(
-          <div style={{display:'flex',gap:'12px',alignItems:'center'}}>
-            <button className="text-button small" onClick={()=>navigate('applications')}>View in full register <ArrowRight size={12}/></button>
-            <button className="text-button small" onClick={()=>setSelectedRegion(null)}>Clear filter</button>
-          </div>
-        )}
-      </div>
-      <div className="regional-grid">
-        {regions.map(r=>{
-          const regApps=active.filter(a=>a.region===r);            const regOverdue=regApps.filter(a=>(workingDaysUntil(a.sla_due_at)??99)<0).length;
-          const isSelected=selectedRegion===r;
-          return (
-            <button
-              type="button"
-              key={r}
-              className={`regional-chip ${isSelected?'active':''}`}
-              onClick={()=>setSelectedRegion(isSelected?null:r)}
-              aria-pressed={isSelected}
-            >
-              <strong>{r}</strong>
-              <span>
-                <span>{regApps.length} active</span>
-                {regOverdue>0&&<span className="overdue-tag">{regOverdue} overdue</span>}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </section>
-
-    <section className="case-register" aria-labelledby="case-register-title">
-      <div className="case-register-heading">
-        <div>
-          <span className="dispatch-kicker">REGISTER / {list.length} OF {active.length} ACTIVE DOSSIERS</span>
-          <h2 id="case-register-title">Case register</h2>
-          <p>Active dossiers with route, region, and next deadline.</p>
-        </div>
-        <button className="text-button" onClick={()=>navigate('applications')}>View all cases <ArrowRight size={15}/></button>
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Case / institution</th>
-              <th>Region</th>
-              <th>Current stage</th>
-              <th>Status</th>
-              <th>Next deadline</th>
-              <th><span className="sr-only">Open</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.map(a=><ApplicationRow key={a.id} app={a} institution={data.institutions.find(i=>i.id===a.institution_id)?.name??'Demo institution'} open={open} selectedId={selected?.id}/>)}
-          </tbody>
-        </table>
-      </div>
-    </section>
 
   </>;
 }

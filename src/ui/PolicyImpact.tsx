@@ -14,7 +14,7 @@ export function PolicyImpact({data, app}:{data:Workspace; app:Application}){
   const impacts = useMemo(() => policyImpact(data.applications, data.claims, diff), [data.applications, data.claims, diff]);
   const changedCodes = new Set(diff.changed.map(c => c.code));
 
-  return <section id="policy" className="dossier-paper"><div className="dossier-paper-heading"><div><span className="section-index">06</span><div><h2>Policy change impact</h2><p>Compare synthetic example requirements. This preview does not publish or adopt policy.</p></div></div><span className="mono">DEMO PACK v{diff.fromVersion} → v{diff.toVersion}</span></div>
+  return <section id="policy" className="dossier-paper"><div className="dossier-paper-heading"><div><div><h2>Policy change impact</h2><p>Compare synthetic example requirements. This preview does not publish or adopt policy.</p></div></div><span className="mono">DEMO PACK v{diff.fromVersion} → v{diff.toVersion}</span></div>
     <div className="policy-body">
       <div className="policy-diff">
         <div className="policy-group added"><span className="policy-group-label"><FilePlus2 size={12}/>New required checks</span>{diff.added.length?diff.added.map(r=><div className="policy-item" key={r.code}><code>{r.code}</code><span>{r.statement}</span><small>Evidence: {r.evidence_types.join(' · ')}</small></div>):<p className="policy-none">None — no new checks introduced.</p>}</div>

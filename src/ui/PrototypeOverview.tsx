@@ -1,18 +1,20 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Search } from 'lucide-react';
 import { workingDaysUntil } from '../domain/clock';
+import type { Claim, Deficiency } from '../domain/integrity';
 import {
   actionLabels,
   allowedActions,
-  missingInputs,
   nextAuthority,
   routeStage,
   routeStageIndex,
   type Application,
+  type DocumentRecord,
   type Identity,
   type Status,
   typeLabels,
 } from '../domain/model';
+import { attentionReasons } from './caseAttention';
 import { Badge, Due, Empty } from './common';
 
 const operationalStatus: Record<Status, string> = {
@@ -34,6 +36,9 @@ interface Props {
   data: {
     applications: Application[];
     institutions: Record<string, { name: string }>;
+    documents: DocumentRecord[];
+    claims: Claim[];
+    deficiencies: Deficiency[];
   };
   identity: Identity;
   open: (id: string) => void;
@@ -183,7 +188,7 @@ export function PrototypeOverview({ data, identity, open }: Props) {
                 data.institutions[app.institution_id]?.name ?? 'Demo institution';
               const stage = routeStage(app.status);
               const actions = allowedActions(app, identity);
-              const missing = missingInputs(app, []);
+              const attention = attentionReasons(app, data.documents, data.claims, data.deficiencies);
               return (
                 <>
                   <div className="prototype-preview-head">
@@ -218,16 +223,15 @@ export function PrototypeOverview({ data, identity, open }: Props) {
 
                   <div className="prototype-preview-block">
                     <h3>Why it needs attention</h3>
-                    {missing.length > 0 ? (
+                    {attention.length > 0 ? (
                       <ul>
-                        {missing.slice(0, 4).map(item => (
+                        {attention.map(item => (
                           <li key={item}>{item}</li>
                         ))}
-                        {missing.length > 4 && <li>+{missing.length - 4} more gaps</li>}
                       </ul>
                     ) : (
                       <p className="quiet">
-                        Submission is complete; the case is waiting on the current authority.
+                        No recorded submission or evidence blocker; the case is waiting on the current authority.
                       </p>
                     )}
                   </div>
