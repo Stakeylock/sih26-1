@@ -5,6 +5,7 @@ const PILL:Record<string,string>={'Alerts & escalations':'Alerts','Audit logs':'
 async function openDesk(page:Page,label:string){if(label==='Settings'){await page.getByRole('button',{name:'Settings',exact:true}).click();return;}const section=SECTIONS[label];if(section)await page.getByRole('navigation').getByRole('button',{name:section,exact:true}).click();if(!section||section!==label)await page.getByRole('navigation').getByRole('button',{name:PILL[label]??label,exact:true}).click();}
 async function openDrawer(page:Page,label:string){await page.getByRole('button',{name:'Open navigation'}).click();await page.getByRole('navigation').getByRole('button',{name:label,exact:true}).click();}
 async function openCase(page:Page,ref:string){await openDesk(page,'Applications');await page.getByRole('textbox',{name:'Search applications'}).fill(ref);await page.getByRole('button',{name:ref,exact:true}).click();}
+async function openDemoLab(page:Page){await page.locator('header.topbar details.demo-disclosure summary').click();await page.getByRole('button',{name:'Open demo lab',exact:true}).click();}
 test.beforeEach(async({page})=>{await page.goto('/#overview');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();});
 test('public landing explains the approval record and starts the guided story',async({page})=>{
   await page.goto('/');
@@ -64,7 +65,8 @@ test('overview attention reflects attached evidence and current review state',as
   const institutionPreview=page.getByRole('complementary',{name:'Selected case preview'});
   await expect(institutionPreview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
   await expect(institutionPreview).toContainText('2 of 9 claims awaiting verification.');
-  await page.getByRole('navigation').getByRole('button',{name:'Needs attention',exact:true}).click();
+  await openDemoLab(page);
+  await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Applications requiring attention',exact:true})).toBeVisible();
   const prototypePreview=page.getByRole('complementary',{name:'Selected case preview'});
   await expect(prototypePreview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
@@ -324,6 +326,17 @@ test('shell owns one contextual header and an expandable demo disclosure',async(
   await expect(page.getByText('Cases closest to their next deadline.',{exact:true})).toBeVisible();
   await expect(page.getByText('Active cases across approval stages.',{exact:true})).toBeVisible();
 });
+test('demo lab gathers simulation controls outside working navigation',async({page})=>{
+  await openDemoLab(page);
+  await expect(page.getByRole('heading',{level:1,name:'Demo lab',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Needs attention',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Reset synthetic workspace',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Start guided story',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:/T-90 advance notice/}).click();
+  await expect(page.getByRole('status')).toContainText('Institution registrar');
+  await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
+  await expect(page.getByRole('heading',{level:1,name:'Applications requiring attention',exact:true})).toBeVisible();
+});
 test('dossier is the page header and keeps authority and return path',async({page})=>{
   await openDesk(page,'Applications');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1002');
@@ -377,6 +390,9 @@ test('every desktop route has no serious automated accessibility violations',asy
     const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
     expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical'),name).toEqual([]);
   }
+  await openDemoLab(page);
+  const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
+  expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical'),'Demo lab').toEqual([]);
 });
 test('design-rationale copy is absent from every route',async({page})=>{
   const banned=['Start with the dossier closest to a missed handoff.','Where visible cases are waiting now.','decorative chart','queue stays legible','before asking for a chart','application mix, not'];

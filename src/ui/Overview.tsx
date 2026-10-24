@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Clock3, FileStack, Plus, ShieldCheck, TrendingUp } from 'lucide-react';
+import {ArrowRight,BarChart3,Clock3,FileStack,Plus,ShieldCheck,TrendingUp} from 'lucide-react';
 import { actionLabels, allowedActions, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace } from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
 // Station label for a status. Same facts as statusLabels, phrased as the work in progress at the station.
@@ -9,7 +9,6 @@ const operationalStatus: { [key in Status]: string } = {
   pending_decision: 'Awaiting decision', approved: 'Approved', rejected: 'Rejected',
 };
 import {Badge,Due,Empty} from './common';
-import {attentionReasons} from './caseAttention';
 
 function priorityReason(app:Application){const days=workingDaysUntil(app.sla_due_at);if(days!==null&&days<0)return `Overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return 'Due today';if(days!==null)return `Due in ${days} day${days===1?'':'s'}`;return 'No demo SLA recorded';}
 function nextAction(app:Application,identity:Identity){const action=allowedActions(app,identity)[0];return action?`Your next action: ${actionLabels[action].toLowerCase()}`:'Next authority: '+nextAuthorityLabel(app.status);}
@@ -22,8 +21,6 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   const canCreate=identity.roles.some(r=>r.role==='institution');
   const onTime=active.filter(a=>(workingDaysUntil(a.sla_due_at)??99)>=0).length;
   const priority=active.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at)??9999)-(workingDaysUntil(b.sla_due_at)??9999)).slice(0,3);
-  const selected=priority[0]??null;
-  const attention=selected?attentionReasons(selected,data.documents,data.claims,data.deficiencies):[];
 
   const sla=active.length?`${Math.round(onTime/active.length*100)}%`:'—';
 
@@ -88,28 +85,6 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       </section>
     </div>
 
-    <div className="overview-work-layout">
-    {selected&&active.length>1&&(
-      <aside className="overview-preview" aria-label="Selected case preview">
-        <div><span className="mono">{selected.ref_no}</span><Badge status={selected.status}/></div>
-        <h2>{data.institutions.find(i=>i.id===selected.institution_id)?.name??'Demo institution'}</h2>
-        <p>{selected.title}</p>
-        <dl className="overview-preview-facts">
-          <div><dt>Stage</dt><dd>{routeStageIndex(selected.status)+1} of {routeStages.length} · {routeStage(selected.status).label}</dd></div>
-          <div><dt>Status</dt><dd>{operationalStatus[selected.status]}</dd></div>
-          <div><dt>Deadline</dt><dd><Due app={selected}/></dd></div>
-          <div><dt>Next authority</dt><dd>{nextAuthorityLabel(selected.status)}</dd></div>
-        </dl>
-        <div className="overview-preview-block">
-          <h3>Why it needs attention</h3>
-          {attention.length>0?<ul>{attention.map(item=><li key={item}>{item}</li>)}</ul>:<p className="quiet">No recorded submission or evidence blocker; the case is waiting on the current authority.</p>}
-        </div>
-        <div className="overview-preview-actions">
-          <button className="button" onClick={()=>open(selected.id)}>Open dossier <ArrowRight size={15}/></button>
-        </div>
-      </aside>
-    )}
-
     <section className="dispatch-board" aria-label="Approval dispatch board">
       <div className="dispatch-column dispatch-action-column">
         <div className="dispatch-column-heading">
@@ -132,10 +107,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
           </article>
         )):<Empty title="The priority queue is clear">No active cases need intervention right now.</Empty>}
       </div>
-    </section>
-
-    <section className="stage-board" aria-label="Work by stage">
-      <div className="dispatch-handoff-column">
+      <div className="dispatch-column dispatch-handoff-column">
         <div className="dispatch-column-heading">
           <div><div><h2>Work by stage</h2><p>Active cases across approval stages.</p></div></div>
           <span className="quiet-label"><span className="live-dot"/>Live</span>
@@ -165,8 +137,6 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
         <div className="handoff-footer"><ShieldCheck size={14}/>Visible active scope<strong>{active.length}</strong></div>
       </div>
     </section>
-    </div>
-
     <div className="overview-record-link">
       <span><ShieldCheck size={14}/> Evidence provenance, record checks, and automation permissions.</span>
       <button className="text-button small" onClick={()=>navigate('trust')}>Open Trust Center <ArrowRight size={13}/></button>
