@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,Download,ExternalLink,FileCheck2,FastForward,GitBranch,Info,LockKeyhole,Printer,RotateCcw,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
+import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,Download,ExternalLink,FileCheck2,GitBranch,Info,LockKeyhole,Printer,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
 import type {AuditVerification} from '../domain/integrity';
 import {daysUntil,missingInputs,regions,roleLabels,routeStage,routeStages,statusLabels,typeLabels,type AppType,type Application,type Identity,type Repository,type TemplateDefinition,type Workspace} from '../domain/model';
 import {Badge,Dialog,Empty,Panel,ViewHeader} from './common';
@@ -72,7 +72,6 @@ export function Compliance({data,identity,repo,run,busy,navigate}:{data:Workspac
   const [selected,setSelected]=useState<string|null>(null);
   const [passportDoc,setPassportDoc]=useState<{application:Workspace['applications'][number];document:Workspace['documents'][number]}|null>(null);
   const [reason,setReason]=useState('');
-  const [rehearsalStep,setRehearsalStep]=useState<number|null>(null);
   const mayVerify=identity.roles.some(r=>['regional_officer','national_admin'].includes(r.role));
   const roleName=roleLabels[identity.roles[0]?.role??'institution'];
   const openCount=data.obligations.filter(o=>o.status!=='fulfilled').length;
@@ -80,51 +79,8 @@ export function Compliance({data,identity,repo,run,busy,navigate}:{data:Workspac
   const obligationStages=[{key:'upcoming',label:'Upcoming'},{key:'submit',label:'Awaiting submission'},{key:'verify',label:'Awaiting verification'},{key:'overdue',label:'Overdue'},{key:'closed',label:'Closed'}] as const;
   const [stageFilter,setStageFilter]=useState<'all'|typeof obligationStages[number]['key']>('all');
   const visible=stageFilter==='all'?data.obligations:data.obligations.filter(obligation=>stageOf(obligation)===stageFilter);
-  const rehearsalStages=[
-    {stage:'t_minus_90',label:'T-90 Advance Notice',badge:'90d Ahead',recipient:'Institution Registrar',summary:'Autonomous 90-day advance notification dispatched. Instructs institution to execute and register renewed 30-year lease deed.'},
-    {stage:'t_minus_30',label:'T-30 Urgent Notice',badge:'30d Ahead',recipient:'Institution & Regional Bureau',summary:'High-priority amber signal generated. Document flagged as "Expiring Soon" on Institutional Portal and Regional Bureau Dashboard.'},
-    {stage:'t_0',label:'T-0 Expiry Breached',badge:'Deadline Day',recipient:'Regional Officer',summary:'Validity expired. System flips document status to EXPIRED (Red). Institution enters default 15-day statutory curing window.'},
-    {stage:'escalated_ro',label:'T+7 RO Escalation',badge:'T+7 Days',recipient:'Regional Officer',summary:'Level-1 Statutory Escalation: Formal Non-Compliance Notice automatically lodged. Regional Officer assigned for physical inquiry.'},
-    {stage:'escalated_hq',label:'T+15 Council HQ',badge:'T+15 Days',recipient:'Member Secretary & SCC',summary:'Level-2 Statutory Escalation: Docket transmitted to AICTE Member Secretary & Standing Complaint Committee (SCC) for regulatory sanction.'}
-  ];
   return <>
     <ViewHeader title="Obligation register" summary="Time-bound undertakings, document validity, and escalation status." count={String(openCount).padStart(2,'0')} label="open obligations"/>
-    <section className="support-surface" style={{marginBottom:'20px',borderLeft:'3px solid var(--route,#0c8272)',background:'var(--paper)'}}>
-      <div className="support-surface-heading">
-        <div>
-          <div>
-            <h2>Autonomous Deadline & Escalation Rehearsal</h2>
-            <p>Interactive simulation demonstrating time-bound multi-tier escalation across statutory APH windows.</p>
-          </div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-          <span className="quiet-label"><FastForward size={14}/>APH Chapter 7 Engine</span>
-          {rehearsalStep!==null&&<button className="button small outline" onClick={()=>setRehearsalStep(null)}><RotateCcw size={12}/>Reset rehearsal</button>}
-        </div>
-      </div>
-      <div style={{padding:'16px 20px'}}>
-        <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'12px'}}>
-          {rehearsalStages.map((st,idx)=>(
-            <button key={st.stage} className={`button small ${rehearsalStep===idx?'':'outline'}`} style={{fontSize:'11px',padding:'6px 10px'}} onClick={()=>setRehearsalStep(idx)}>
-              <strong>{st.badge}</strong> · {st.label}
-            </button>
-          ))}
-        </div>
-        {rehearsalStep!==null?(
-          <div style={{background:'var(--surface-muted)',border:'1px solid var(--rule,#e2e8f0)',borderRadius:'6px',padding:'12px 16px'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}}>
-              <strong style={{color:'var(--ink,#17243a)',fontSize:'13px'}}>{rehearsalStages[rehearsalStep].label} (Statutory Simulation)</strong>
-              <span className="document-tag clean" style={{fontSize:'9px'}}>Dispatched to: {rehearsalStages[rehearsalStep].recipient}</span>
-            </div>
-            <p style={{margin:0,fontSize:'12px',color:'var(--muted,#475569)',lineHeight:1.6}}>{rehearsalStages[rehearsalStep].summary}</p>
-          </div>
-        ):(
-          <p style={{margin:0,fontSize:'11px',color:'var(--muted,#64748b)'}}>
-            Click any milestone above to rehearse how FlowPilot autonomously generates notices, triggers urgent flags, shifts document states, and escalates overdue undertakings to the Member Secretary.
-          </p>
-        )}
-      </div>
-    </section>
     <section className="support-surface obligation-surface">
       <div className="support-surface-heading"><div><div><h2>Compliance obligations & document validity</h2><p>Lease tenure tracking, required evidence, multi-tier escalation hierarchy, and verified closure.</p></div></div><span className="quiet-label"><ShieldCheck size={14}/>Evidence-linked follow-up</span></div>
       <div className="compliance-pipeline" role="group" aria-label="Obligation stages"><button type="button" className={`pipeline-chip${stageFilter==='all'?' active':''}`} aria-pressed={stageFilter==='all'} onClick={()=>setStageFilter('all')}>All obligations <b>{String(data.obligations.length).padStart(2,'0')}</b></button>{obligationStages.map(stage=>{const count=data.obligations.filter(obligation=>stageOf(obligation)===stage.key).length;return <button key={stage.key} type="button" className={`pipeline-chip ${stage.key}${stageFilter===stage.key?' active':''}`} aria-pressed={stageFilter===stage.key} onClick={()=>setStageFilter(stageFilter===stage.key?'all':stage.key)}><span className="pipeline-dot" aria-hidden="true"/>{stage.label} <b>{String(count).padStart(2,'0')}</b></button>;})}</div>

@@ -132,8 +132,8 @@ export function PrototypeDossier({
 
       {app.form_data?.shc_appeal_active === 'true' && (
         <div className="prototype-shc-alert" role="status" style={{ padding: '0.85rem 1.25rem', background: 'var(--info-soft)', border: '1px solid var(--info-border)', color: 'var(--info-text)', borderRadius: '8px', margin: '0 0 1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <strong style={{ color: 'var(--info-strong)' }}>APH Standing Hearing Committee (SHC) Appeal In Progress</strong>
-          <span style={{ fontSize: '0.85rem', color: 'var(--info-text)' }}>A statutory appeal under APH Chapter 2 has been registered. Hearing panel review and compliance verification are underway.</span>
+          <strong style={{ color: 'var(--info-strong)' }}>Synthetic appeal in progress</strong>
+          <span style={{ fontSize: '0.85rem', color: 'var(--info-text)' }}>A demo appeal request was recorded. This does not establish an official hearing or regulatory process.</span>
         </div>
       )}
 

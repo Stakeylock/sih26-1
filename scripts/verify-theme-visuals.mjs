@@ -24,6 +24,7 @@ const screens=[
   {name:'trust',hash:'#trust'},
   {name:'audit',hash:'#audit'},
   {name:'settings',hash:'#settings'},
+  {name:'demo-lab',hash:'#demo-lab'},
   {name:'prototype',hash:'#prototype'},
   {name:'prototype-case',hash:'#prototype/case/demo-app-0'},
   {name:'receipt',hash:'#receipt/demo-app-5'},
@@ -79,7 +80,7 @@ try{
   const mobile=await browser.newContext({viewport:{width:390,height:844}});
   await mobile.addInitScript(()=>{try{localStorage.setItem('flowpilot-theme','dark');}catch{}});
   const mobilePage=await mobile.newPage();
-  for(const screen of [{name:'overview',hash:'#overview'},{name:'welcome',hash:'#welcome'}]){
+  for(const screen of [{name:'overview',hash:'#overview'},{name:'welcome',hash:'#welcome'},{name:'demo-lab',hash:'#demo-lab'}]){
     await mobilePage.goto(`${BASE}/${screen.hash}`,{waitUntil:'networkidle'});
     await mobilePage.waitForTimeout(300);
     const overflow=await mobilePage.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+1);

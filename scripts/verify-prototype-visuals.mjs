@@ -173,9 +173,9 @@ try {
       // Verify SHC Appeal Dialog opens with statutory callout
       const dialogText = await page.evaluate(() => document.body.innerText);
       expect(
-        'Option A: Statutory SHC appeal modal contains regulatory callout',
-        dialogText.includes('Standing Hearing Committee (SHC) Appeal') &&
-          dialogText.includes('APH Chapter 1 & 2'),
+        'Option A: SHC appeal modal discloses the synthetic limit',
+        dialogText.includes('Synthetic appeal request') &&
+          dialogText.includes('connected backend does not yet support this workflow'),
       );
 
       await page.screenshot({ path: 'scratch-visual/shc-appeal-dialog-1440.png' });
@@ -197,8 +197,8 @@ try {
         postCaseText.includes('Decision pending') || postCaseText.includes('Final decision'),
       );
       expect(
-        'Option A: SHC Appeal In Progress callout is displayed',
-        postCaseText.includes('APH Standing Hearing Committee (SHC) Appeal In Progress'),
+        'Option A: Synthetic appeal callout is displayed',
+        postCaseText.includes('Synthetic appeal in progress'),
       );
       await page.screenshot({ path: 'scratch-visual/shc-appeal-submitted-1440.png', fullPage: true });
 
@@ -207,8 +207,8 @@ try {
       await page.waitForTimeout(400);
       const protoCaseText = await page.evaluate(() => document.body.innerText);
       expect(
-        'Option A: Prototype view also displays SHC Appeal In Progress alert',
-        protoCaseText.includes('APH Standing Hearing Committee (SHC) Appeal In Progress'),
+        'Option A: Prototype view also displays the synthetic appeal callout',
+        protoCaseText.includes('Synthetic appeal in progress'),
       );
       await page.screenshot({ path: 'scratch-visual/prototype-shc-1440.png', fullPage: true });
     }
