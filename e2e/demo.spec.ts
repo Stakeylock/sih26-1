@@ -43,7 +43,7 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await expect(dispatchBoard.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
   await openDesk(page,'Approval routes');
   await expect(page.getByRole('heading',{name:'Approval route registry',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Time by stage',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Time since last update',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Open Scrutiny stage',exact:true})).toBeVisible();
   await openDesk(page,'Applications');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
@@ -106,6 +106,11 @@ test('evidence passport remains readable at 390px',async({page})=>{
 test('scrutiny verifies a claim and records a reasoned deficiency',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Accept scrutiny',exact:true})).toBeDisabled();
+  await expect(page.getByText('Resolve 3 unresolved items before accepting scrutiny.',{exact:true})).toBeVisible();
+  const verified=page.locator('.claim-row').filter({hasText:'Institution name and AICTE reference match the trust record'});
+  await expect(verified.getByRole('button',{name:'Verify',exact:true})).toHaveCount(0);
+  await expect(verified).toContainText('Finding recorded');
   const claim=page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
   await claim.getByRole('button',{name:'Verify',exact:true}).click();
   await page.getByRole('textbox',{name:'Verification note'}).fill('Synthetic faculty list reviewed for this demonstration.');
@@ -195,7 +200,7 @@ test('behavioral: replacement certificate clears the fire claim while missing in
   await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Claim verified');
   await expect(page.locator('.claim-summary')).toContainText('8 of 9 verified or not applicable');
   await expect(page.locator('.preflight-panel')).toContainText('Evidence missing · APH infrastructure');
-  await expect(page.locator('.dossier-readiness')).toContainText('Claims8 of 9 verified or not applicable');
+  await expect(page.locator('.readiness-status')).toContainText('Claims 8 of 9');
   await page.getByRole('tab',{name:'History'}).click();
   await expect(page.locator('.timeline')).toContainText('deficiency resolved');
   await expect(page.locator('.timeline')).toContainText('deficiency rechecked');
@@ -415,7 +420,8 @@ test('mobile applications use case cards and the dossier route stays inside the 
   await expect(page.getByText(/Viewing as/)).toContainText('National administrator');
   await expect(page.getByText('Claims 6 of 9',{exact:true})).toBeVisible();
   await expect(page.getByText(/Ready for next gate|Ready for the next workflow gate/)).toHaveCount(0);
-  await expect(page.getByText('Current authority',{exact:true})).toBeVisible();
+  await expect(page.locator('.claim-summary')).toContainText('3 unresolved: 2 awaiting review, 1 deficiency');
+  await expect(page.getByText('Current authority',{exact:true})).toHaveCount(0);
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
   await expect(page.locator('.workflow-rail-scroll')).toBeVisible();
@@ -441,7 +447,7 @@ test('alerts offer queue navigation and route visuals expose a return branch',as
   await page.getByRole('button',{name:'Open priority queue',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
   await openDesk(page,'Approval routes');
-  await expect(page.getByRole('heading',{name:'Time by stage',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Time since last update',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Bottleneck heatmap',exact:true})).toHaveCount(0);
   await expect(page.locator('.workflow-branch')).toContainText('Return and query branch');
   const zeroFill=await page.locator('.bottleneck-row').first().locator('.bottleneck-bar span').evaluate(element=>getComputedStyle(element).width);

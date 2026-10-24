@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Clock3, FileStack, GitBranch, ListChecks, MapPin, Plus, ShieldCheck, TrendingUp, Search } from 'lucide-react';
+import { ArrowRight, BarChart3, Clock3, FileStack, MapPin, Plus, ShieldCheck, TrendingUp, Search } from 'lucide-react';
 import { actionLabels, allowedActions, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace } from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
 // Station label for a status. Same facts as statusLabels, phrased as the work in progress at the station.
@@ -35,25 +35,18 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   const selected=list.find(a=>a.id===filterSelectedId)??list[0]??null;
 
   const sla=active.length?`${Math.round(onTime/active.length*100)}%`:'—';
-  const stageCount=(status:Status)=>active.filter(a=>routeStage(a.status).key===routeStage(status).key).length;
 
   const institutionHolding=active.filter(a=>a.status==='deficiency_raised');
   const authorityHolding=active.filter(a=>a.status!=='deficiency_raised');
   const instAvgDays=institutionHolding.length?Math.round(institutionHolding.reduce((s,a)=>s+holdDays(a),0)/institutionHolding.length):0;
   const authAvgDays=authorityHolding.length?Math.round(authorityHolding.reduce((s,a)=>s+holdDays(a),0)/authorityHolding.length):0;
 
-  const metrics=[
-    {label:'Active cases',value:active.length,note:`${data.applications.length} visible dossiers`,icon:FileStack,tone:'route'},
-    {label:'Need intervention',value:atRisk.length,note:'Due within 3 days or overdue',icon:Clock3,tone:'attention'},
-    {label:'At scrutiny',value:stageCount('under_scrutiny'),note:'Waiting for review or return',icon:ListChecks,tone:'verified'},
-    {label:'Within SLA',value:sla,note:`${onTime} of ${active.length} active cases meet the demo target`,icon:TrendingUp,tone:'ink'}
-  ];
   const priority=active.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at)??9999)-(workingDaysUntil(b.sla_due_at)??9999)).slice(0,3);
 
   return <>
     <section className="dispatch-header" aria-labelledby="dispatch-title">
       <div>
-        <span className="dispatch-kicker">DISPATCH / 01 · ACTIVE WORK · AY 2026–27</span>
+        <span className="dispatch-kicker">ACTIVE WORK · AY 2026–27</span>
         <h1 id="dispatch-title">Approval operations</h1>
         <p>{active.length} active cases across {regions.length} administrative regions · {atRisk.length} require intervention.</p>
       </div>
@@ -79,7 +72,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       </section>
 
       <section className="hero-metric-card card-clock">
-        <div className="hero-metric-head"><span>Dual Clock SLA Split</span><Clock3 size={16}/></div>
+        <div className="hero-metric-head"><span>Time with officer / institution</span><Clock3 size={16}/></div>
         <div className="dual-clock-split">
           <div className="dual-clock-col">
             <span>🏛 Council Review</span>
@@ -90,7 +83,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
             <strong>{institutionHolding.length} {institutionHolding.length===1?'case':'cases'} ({instAvgDays}d avg)</strong>
           </div>
         </div>
-        <span className="hero-metric-note" style={{marginTop:'4px'}}>Blame-free responsibility tracking</span>
+        <span className="hero-metric-note" style={{marginTop:'4px'}}>Working days by responsible role</span>
       </section>
 
       <section className="hero-metric-card card-attention">
@@ -143,7 +136,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
     <section className="dispatch-board" aria-label="Approval dispatch board">
       <div className="dispatch-column dispatch-action-column">
         <div className="dispatch-column-heading">
-          <div><span className="section-index">01</span><div><h2>Priority queue</h2><p>Cases closest to their next deadline.</p></div></div>
+          <div><div><h2>Priority queue</h2><p>Cases closest to their next deadline.</p></div></div>
           <span className="dispatch-count">{String(priority.length).padStart(2,'0')}</span>
         </div>
         {priority.length?priority.map((app,index)=>(
@@ -165,7 +158,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
 
       <aside className="dispatch-column dispatch-handoff-column">
         <div className="dispatch-column-heading">
-          <div><span className="section-index">02</span><div><h2>Work by stage</h2><p>Active cases across approval stages.</p></div></div>
+          <div><div><h2>Work by stage</h2><p>Active cases across approval stages.</p></div></div>
           <span className="quiet-label"><span className="live-dot"/>Live</span>
         </div>
         <div className="stage-bar-list">
@@ -195,23 +188,15 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
     </section>
     </div>
 
-    {/* Cryptographic Trust & Regulatory Ribbon */}
-    <div className="overview-security-ribbon">
-      <div className="inline">
-        <span className="ribbon-tag tag-security"><ShieldCheck size={13}/> Hash-linked audit history</span>
-        <span className="ribbon-tag tag-clock"><Clock3 size={13}/> Time with authority / institution</span>
-        <span className="ribbon-tag tag-aph"><GitBranch size={13}/> APH 2024–27 Clause Engine</span>
-      </div>
-      <div className="ribbon-stats">
-        <span>Verification runs on demand</span>
-        <button className="text-button small" onClick={()=>navigate('trust')}>View verification results <ArrowRight size={13}/></button>
-      </div>
+    <div className="overview-record-link">
+      <span><ShieldCheck size={14}/> Evidence provenance, record checks, and automation permissions.</span>
+      <button className="text-button small" onClick={()=>navigate('trust')}>Open Trust Center <ArrowRight size={13}/></button>
     </div>
 
     {/* Pan-India Regional Heatmap Grid */}
     <section className="regional-control-section" aria-label="Regional Workload Matrix">
       <div className="regional-control-head">
-        <h3><MapPin size={16}/> Pan-India Regional Dispatch {selectedRegion&&<span className="quiet-label" style={{fontWeight:500}}>(Filtered to {selectedRegion} Region)</span>}</h3>
+        <h3><MapPin size={16}/> Active cases by region {selectedRegion&&<span className="quiet-label" style={{fontWeight:500}}>(Filtered to {selectedRegion} Region)</span>}</h3>
         {selectedRegion&&(
           <div style={{display:'flex',gap:'12px',alignItems:'center'}}>
             <button className="text-button small" onClick={()=>navigate('applications')}>View in full register <ArrowRight size={12}/></button>
@@ -270,17 +255,6 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       </div>
     </section>
 
-    <div className="metrics dispatch-metrics" style={{display:'none'}}>
-      {metrics.map(m=><section key={m.label} className={`metric metric-${m.tone}`}><div className="spread"><span>{m.label}</span><m.icon size={17}/></div><strong>{m.value}</strong><small><span className="metric-point"/>{m.note}</small></section>)}
-    </div>
-
-    <div className="overview-bottom dispatch-footer">
-      <div>
-        <span className="quiet-label">DISPATCH NOTE</span>
-        <p>Clauseway · Hash-linked. Role-gated. Regulation-aware.</p>
-      </div>
-      <span className="quiet-label">Metrics calculated dynamically from visible synthetic cases.</span>
-    </div>
   </>;
 }
 

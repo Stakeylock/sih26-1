@@ -32,7 +32,7 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
   const chainOk=verification?.intact===true;
 
   return <>
-    <ViewHeader index="11" title="Trust Center" summary="Four inspectable boundaries: the record, its evidence, human access, and the agent boundary. No combined trust score." count={String(openSignals.length)} label="open integrity signals"/>
+    <ViewHeader title="Trust Center" summary="Inspect the record, its evidence, human access, and automation permissions." count={String(openSignals.length)} label="open integrity signals"/>
     <div className="trust-grid">
       <Panel className="trust-panel" title="Record integrity" subtitle="Hash-chain verification for a submitted dossier." action={<Fingerprint size={19}/>}>
         <div className="trust-reference">
@@ -81,7 +81,7 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
         {!data.access_assignments.length&&<p className="trust-empty">No access assignments are visible in this workspace.</p>}
       </Panel>
 
-      <Panel className="trust-panel" title="Agent boundary" subtitle="Advisory automation is read-only and cannot approve." action={<Activity size={19}/>}>
+      <Panel className="trust-panel" title="Automation permissions" subtitle="Automation can read and flag; it cannot approve or change status." action={<Activity size={19}/>}>
         <div className="trust-agent-summary"><span>{data.agents.length} registered</span><span>{enabledAgents.length} enabled</span><span className={approvalAgents.length?'warning':''}>{approvalAgents.length} with approval authority</span></div>
         <div className="trust-agents">
           {data.agents.map(agent=><article key={agent.id} className="trust-agent">

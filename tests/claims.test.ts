@@ -133,6 +133,13 @@ describe('demo claim actions', () => {
     await expect(repo.verifyClaim(app, claim, 'verified', 'Expired certificate attempt.')).rejects.toThrow('Resolve and re-check');
   });
 
+  it('blocks accepting scrutiny while claims or deficiencies remain unresolved', async () => {
+    const repo = createDemoRepository('scrutiny_officer');
+    const data = await repo.workspace();
+    const app = data.applications.find(item => item.id === 'demo-app-0')!;
+    await expect(repo.transition({ application: app, action: 'pass_scrutiny', reason: 'All evidence appears satisfactory.', payload: {}, requestId: 'gate-1' })).rejects.toThrow('Resolve all claims and open deficiencies before accepting scrutiny.');
+  });
+
   it('raises one claim deficiency and blocks a duplicate', async () => {
     const repo = createDemoRepository('scrutiny_officer');
     const data = await repo.workspace();
