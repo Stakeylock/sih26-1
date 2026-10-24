@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-24",
+  "source_branch": "second",
+  "source_revision": "e46e0d292e7e865c1af5e4ee71a0bb4b05dfd51f",
+  "target_branch": "main",
+  "target_base": "8be5f3bb77ebbeaec6d46b9b0c6260f34767382a",
+  "unit_and_pglite": {"passed": 171, "files": 18},
+  "playwright": {"passed": 41, "failed": 0},
+  "builds": {"demo": "passed", "connected": "passed"},
+  "backend_changes_in_merge": false,
+  "live_supabase_validation": "not rerun; Docker engine unavailable",
+  "production_readiness_claimed": false
+}
