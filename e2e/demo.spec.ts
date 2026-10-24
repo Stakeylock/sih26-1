@@ -55,6 +55,11 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Compliance monitoring'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
 });
+test('trust metrics remain scoped after merging the UI branch',async({page})=>{
+  await openDesk(page,'Trust Center');
+  const metrics=page.locator('.trust-metric');
+  for(const [index,count] of [2,1,0,2].entries())await expect(metrics.nth(index)).toContainText(String(count));
+});
 test('overview prioritises current cases and prototype attention reflects review state',async({page})=>{
   const board=page.getByRole('region',{name:'Approval dispatch board'});
   await expect(board.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();

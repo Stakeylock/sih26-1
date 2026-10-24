@@ -1,9 +1,25 @@
-import {ArrowRight,Clock3,GitBranch,LockKeyhole,Play,ReceiptText,ScanLine,ShieldCheck} from 'lucide-react';
-import {routeStages} from '../domain/model';
+import {ArrowRight,Clock3,FileMinus2,GitBranch,LockKeyhole,Play,ReceiptText,ScanLine,ShieldCheck} from 'lucide-react';
 import {Badge,Brand} from './common';
 import {ThemeToggle,type Theme} from './theme';
+import {useState,useEffect} from 'react';
 
 export function Welcome({onEnter,onStory,theme,toggleTheme}:{onEnter:()=>void;onStory:()=>void;theme:Theme;toggleTheme:()=>void}){
+  const [reducedMotion,setReducedMotion]=useState(()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [animationPhase,setAnimationPhase]=useState(()=>reducedMotion?10:0);
+  useEffect(()=>{
+    const preference=window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update=()=>setReducedMotion(preference.matches);
+    preference.addEventListener('change',update);
+    return()=>preference.removeEventListener('change',update);
+  },[]);
+  useEffect(()=>{
+    setAnimationPhase(reducedMotion?10:0);
+    if(reducedMotion)return;
+    const timers=Array.from({length:10},(_,index)=>window.setTimeout(()=>setAnimationPhase(index+1),(index+1)*800));
+    return()=>timers.forEach(timer=>window.clearTimeout(timer));
+  },[reducedMotion]);
+  const evidenceVisible = animationPhase>=4 && animationPhase<7;
+  const replacementVisible = animationPhase>=7 && animationPhase<10;
   return <div className="welcome">
     <header className="welcome-top"><Brand/><div className="welcome-top-meta"><span>SIH26262 / SYNTHETIC DEMONSTRATION</span><ThemeToggle theme={theme} toggleTheme={toggleTheme} className="welcome-theme"/><button className="text-button" onClick={onEnter}>Enter workspace <ArrowRight size={15}/></button></div></header>
     <main className="welcome-main">
@@ -20,9 +36,29 @@ export function Welcome({onEnter,onStory,theme,toggleTheme}:{onEnter:()=>void;on
       </section>
       <section className="welcome-visual" aria-label="Animated preview of a case moving through the approval route">
         <div className="welcome-visual-top"><span className="live-dot"/>ILLUSTRATIVE JOURNEY <span className="mono">DEMO-2026-1001</span><span className="welcome-synthetic">SYNTHETIC</span></div>
-        <article className="welcome-case-card"><div className="welcome-case-top"><span className="mono">DEMO-2026-1001</span><Badge status="under_scrutiny"/></div><strong>Cedar Technical Institute</strong><span>Self-disclosure extension · 2026-27</span><div className="welcome-case-meta"><span><Clock3 size={13}/>2d remaining</span><span><ShieldCheck size={13}/>Scrutiny officer</span></div></article>
-        <div className="welcome-route" aria-hidden="true">{routeStages.map((stage,index)=><div className={`welcome-station ${index<2?'reached':''} ${index===2?'current':''}`} key={stage.key}><span>{String(index+1).padStart(2,'0')}</span><strong>{stage.label}</strong></div>)}<i className="welcome-pulse"/></div>
-        <article className="welcome-receipt-card"><div className="welcome-receipt-head"><span>DECISION RECEIPT</span><ReceiptText size={16}/></div><strong>Approved</strong><p>Evidence accepted. Human decision recorded.</p><span className="mono">REGIONAL OFFICER · 17 OCT · v1.0</span></article>
+        <article className={`welcome-case-card${animationPhase>=0&&animationPhase<4?'':' done'}`}><div className="welcome-case-top"><span className="mono">DEMO-2026-1001</span><Badge status="under_scrutiny"/></div><strong>Cedar Technical Institute</strong><span>Self-disclosure extension · 2026-27</span><div className="welcome-case-meta"><span><Clock3 size={13}/>2d remaining</span><span><ShieldCheck size={13}/>Scrutiny officer</span></div></article>
+        <div className="welcome-route" aria-hidden="true">
+          <svg className="welcome-route-svg" viewBox="0 0 200 40" aria-hidden="true">
+            <path className="welcome-route-path" d="M10 10 C50 10, 150 30, 190 30"/>
+            <polygon className="welcome-marker" points="0,0 0,10 10,5" fill="currentColor"/>
+          </svg>
+        </div>
+        <article className={`welcome-case-card${animationPhase>=4?'':' next'}`}><div className="welcome-case-top"><span className="mono">DEMO-2026-1001</span><Badge status={animationPhase>=4?'pending_decision':'under_scrutiny'}/></div><strong>Cedar Technical Institute</strong><span>Self-disclosure extension · 2026-27</span><div className="welcome-case-meta"><span><Clock3 size={13}/>2d remaining</span><span><ShieldCheck size={13}/>Scrutiny officer</span></div></article>
+        <div className={`welcome-evidence-card${evidenceVisible?' shown':''}`}>
+          <div className="evidence-icon"><ShieldCheck size={12}/></div>
+          <div>
+            <strong>Evidence issue found</strong>
+            <p>Fire certificate expired on scrutiny date.</p>
+          </div>
+        </div>
+        <div className={`welcome-replacement-tile${replacementVisible?' shown':''}`}>
+          <div className="replacement-icon"><FileMinus2 size={12}/></div>
+          <div>
+            <strong>Replacement uploaded</strong>
+            <p>Awaiting authorised review</p>
+          </div>
+        </div>
+        <article className={`welcome-receipt-card${animationPhase===0?'':' is-mounted'}`} data-phase={animationPhase<10?'initial':'final'}><div className="welcome-receipt-head"><span>DECISION RECEIPT</span><ReceiptText size={16}/></div><strong>Scrutiny finding recorded</strong><p>Evidence reviewed by an authorised officer.</p><span className="mono">REGIONAL OFFICER · 17 OCT · v1.0</span></article>
         <span className="welcome-visual-note">Illustrative sequence, not this record's current state.</span>
       </section>
     </main>
