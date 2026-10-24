@@ -9,7 +9,7 @@
   ".dispatch-header h1": {
     "fontSize": "31px"
   },
-  ".stage-board": {
+  ".dispatch-board": {
     "borderRadius": "0px",
     "backgroundColor": "rgb(255, 255, 255)"
   },

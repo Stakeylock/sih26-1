@@ -64,6 +64,7 @@ export async function ready(db:PGlite) {
     await db.query(`insert into storage.objects(bucket_id,name,metadata) select 'application-docs',file_path,'{"size":100,"mimetype":"application/pdf"}' from public.application_documents where id=$1`,[doc]);
     await db.exec('set role service_role');
     await db.query(`select public.fp_complete_document($1,$2,true,'test-fixture-scanner')`,[doc,'a'.repeat(64)]);
+    await fixtureValidity(db,doc);
     await as(db,ids.institution);
   }
   return id;
@@ -75,7 +76,7 @@ export async function upload(db:PGlite,id:string,type:string,hash='b'.repeat(64)
   await db.query(`insert into storage.objects(bucket_id,name,metadata) select 'application-docs',file_path,'{"size":100,"mimetype":"application/pdf"}' from public.application_documents where id=$1`,[doc]);
   await db.exec('set role service_role');
   await db.query(`select public.fp_complete_document($1,$2,true,'test-fixture-scanner')`,[doc,hash]);
-  if(expiresOn){ await db.exec('reset role'); await db.query('update public.application_documents set expires_on=$2 where id=$1',[doc,expiresOn]); }
+  await fixtureValidity(db,doc,expiresOn);
   await as(db,ids.institution);
   return doc;
 }
@@ -101,6 +102,14 @@ export async function grantRole(db:PGlite,userId:string,role:string,region:strin
   await db.query(`select public.fp_assign_role($1,$2,$3,$4,$5)`,[userId,role,region,opts.expiresAt??null,opts.reason??'Synthetic grant reason fixture']);
 }
 export async function transition(db:PGlite,id:string,action:string,reason='Synthetic test reason',payload:Record<string,unknown>={},requestId=crypto.randomUUID()) {
+  if(action==='approve'&&!payload.approval)payload={...payload,approval:approvalFixture};
   const version=await scalar<number>(db,`select version from public.applications where id=$1`,[id]);
   return scalar<{id:string;status:string;version:number}>(db,`select public.fp_transition($1,$2,$3,$4,$5,$6)`,[id,action,reason,payload,version,requestId]);
 }
+
+// Synthetic recorded validity metadata for baseline regression fixtures only.
+async function fixtureValidity(db:PGlite,doc:string,expiresOn?:string){
+  await db.exec('reset role');
+  await db.query(`update public.application_documents set validity_mode=$2,expires_on=$3,validity_reviewed_by=$4,validity_reviewed_at=now(),validity_review_note='Synthetic fixture metadata review' where id=$1`,[doc,expiresOn?'dated':'no_stated_expiry',expiresOn??null,ids.scrutiny]);
+}
+export const approvalFixture={approval_type:'Synthetic test approval',academic_year_start:2026,academic_year_end:2026,valid_from:'2026-07-01',valid_to:'2027-06-30',items:[],conditions:[]};

@@ -1,5 +1,6 @@
 import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
 import type {CaseHistory} from './review';
+import type {ApprovalRecord,ApprovalScopeItem,DeadlineNotice,DeadlineRevision,NoticeImpact,NoticeInput,ReminderIntent,ScopeInput,ScopeRequest,ValidityInput,ValidityMode} from './approvals';
 
 export type { Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
 export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'regional_officer', 'national_admin'] as const;
@@ -23,13 +24,14 @@ export interface TemplateDefinition {
 export interface Template { id: string; app_type: AppType; version: number; status: string; name: string; definition: TemplateDefinition }
 export interface Institution { id: string; owner_id: string; name: string; aicte_ref: string; region: string; state: string }
 export interface Application {
+  academic_year_start?:number|null;scope_revision?:number;scope_reviewed_revision?:number|null;scope_reviewed_by?:string|null;scope_review_note?:string|null;
   id: string; ref_no: string; title: string; owner_id: string; institution_id: string; app_type: AppType; status: Status;
   region: string; version: number; template_version: number; template_snapshot: TemplateDefinition;
   form_data: Record<string, string>; evc_required: boolean; assigned_officer: string | null;
   sla_due_at: string | null; submitted_at: string | null; created_at: string; updated_at: string;
   decision_reason: string | null; decision_evidence: string | null; is_demo: boolean;
 }
-export interface DocumentRecord { id: string; application_id: string; doc_type: string; file_name: string; file_path: string; size_bytes: number; mime_type: string; scan_status: 'pending' | 'clean' | 'rejected'; sha256: string | null; uploaded_at: string; expires_on?: string | null; issuer?: string | null; document_number?: string | null; /** Synthetic extraction metadata (demo only) — e.g. values read off a roster, used for cross-document consistency checks. */ extracted?: Record<string,string> }
+export interface DocumentRecord { validity_mode?:ValidityMode;issue_date?:string|null;subject_institution_id?:string|null;supersedes_document_id?:string|null;validity_reviewed_by?:string|null;validity_reviewed_at?:string|null;validity_review_note?:string|null; id: string; application_id: string; doc_type: string; file_name: string; file_path: string; size_bytes: number; mime_type: string; scan_status: 'pending' | 'clean' | 'rejected'; sha256: string | null; uploaded_at: string; expires_on?: string | null; issuer?: string | null; document_number?: string | null; /** Synthetic extraction metadata (demo only) — e.g. values read off a roster, used for cross-document consistency checks. */ extracted?: Record<string,string> }
 export interface AuditEvent { id: number; application_id: string; actor_id: string | null; actor_role: string | null; action: string; from_status: Status | null; to_status: Status | null; reason: string | null; created_at: string; payload: Record<string, unknown>; sequence?: number | null; prev_hash?: string | null; event_hash?: string | null }
 export interface ChecklistItem { id: string; application_id: string; item: string; passed: boolean | null; note: string }
 export interface ExpertMember {
@@ -40,9 +42,9 @@ export interface ExpertMember {
   no_conflict_signed: boolean;
 }
 export interface Visit { id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null; committee?: ExpertMember[] }
-export interface Obligation { id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string; escalation_level?: 'normal' | 't_minus_30' | 't_minus_0' | 'escalated_ro' | 'escalated_hq'; statutory_norm?: string; lease_years_remaining?: number; required_evidence?: string[] }
+export interface Obligation { kind?:string;approval_id?:string|null;document_id?:string|null;document_expiry_on?:string|null;deadline_revision?:number; id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string; escalation_level?: 'normal' | 't_minus_30' | 't_minus_0' | 'escalated_ro' | 'escalated_hq'; statutory_norm?: string; lease_years_remaining?: number; required_evidence?: string[] }
 export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null }
-export interface Workspace { applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[] }
+export interface Workspace { scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[] }
 export const routeStages = [
   { key: 'submission', label: 'Submission', statuses: ['draft'] },
   { key: 'scrutiny', label: 'Scrutiny', statuses: ['submitted', 'resubmitted', 'under_scrutiny', 'deficiency_raised'] },
@@ -71,6 +73,14 @@ export const actionLabels: Record<Action, string> = { submit: 'Submit applicatio
 export interface Transition { application: Application; action: Action; reason: string; payload: Record<string, unknown>; requestId: string }
 export interface Advisory {engine:string;advisoryOnly:boolean;model:string;summary:string;warnings:string[];trace:string[];disclaimer:string;automation:{id:string;state:string}}
 export interface Repository {
+  saveScope(application:Application,year:number,items:ScopeInput[],requestId?:string):Promise<void>;
+  reviewScope(application:Application,note:string,requestId?:string):Promise<void>;
+  reviewDocumentValidity(application:Application,document:DocumentRecord,input:ValidityInput,requestId?:string):Promise<void>;
+  createNotice(input:NoticeInput,requestId?:string):Promise<void>;
+  reviewNotice(notice:DeadlineNotice,note:string,requestId?:string):Promise<void>;
+  previewNotice(notice:DeadlineNotice):Promise<NoticeImpact>;
+  adoptNotice(notice:DeadlineNotice,impact:NoticeImpact,note:string,requestId?:string):Promise<void>;
+  fulfilWithEvidence(application:Application,obligation:Obligation,evidence:string[],reason:string,requestId?:string):Promise<void>;
   mode: 'demo' | 'connected'; identity(): Promise<Identity | null>; subscribeAuth(callback: () => void): () => void;
   signIn(email: string, password: string): Promise<void>; signOut(): Promise<void>; workspace(): Promise<Workspace>;
   createInstitution(input: Omit<Institution, 'id' | 'owner_id'>): Promise<void>;

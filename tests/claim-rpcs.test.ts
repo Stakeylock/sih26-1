@@ -40,7 +40,7 @@ describe('claim evidence and verification', () => {
     await as(db, ids.scrutiny);
     const version = await scalar<number>(db, 'select version from public.applications where id=$1', [id]);
     expect(await failure(db, `select public.fp_verify_claim($1,'verified','Expired certificate',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.FIRE_SAFETY])).toContain('current clean evidence');
-    expect(await failure(db, `select public.fp_transition($1,'pass_scrutiny','All synthetic claims reviewed','{"evc":false}',$2,$3)`, [id, version, crypto.randomUUID()])).toContain('mandatory claim');
+    expect(await failure(db, `select public.fp_transition($1,'pass_scrutiny','All synthetic claims reviewed','{"evc":false}',$2,$3)`, [id, version, crypto.randomUUID()])).toContain('validity');
   });
 
   it('unlinks evidence and makes verification fail', async () => {

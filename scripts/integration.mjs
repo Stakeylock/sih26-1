@@ -9,7 +9,7 @@ const fixtureFile='.env.integration-fixtures.local';
 function ok(value,message){assert.ok(value,message);checks++;}
 function check(result){if(result.error)throw new Error(result.error.message);return result.data;}
 async function snapshot(client,id){return check(await client.from('applications').select('*').eq('id',id).single());}
-async function transition(client,id,action,reason='Synthetic integration test reason',payload={},requestId=randomUUID(),version){const a=await snapshot(client,id);return client.rpc('fp_transition',{_id:id,_action:action,_reason:reason,_payload:payload,_expected_version:version??a.version,_request_id:requestId});}
+async function transition(client,id,action,reason='Synthetic integration test reason',payload={},requestId=randomUUID(),version){if(action==='approve'&&!payload.approval)payload={...payload,approval:{approval_type:'Synthetic integration approval',academic_year_start:2026,academic_year_end:2026,valid_from:'2026-07-01',valid_to:'2027-06-30',items:[],conditions:[]}};const a=await snapshot(client,id);return client.rpc('fp_transition',{_id:id,_action:action,_reason:reason,_payload:payload,_expected_version:version??a.version,_request_id:requestId});}
 try{
   for(const [name,a] of Object.entries(accounts)){const client=createClient(process.env.VITE_SUPABASE_URL,process.env.VITE_SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});check(await client.auth.signInWithPassword({email:a.email,password:a.password}));clients[name]=client;}
   if(process.argv[2]==='prepare'){
@@ -35,6 +35,7 @@ try{
     check(await transition(reviewer,id,'raise_deficiency','Correct the synthetic inventory for this demonstration.'));
     check(await transition(clients.institution,id,'resubmit','Synthetic inventory corrected and ready for review.'));
     check(await transition(reviewer,id,'start_scrutiny'));
+    for(const doc of docs){const current=await snapshot(reviewer,id);check(await reviewer.rpc('fp_governance_command',{_kind:'document_validity',_id:doc.id,_payload:{validity_mode:'no_stated_expiry',issue_date:null,expires_on:null,issuer:'Synthetic fixture issuer',document_number:'DEMO-INTEGRATION',supersedes_document_id:null,note:'Reviewed synthetic fixture with no stated expiry.'},_expected_version:current.version,_request_id:randomUUID()}));}
     const app=await snapshot(reviewer,id);for(const item of app.template_snapshot.checklist)check(await reviewer.rpc('fp_checklist',{_id:id,_item:item,_passed:true,_note:'Synthetic evidence verified for test.'}));
     check(await transition(reviewer,id,'pass_scrutiny','No expert visit needed for this synthetic test.',{evc:false}));
     ok(Boolean((await transition(clients.evc,id,'approve','Unauthorized demo approval',{evidence:docs[0].id})).error),'EVC role cannot decide');
@@ -43,7 +44,8 @@ try{
     check(await transition(clients.regional,id,'approve','Synthetic evidence accepted for demonstration only.',{evidence:docs[0].id},decisionKey,before.version));
     const events=check(await clients.institution.from('application_events').select('*').eq('application_id',id));
     ok(events.filter(e=>e.action==='approve').length===1,'Exactly one decision audit event');
-    ok(check(await clients.institution.from('obligations').select('*').eq('application_id',id)).filter(o=>o.kind==='renewal').length===1,'Exactly one renewal obligation');
+    ok(check(await clients.institution.from('approval_records').select('*').eq('application_id',id)).length===1,'Exactly one explicit approval record');
+    ok(check(await clients.institution.from('obligations').select('*').eq('application_id',id)).filter(o=>o.kind==='renewal').length===0,'No automatic annual-renewal assumption');
     const downloaded=check(await clients.institution.storage.from('application-docs').download(docs[0].path));ok(createHash('sha256').update(Buffer.from(await downloaded.arrayBuffer())).digest('hex')===docs[0].sha256,'Uploaded bytes match their SHA-256');
     ok(Boolean((await clients.other.storage.from('application-docs').download(docs[0].path)).error),'Cross-tenant private download denied');
     const anon=createClient(process.env.VITE_SUPABASE_URL,process.env.VITE_SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false}});

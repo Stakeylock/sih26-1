@@ -3,8 +3,8 @@
   {"selector":".mainnav","prop":"height","expected":"56px"},
   {"selector":"body","prop":"backgroundColor","expected":"rgb(236, 239, 241)"},
   {"selector":".dispatch-header h1","prop":"fontSize","expected":"31px"},
-  {"selector":".stage-board","prop":"borderRadius","expected":"0px"},
-  {"selector":".stage-board","prop":"backgroundColor","expected":"rgb(255, 255, 255)"},
+  {"selector":".dispatch-board","prop":"borderRadius","expected":"0px"},
+  {"selector":".dispatch-board","prop":"backgroundColor","expected":"rgb(255, 255, 255)"},
   {"selector":".button","prop":"borderRadius","expected":"6px"},
   {"selector":".section-tab","prop":"fontSize","expected":"13px"}
 ]

@@ -43,7 +43,7 @@ describe('review regressions: authorization and case binding',()=>{
     await db.exec('set role service_role');await db.query(`select public.fp_complete_document($1,$2,true,'fixture-scanner')`,[doc,'ff'.repeat(32)]);
     await as(db,ids.institution);const deficiency=await scalar<string>(db,`select id from public.deficiencies where claim_id=$1`,[claims.FIRE_SAFETY]);
     await db.query(`select public.fp_resolve_deficiency($1,$2,'The corrected certificate is now attached.',(select version from public.applications where id=(select application_id from public.deficiencies where id=$1)),gen_random_uuid())`,[deficiency,doc]);
-    await as(db,ids.scrutiny);await db.query(`select public.fp_recheck_deficiency($1,'accepted','The replacement document has been checked.',(select version from public.applications where id=(select application_id from public.deficiencies where id=$1)),gen_random_uuid())`,[deficiency]);
+    await as(db,ids.scrutiny);await db.query(`select public.fp_governance_command('document_validity',$1,$2,(select version from public.applications where id=$3),gen_random_uuid())`,[doc,{validity_mode:'no_stated_expiry',issue_date:null,expires_on:null,issuer:'Synthetic fixture issuer',document_number:'DEMO-REPLACEMENT',supersedes_document_id:null,note:'Reviewed the current synthetic replacement validity.'},id]);await db.query(`select public.fp_recheck_deficiency($1,'accepted','The replacement document has been checked.',(select version from public.applications where id=(select application_id from public.deficiencies where id=$1)),gen_random_uuid())`,[deficiency]);
     expect(await scalar<string>(db,`select status::text from public.application_claims where id=$1`,[claims.FIRE_SAFETY])).toBe('verified');
   });
 });

@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-24",
+  "unit_and_pglite": {"passed": 171, "files": 18},
+  "playwright": {"passed": 38, "failed": 0},
+  "builds": {"demo": "passed", "connected": "passed"},
+  "docker": "Linux engine pipe unavailable",
+  "live_supabase_auth_storage_concurrency": "not revalidated for this migration",
+  "outbox_processor": "SQL permission and generation checks tested; live worker not running",
+  "hosted_schema_changes": false,
+  "deployed": false,
+  "production_ready": false
+}

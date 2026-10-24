@@ -52,25 +52,19 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
   await page.screenshot({path:'../../work/flowpilot-case.png',fullPage:true});
-  for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Obligation register'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
+  for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Compliance monitoring'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
 });
-test('overview attention reflects attached evidence and current review state',async({page})=>{
-  const preview=page.getByRole('complementary',{name:'Selected case preview'});
-  await expect(preview).toContainText('Why it needs attention');
-  await expect(preview).not.toContainText('clean scan required');
-  await expect(preview).not.toContainText('Board Resolution');
+test('overview prioritises current cases and prototype attention reflects review state',async({page})=>{
+  const board=page.getByRole('region',{name:'Approval dispatch board'});
+  await expect(board.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
-  await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
-  const institutionPreview=page.getByRole('complementary',{name:'Selected case preview'});
-  await expect(institutionPreview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
-  await expect(institutionPreview).toContainText('2 of 9 claims awaiting verification.');
-  await openDemoLab(page);
-  await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
-  await expect(page.getByRole('heading',{level:1,name:'Applications requiring attention',exact:true})).toBeVisible();
-  const prototypePreview=page.getByRole('complementary',{name:'Selected case preview'});
-  await expect(prototypePreview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
-  await expect(prototypePreview).toContainText('2 of 9 claims awaiting verification.');
+  await expect(board.getByRole('button',{name:'Open DEMO-2026-1001',exact:true})).toBeVisible();
+  await expect(board).not.toContainText('DEMO-2026-1011');
+  await openDemoLab(page);await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
+  const preview=page.getByRole('complementary',{name:'Selected case preview'});
+  await expect(preview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
+  await expect(preview).toContainText('2 of 9 claims awaiting verification.');
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
@@ -359,9 +353,11 @@ test('supporting desks keep task-specific composition',async({page})=>{
   await expect(page.getByText(/local timezone/i)).toBeVisible();
   await expect(page.getByRole('button',{name:'Open dossier',exact:true}).first()).toBeVisible();
   await openDesk(page,'Compliance');
-  await expect(page.getByRole('heading',{level:1,name:'Obligation register',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Compliance obligations & document validity',exact:true})).toBeVisible();
-  for(const label of ['Required evidence','Evidence present','Authorized verification','Permitted next action'])await expect(page.getByText(label,{exact:true}).first()).toBeVisible();
+  await expect(page.getByRole('heading',{level:1,name:'Compliance monitoring',exact:true})).toBeVisible();
+  await expect(page.getByRole('table',{name:'Continuing obligations'})).toContainText('Synthetic land-document follow-up');
+  await page.getByRole('button',{name:'Review obligation',exact:true}).first().click();
+  await expect(page.getByText('Required compliance evidence',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Verify fulfilment',exact:true})).toBeVisible();
   await openDesk(page,'Alerts & escalations');
   await expect(page.getByRole('heading',{level:1,name:'Escalation desk',exact:true})).toBeVisible();
   await expect(page.getByText('2 escalations require review · 2 informational updates.',{exact:true})).toBeVisible();
