@@ -1,3 +1,4 @@
+import type {ApprovalRecord,ApprovalScopeItem,ScopeRequest,DeadlineNotice,DeadlineRevision,ReminderIntent,NoticeImpact} from '../domain/approvals';
 import type { Application, AuditEvent, ChecklistItem, DocumentRecord, Institution, Notification, Obligation, Template, Visit, Role } from '../domain/model';
 import type {HistoryPage} from '../domain/review';
 import type { AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement, AgentRecord } from '../domain/integrity';
@@ -7,6 +8,7 @@ type Fn<A, R> = { Args: A; Returns: R };
 export interface Database {
   public: {
     Tables: {
+      application_scope_items:Table<ScopeRequest>;approval_records:Table<ApprovalRecord>;approval_scope_items:Table<ApprovalScopeItem>;policy_notices:Table<DeadlineNotice>;applied_deadlines:Table<DeadlineRevision>;deadline_reminder_intents:Table<ReminderIntent>;
       applications: Table<Application>; application_events: Table<AuditEvent>; application_documents: Table<DocumentRecord>;
       requirements: Table<Requirement>; application_claims: Table<Claim>; claim_evidence: Table<ClaimEvidence>; deficiencies: Table<Deficiency>; integrity_signals: Table<IntegritySignal>;
       checklist_items: Table<ChecklistItem>; evc_visits: Table<Visit>; institutions: Table<Institution>;
@@ -17,6 +19,8 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      fp_governance_command:Fn<{_kind:string;_id:string|null;_payload:Record<string,unknown>;_expected_version:number|null;_request_id:string},Record<string,unknown>>;
+      fp_notice_preview:Fn<{_id:string},NoticeImpact>;
       fp_create_institution: Fn<{_name: string; _ref: string; _region: string; _state: string}, undefined>;
       fp_create_application_draft: Fn<{_type:string;_title:string;_form:Record<string,string>},string>;
       fp_case_history: Fn<{_application:string;_after:number;_through:number|null;_limit:number},HistoryPage>;

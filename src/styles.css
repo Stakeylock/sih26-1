@@ -1210,3 +1210,24 @@ demo-lab-link{margin-top:10px;gap:5px;font-size:11px;color:var(--route)}
 @media(max-width:1000px){.demo-lab-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.demo-lab-grid{grid-template-columns:1fr}.demo-lab-rehearsal-body{padding:14px 16px 16px}.demo-lab-rehearsal-actions{justify-content:space-between;width:100%}}
 @media(max-width:420px){.topnav .context-back span{display:none}}
+
+/* Working governance surfaces share the dossier typography and theme tokens. */
+.governance-view,.document-validity{padding:24px;min-width:0}
+.governance-view h3,.document-validity h3{margin:24px 0 12px}
+.scope-editor{border:1px solid var(--rule);border-radius:8px;padding:16px;margin:16px 0;min-width:0}
+.scope-editor legend{font-size:13px;font-weight:600;padding:0 6px}
+.approval-record{border-top:1px solid var(--rule);padding:16px 0}
+.approval-record summary,.document-validity summary{cursor:pointer;font-weight:600;padding:8px 0}
+.document-validity{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin:16px 0}
+.table-scroll{overflow:auto;max-width:100%}
+.table-scroll table{width:100%;border-collapse:collapse;font-size:13px}
+.table-scroll caption{text-align:left;font-weight:600;padding:12px 0}
+.table-scroll th,.table-scroll td{padding:12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+.table-scroll td small{display:block;color:var(--muted);margin-top:5px}
+.hash-value{display:block;overflow-wrap:anywhere;font-size:12px;padding:12px 0}
+.reminder-history{font-size:13px;line-height:1.8}.governance-view .meta-grid,.document-validity .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin:20px 0}.governance-view dt,.document-validity dt{color:var(--muted);font-size:12px;margin-bottom:5px}.governance-view dd,.document-validity dd{margin:0;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:700px){.governance-view,.document-validity{padding:16px}.scope-editor{padding:12px}}
+@media(max-width:700px){.dossier-tabs{max-width:100%;flex-wrap:wrap}.dossier-tabbar{min-width:0}}
+.main-shell,.content,.page-body,.dossier-review-main{min-width:0;max-width:100%}
+.table-scroll{width:100%;min-width:0}
+@media(max-width:700px){.command-trigger>span,.demo-disclosure-title{display:block;position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}}

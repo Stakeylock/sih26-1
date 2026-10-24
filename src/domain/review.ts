@@ -4,6 +4,7 @@ import {reviewBasisCurrent} from './evidence';
 
 export interface ReviewSnapshot {
   schema:1;
+  governance?:Record<string,unknown>;
   application:{id:string;version:number;status:Application['status'];workflow_version:number;form_data:Record<string,string>};
   calendar:string;
   claims:(Claim&{basis_current:boolean})[];
@@ -21,6 +22,10 @@ export function captureReviewSnapshot(data:Workspace,app:Application):ReviewSnap
     claims:claims.map(claim=>({...claim,basis_current:reviewBasisCurrent(app,claim,data.claim_evidence,data.documents)})),
     deficiencies:data.deficiencies.filter(item=>item.application_id===app.id),links:data.claim_evidence.filter(link=>claims.some(claim=>claim.id===link.claim_id)),
     documents:data.documents.filter(document=>document.application_id===app.id).map(({id,doc_type,file_name,sha256,scan_status,expires_on,uploaded_at})=>({id,doc_type,file_name,sha256,scan_status,expires_on:expires_on??null,uploaded_at}))};
+  snapshot.governance={schema:1,academic_year_start:app.academic_year_start??null,scope_revision:app.scope_revision??0,scope_reviewed_revision:app.scope_reviewed_revision??null,sla_due_at:app.sla_due_at,
+    scope_requests:data.scope_requests?.filter(item=>item.application_id===app.id)??[],approvals:data.approvals?.filter(item=>item.application_id===app.id)??[],
+    obligations:data.obligations.filter(item=>item.application_id===app.id),deadlines:data.deadlines?.filter(item=>item.application_id===app.id)??[],
+    documents:data.documents.filter(item=>item.application_id===app.id).map(item=>({id:item.id,subject_institution_id:item.subject_institution_id??null,validity_mode:item.validity_mode??'unknown',issue_date:item.issue_date??null,expires_on:item.expires_on??null,supersedes_document_id:item.supersedes_document_id??null,validity_reviewed_at:item.validity_reviewed_at??null,validity_reviewed_by:item.validity_reviewed_by??null}))};
   return structuredClone(snapshot);
 }
 export function recordedSnapshot(event:AuditEvent):ReviewSnapshot|null{

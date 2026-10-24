@@ -16,6 +16,7 @@
     "local:start": "node scripts/start-local.mjs",
     "local:setup": "node scripts/local-setup.mjs",
     "test:connected": "playwright test --config playwright.connected.config.ts",
+    "deadlines:process": "node scripts/process-deadlines.mjs",
     "test:claims:local": "node scripts/local-claims-smoke.mjs"
   },
   "dependencies": {

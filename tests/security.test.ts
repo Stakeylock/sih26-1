@@ -116,7 +116,8 @@ describe('PostgreSQL authorization and workflow security',()=>{
     await as(db,ids.regional);
     const doc=await scalar<string>(db,'select id from public.application_documents where application_id=$1 limit 1',[id]);
     expect((await transition(db,id,'approve','Synthetic evidence reviewed; demo decision only.',{evidence:doc})).status).toBe('approved');
-    expect(await scalar<number>(db,`select count(*)::int from public.obligations where kind='renewal'`)).toBe(1);
+    expect(await scalar<number>(db,`select count(*)::int from public.approval_records where application_id='${id}'`)).toBe(1);
+    expect(await scalar<number>(db,`select count(*)::int from public.obligations where application_id='${id}' and kind='renewal'`)).toBe(0);
     expect(await failure(db,`select public.fp_transition($1,'approve','Repeated decision','{}',10,$2)`,[id,crypto.randomUUID()])).toContain('Pending decision');
     expect(await scalar<number>(db,`select template_version from public.applications where id=$1`,[id])).toBe(1);
   });
