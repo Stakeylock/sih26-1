@@ -70,19 +70,6 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       </div>
     </section>
 
-    {/* Cryptographic Trust & Regulatory Ribbon */}
-    <div className="overview-security-ribbon">
-      <div className="inline">
-        <span className="ribbon-tag tag-security"><ShieldCheck size={13}/> Hash-linked audit history</span>
-        <span className="ribbon-tag tag-clock"><Clock3 size={13}/> Time with authority / institution</span>
-        <span className="ribbon-tag tag-aph"><GitBranch size={13}/> APH 2024–27 Clause Engine</span>
-      </div>
-      <div className="ribbon-stats">
-        <span>Verification runs on demand</span>
-        <button className="text-button small" onClick={()=>navigate('trust')}>View verification results <ArrowRight size={13}/></button>
-      </div>
-    </div>
-
     {/* Hero Metrics Bar (Above the Fold) */}
     <div className="overview-hero-metrics" aria-label="Regulatory Command Center Metrics">
       <section className="hero-metric-card">
@@ -108,13 +95,13 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
 
       <section className="hero-metric-card card-attention">
         <div className="hero-metric-head"><span>Need Intervention</span><Clock3 size={16}/></div>
-        <strong className="hero-metric-value" style={{color:'#b42318'}}>{String(atRisk.length).padStart(2,'0')}</strong>
+        <strong className="hero-metric-value" style={{color:'var(--critical)'}}>{String(atRisk.length).padStart(2,'0')}</strong>
         <span className="hero-metric-note">Due in &le;3 days or overdue</span>
       </section>
 
       <section className="hero-metric-card card-verified">
         <div className="hero-metric-head"><span>Within configured processing target</span><TrendingUp size={16}/></div>
-        <strong className="hero-metric-value" style={{color:'#067647'}}>{sla}</strong>
+        <strong className="hero-metric-value" style={{color:'var(--verified)'}}>{sla}</strong>
         <span className="hero-metric-note">{onTime} of {active.length} active meet the configured target</span>
       </section>
     </div>
@@ -131,6 +118,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
       </label>
     </div>
 
+    <div className="overview-work-layout">
     {selected&&list.length>1&&(
       <aside className="overview-preview" aria-label="Selected case preview">
         <div><span className="mono">{selected.ref_no}</span><Badge status={selected.status}/></div>
@@ -194,7 +182,7 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
                 <div className="stage-bar-track">
                   <div className={`stage-bar-fill ${isAttention?'fill-attention':''}`} style={{width:`${pct}%`}}/>
                 </div>
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:'9px',color:'var(--muted)'}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:'10.5px',color:'var(--muted)'}}>
                   <span>{pct}% of active pool</span>
                   <span>{count>0?'In progress':'Clear'}</span>
                 </div>
@@ -205,6 +193,20 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
         <div className="handoff-footer"><ShieldCheck size={14}/>Visible active scope<strong>{active.length}</strong></div>
       </aside>
     </section>
+    </div>
+
+    {/* Cryptographic Trust & Regulatory Ribbon */}
+    <div className="overview-security-ribbon">
+      <div className="inline">
+        <span className="ribbon-tag tag-security"><ShieldCheck size={13}/> Hash-linked audit history</span>
+        <span className="ribbon-tag tag-clock"><Clock3 size={13}/> Time with authority / institution</span>
+        <span className="ribbon-tag tag-aph"><GitBranch size={13}/> APH 2024–27 Clause Engine</span>
+      </div>
+      <div className="ribbon-stats">
+        <span>Verification runs on demand</span>
+        <button className="text-button small" onClick={()=>navigate('trust')}>View verification results <ArrowRight size={13}/></button>
+      </div>
+    </div>
 
     {/* Pan-India Regional Heatmap Grid */}
     <section className="regional-control-section" aria-label="Regional Workload Matrix">

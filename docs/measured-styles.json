@@ -1,7 +1,7 @@
 {
-  ".sidebar": {
-    "backgroundColor": "rgb(24, 33, 38)",
-    "width": "220px"
+  ".mainnav": {
+    "backgroundColor": "rgb(23, 35, 47)",
+    "height": "56px"
   },
   "body": {
     "backgroundColor": "rgb(236, 239, 241)"
@@ -16,7 +16,7 @@
   ".button": {
     "borderRadius": "6px"
   },
-  ".nav-item": {
-    "fontSize": "12px"
+  ".section-tab": {
+    "fontSize": "13px"
   }
 }

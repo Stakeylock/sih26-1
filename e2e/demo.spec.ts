@@ -1,5 +1,9 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+const SECTIONS:Record<string,string>={'Overview':'Workbench','Applications':'Approvals','Approval routes':'Approvals','Verification visits':'Approvals','Compliance':'Compliance','Alerts & escalations':'Oversight','Reports':'Oversight','Trust Center':'Oversight','Audit logs':'Oversight'};
+const PILL:Record<string,string>={'Alerts & escalations':'Alerts','Audit logs':'Audit'};
+async function openDesk(page:Page,label:string){if(label==='Settings'){await page.getByRole('button',{name:'Settings',exact:true}).click();return;}const section=SECTIONS[label];if(section)await page.getByRole('navigation').getByRole('button',{name:section,exact:true}).click();if(!section||section!==label)await page.getByRole('navigation').getByRole('button',{name:PILL[label]??label,exact:true}).click();}
+async function openDrawer(page:Page,label:string){await page.getByRole('button',{name:'Open navigation'}).click();await page.getByRole('navigation').getByRole('button',{name:label,exact:true}).click();}
 test.beforeEach(async({page})=>{await page.goto('/#overview');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();});
 test('public landing explains the approval record and starts the guided story',async({page})=>{
   await page.goto('/');
@@ -20,7 +24,7 @@ test('landing enters the dispatch board',async({page})=>{
   await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
 });
 test('closed case exposes a printable decision receipt',async({page})=>{
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDesk(page,'Applications');
   await page.getByRole('button',{name:'Closed 4'}).click();
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1006');
   await page.getByRole('button',{name:'DEMO-2026-1006',exact:true}).click();
@@ -37,16 +41,17 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   const dispatchBoard=page.locator('section.dispatch-board');
   await expect(dispatchBoard).toBeVisible();
   await expect(dispatchBoard.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
-  await page.getByRole('navigation').getByRole('button',{name:'Approval routes',exact:true}).click();
+  await openDesk(page,'Approval routes');
   await expect(page.getByRole('heading',{name:'Approval route registry',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Time by stage',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Open Scrutiny stage',exact:true})).toBeVisible();
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDesk(page,'Applications');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
   await page.screenshot({path:'../../work/flowpilot-case.png',fullPage:true});
-  for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Obligation register'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
+  for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Obligation register'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
@@ -56,21 +61,24 @@ test('institution creates and saves a synthetic draft; unsafe upload is rejected
   await page.getByRole('button',{name:'Continue to institution details'}).click();
   await page.getByRole('button',{name:'Save draft & continue to evidence'}).click();
   await expect(page.getByText('Demo robotics programme request',{exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
   await expect(page.getByText(/blocker.*before this dossier can advance/, {exact:false})).toBeVisible();
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
   await page.getByRole('textbox',{name:'Programme name',exact:true}).fill('Demo robotics');
   await page.getByRole('textbox',{name:'Level',exact:true}).fill('Undergraduate');
   await page.getByRole('textbox',{name:'Proposed intake',exact:true}).fill('60');
   await page.getByRole('textbox',{name:'Laboratory infrastructure',exact:true}).fill('Synthetic laboratory inventory');
   await page.getByRole('button',{name:'Save draft',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('Draft saved');
+  await expect(page.locator('.toast')).toContainText('Draft saved');
   await expect(page.getByRole('button',{name:'Submit application',exact:true})).toBeDisabled();
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await page.getByLabel('Upload Building Plan').setInputFiles({name:'active.html',mimeType:'text/html',buffer:Buffer.from('<script>alert(1)</script>')});
   await expect(page.getByRole('alert')).toContainText('PDF, PNG, or JPEG');
 });
 test('evidence passport surfaces duplicate use and linked claims',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await page.locator('.document').filter({hasText:'fire_safety_certificate.pdf'}).first().getByRole('button',{name:/View document record/}).click();
   const passport=page.getByRole('dialog');
   await expect(passport.getByRole('heading',{name:'Document record'})).toBeVisible();
@@ -86,9 +94,9 @@ test('evidence passport surfaces duplicate use and linked claims',async({page})=
 test('evidence passport remains readable at 390px',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
-  await page.getByRole('button',{name:'Open navigation'}).click();
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDrawer(page,'Applications');
   await page.locator('.application-mobile-card').filter({hasText:'DEMO-2026-1001'}).getByRole('button').click();
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await page.locator('.document').filter({hasText:'fire_safety_certificate.pdf'}).first().getByRole('button',{name:/View document record/}).click();
   const passport=page.getByRole('dialog');
   await expect(passport.getByRole('heading',{name:'Document record'})).toBeVisible();
@@ -102,7 +110,7 @@ test('scrutiny verifies a claim and records a reasoned deficiency',async({page})
   await claim.getByRole('button',{name:'Verify',exact:true}).click();
   await page.getByRole('textbox',{name:'Verification note'}).fill('Synthetic faculty list reviewed for this demonstration.');
   await page.getByRole('button',{name:'Record verification'}).click();
-  await expect(page.getByRole('status')).toContainText('Claim verified');
+  await expect(page.locator('.toast')).toContainText('Claim verified');
   await page.getByRole('button',{name:'Return for deficiency',exact:true}).click();
   await page.getByRole('textbox',{name:'Reason',exact:true}).fill('Please update the synthetic fire certificate for this demonstration.');
   await page.getByRole('button',{name:'Confirm return for deficiency'}).click();
@@ -118,7 +126,7 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
   await raise.getByLabel('Observation').fill('The faculty list does not reconcile with the sanctioned intake.');
   await raise.getByLabel('Remedy requested').fill('Provide a reconciled faculty list signed by the registrar.');
   await raise.getByRole('button',{name:'Raise deficiency'}).click();
-  await expect(page.getByRole('status')).toContainText('Deficiency raised');
+  await expect(page.locator('.toast')).toContainText('Deficiency raised');
   await expect(scrutinyRow()).toContainText('Deficiency open');
 
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
@@ -129,7 +137,7 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
   await resolve.getByLabel('Replacement evidence').selectOption({label:'Faculty List · faculty_list.pdf'});
   await resolve.getByLabel('Resolution note').fill('Reconciled faculty list signed by the registrar is attached.');
   await resolve.getByRole('button',{name:'Resolve deficiency'}).click();
-  await expect(page.getByRole('status')).toContainText('Deficiency resolved');
+  await expect(page.locator('.toast')).toContainText('Deficiency resolved');
   await expect(institutionRow()).toContainText('awaiting re-check');
 
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
@@ -138,13 +146,13 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
   const recheck=page.getByRole('dialog');
   await recheck.getByLabel('Re-check note').fill('Reconciled register checked; the faculty list now matches.');
   await recheck.getByRole('button',{name:'Record re-check'}).click();
-  await expect(page.getByRole('status')).toContainText('Re-check accepted');
+  await expect(page.locator('.toast')).toContainText('Re-check accepted');
   await expect(scrutinyRow()).toContainText('Verified');
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 test('behavioral: replacement certificate clears the fire claim while missing infrastructure evidence still blocks',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDesk(page,'Applications');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
   const fire=()=>page.locator('.claim-row').filter({hasText:'Fire safety certificate is valid on the scrutiny date'});
@@ -153,7 +161,7 @@ test('behavioral: replacement certificate clears the fire claim while missing in
   await resolve.getByLabel('Replacement evidence').selectOption({label:'Fire Safety Certificate · fire_safety_certificate_valid.pdf'});
   await resolve.getByLabel('Resolution note').fill('Uploaded the current synthetic certificate for this demonstration.');
   await resolve.getByRole('button',{name:'Resolve deficiency'}).click();
-  await expect(page.getByRole('status')).toContainText('Deficiency resolved');
+  await expect(page.locator('.toast')).toContainText('Deficiency resolved');
   await expect(fire()).toContainText('Resolution submitted · awaiting re-check');
   await expect(page.locator('.claim-summary')).toContainText('6 of 9 verified or not applicable');
   const ratio=page.locator('.claim-row').filter({hasText:'Student-faculty ratio'});
@@ -166,17 +174,18 @@ test('behavioral: replacement certificate clears the fire claim while missing in
   const recheck=page.getByRole('dialog');
   await recheck.getByLabel('Re-check note').fill('Current replacement certificate checked for this demonstration.');
   await recheck.getByRole('button',{name:'Record re-check'}).click();
-  await expect(page.getByRole('status')).toContainText('Re-check accepted');
+  await expect(page.locator('.toast')).toContainText('Re-check accepted');
   await expect(fire()).toContainText('Verified');
   await expect(page.locator('.claim-summary')).toContainText('7 of 9 verified or not applicable');
   const faculty=page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
   await faculty.getByRole('button',{name:'Verify',exact:true}).click();
   await page.getByRole('textbox',{name:'Verification note'}).fill('Synthetic faculty list reviewed for this demonstration.');
   await page.getByRole('button',{name:'Record verification'}).click();
-  await expect(page.getByRole('status')).toContainText('Claim verified');
+  await expect(page.locator('.toast')).toContainText('Claim verified');
   await expect(page.locator('.claim-summary')).toContainText('8 of 9 verified or not applicable');
   await expect(page.locator('.preflight-panel')).toContainText('Evidence missing · APH infrastructure');
   await expect(page.locator('.dossier-readiness')).toContainText('Claims8 of 9 verified or not applicable');
+  await page.getByRole('tab',{name:'History'}).click();
   await expect(page.locator('.timeline')).toContainText('deficiency resolved');
   await expect(page.locator('.timeline')).toContainText('deficiency rechecked');
   await expect(page.locator('.timeline')).toContainText('claim verified');
@@ -194,8 +203,7 @@ test('claim dialogs hold focus and close with Escape',async({page})=>{
 });
 test('mobile navigation and Applications screen have no serious automated accessibility violations',async({page})=>{
   await page.setViewportSize({width:390,height:844});
-  await page.getByRole('button',{name:'Open navigation'}).click();
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDrawer(page,'Applications');
   await expect(page.getByRole('heading',{level:1,name:'Applications',exact:true})).toBeVisible();
   await page.screenshot({path:'../../work/flowpilot-mobile.png',fullPage:true,animations:'disabled'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -217,7 +225,7 @@ test('shell owns one contextual header and an expandable demo disclosure',async(
   await expect(page.getByText('Active cases across approval stages.',{exact:true})).toBeVisible();
 });
 test('dossier is the page header and keeps authority and return path',async({page})=>{
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDesk(page,'Applications');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1002');
   await page.getByRole('button',{name:'DEMO-2026-1002',exact:true}).click();
   await expect(page.locator('main h1')).toHaveCount(1);
@@ -225,36 +233,36 @@ test('dossier is the page header and keeps authority and return path',async({pag
   await expect(page.getByText('Next authority:',{exact:false})).toContainText('Institution');
   await expect(page.getByText('Return in route:',{exact:false})).toBeVisible();
   await expect(page.getByText('Synthetic record',{exact:true})).toBeVisible();
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDesk(page,'Applications');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
   await expect(page.getByText('Next authority:',{exact:false})).toContainText('Scrutiny officer');
   await expect(page.locator('.dossier-route-note')).toContainText('Current handoff: Scrutiny · Scrutiny officer');
 });
 test('supporting desks keep task-specific composition',async({page})=>{
-  await page.getByRole('navigation').getByRole('button',{name:'Verification visits',exact:true}).click();
+  await openDesk(page,'Verification visits');
   await expect(page.getByRole('heading',{level:1,name:'Verification agenda',exact:true})).toBeVisible();
   await expect(page.locator('.agenda-day').first()).toBeVisible();
   await expect(page.getByText('Coordinator record · demo-evc',{exact:true}).first()).toBeVisible();
   await expect(page.getByText(/local timezone/i)).toBeVisible();
   await expect(page.getByRole('button',{name:'Open dossier',exact:true}).first()).toBeVisible();
-  await page.getByRole('navigation').getByRole('button',{name:'Compliance',exact:true}).click();
+  await openDesk(page,'Compliance');
   await expect(page.getByRole('heading',{level:1,name:'Obligation register',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Compliance obligations & document validity',exact:true})).toBeVisible();
   for(const label of ['Required evidence','Evidence present','Authorized verification','Permitted next action'])await expect(page.getByText(label,{exact:true}).first()).toBeVisible();
-  await page.getByRole('navigation').getByRole('button',{name:'Alerts & escalations',exact:true}).click();
+  await openDesk(page,'Alerts & escalations');
   await expect(page.getByRole('heading',{level:1,name:'Escalation desk',exact:true})).toBeVisible();
   await expect(page.getByText('2 escalations require review · 2 informational updates.',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:/Open case|Review case/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Mark read',exact:true}).first()).toBeVisible();
-  await page.getByRole('navigation').getByRole('button',{name:'Reports',exact:true}).click();
+  await openDesk(page,'Reports');
   await expect(page.getByRole('heading',{level:1,name:'Operations report',exact:true})).toBeVisible();
   await page.getByRole('button',{name:/Closed cases/}).click();
   await expect(page.getByRole('button',{name:/Closed cases/})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('heading',{name:'Closed outcomes',exact:true})).toBeVisible();
   await page.getByRole('button',{name:/All applications/}).click();
   await expect(page.getByRole('button',{name:/All applications/})).toHaveAttribute('aria-pressed','true');
-  await page.getByRole('navigation').getByRole('button',{name:'Audit logs',exact:true}).click();
+  await openDesk(page,'Audit logs');
   await expect(page.getByRole('heading',{level:1,name:'Decision receipts',exact:true})).toBeVisible();
   const firstReceipt=page.locator('details.audit-row').first();
   await expect(firstReceipt).toBeVisible();
@@ -265,7 +273,7 @@ test('supporting desks keep task-specific composition',async({page})=>{
 });
 test('every desktop route has no serious automated accessibility violations',async({page})=>{
   for(const name of ['Overview','Applications','Approval routes','Verification visits','Compliance','Alerts & escalations','Reports','Trust Center','Audit logs','Settings']){
-    await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();
+    await openDesk(page,name);
     await expect(page.locator('main h1')).toHaveCount(1);
     const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
     expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical'),name).toEqual([]);
@@ -274,7 +282,7 @@ test('every desktop route has no serious automated accessibility violations',asy
 test('design-rationale copy is absent from every route',async({page})=>{
   const banned=['Start with the dossier closest to a missed handoff.','Where visible cases are waiting now.','decorative chart','queue stays legible','before asking for a chart','application mix, not'];
   for(const name of ['Overview','Applications','Approval routes','Verification visits','Compliance','Alerts & escalations','Reports','Trust Center','Audit logs','Settings']){
-    await page.getByRole('navigation').getByRole('button',{name,exact:true}).click();
+    await openDesk(page,name);
     for(const phrase of banned)await expect(page.locator('main')).not.toContainText(phrase);
   }
 });
@@ -293,7 +301,7 @@ test('mobile overview orders header, priority, and stage workload without the du
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 test('application register matches region, stage, and status columns',async({page})=>{
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDesk(page,'Applications');
   await expect(page.getByRole('button',{name:'Active 7'})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('button',{name:'All 11'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Closed 4'})).toBeVisible();
@@ -313,8 +321,7 @@ test('application register matches region, stage, and status columns',async({pag
 test('mobile applications use case cards and the dossier route stays inside the viewport',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.reload();
-  await page.getByRole('button',{name:'Open navigation'}).click();
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDrawer(page,'Applications');
   await expect(page.locator('.applications-table')).toBeHidden();
   const card=page.locator('.application-mobile-card').first();
   await expect(card).toBeVisible();
@@ -324,18 +331,19 @@ test('mobile applications use case cards and the dossier route stays inside the 
   await expect(card).toContainText('Deadline');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.locator('.application-mobile-card').filter({hasText:'DEMO-2026-1001'}).getByRole('button',{name:/Open DEMO-2026-1001/}).click();
-  await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
   await expect(page.getByText(/Viewing as/)).toContainText('National administrator');
   await expect(page.getByText('Claims 6 of 9',{exact:true})).toBeVisible();
   await expect(page.getByText(/Ready for next gate|Ready for the next workflow gate/)).toHaveCount(0);
   await expect(page.getByText('Current authority',{exact:true})).toBeVisible();
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
   await expect(page.locator('.workflow-rail-scroll')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 test('overview lists every active case and reports follow the selected scope',async({page})=>{
   await expect(page.getByRole('heading',{name:'Work by stage',exact:true})).toBeVisible();
   await expect(page.locator('.case-register tbody tr')).toHaveCount(7);
-  await page.getByRole('navigation').getByRole('button',{name:'Reports',exact:true}).click();
+  await openDesk(page,'Reports');
   await expect(page.locator('.support-header-count')).toContainText('07');
   await expect(page.locator('.support-header-count')).toContainText('active cases');
   await page.getByRole('button',{name:/Closed cases/}).click();
@@ -348,10 +356,10 @@ test('overview lists every active case and reports follow the selected scope',as
   await expect(page.locator('.support-header-count')).toContainText('visible applications');
 });
 test('alerts offer queue navigation and route visuals expose a return branch',async({page})=>{
-  await page.getByRole('navigation').getByRole('button',{name:'Alerts & escalations',exact:true}).click();
+  await openDesk(page,'Alerts & escalations');
   await page.getByRole('button',{name:'Open priority queue',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
-  await page.getByRole('navigation').getByRole('button',{name:'Approval routes',exact:true}).click();
+  await openDesk(page,'Approval routes');
   await expect(page.getByRole('heading',{name:'Time by stage',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Bottleneck heatmap',exact:true})).toHaveCount(0);
   await expect(page.locator('.workflow-branch')).toContainText('Return and query branch');
@@ -359,7 +367,7 @@ test('alerts offer queue navigation and route visuals expose a return branch',as
   expect(zeroFill).toBe('0px');
 });
 test('claim ledger shows nine claims and stays within a 390px viewport',async({page})=>{
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDesk(page,'Applications');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
   await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Claim ledger',exact:true})).toBeVisible();
@@ -384,7 +392,7 @@ test('claim ledger shows nine claims and stays within a 390px viewport',async({p
 
 test('trust center derives boundaries from the workspace and tamper replay fails closed',async({page})=>{
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.getByRole('navigation').getByRole('button',{name:'Trust Center',exact:true}).click();
+  await openDesk(page,'Trust Center');
   await expect(page.getByRole('heading',{level:1,name:'Trust Center',exact:true})).toBeVisible();
   const metrics=page.locator('.trust-metric');
   await expect(metrics.nth(0)).toContainText('2');
@@ -412,7 +420,7 @@ test('trust center derives boundaries from the workspace and tamper replay fails
 
 test('audit verifies green, replays tamper red on a copy, resets, and the receipt verifies',async({page})=>{
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.getByRole('navigation').getByRole('button',{name:'Audit logs',exact:true}).click();
+  await openDesk(page,'Audit logs');
   await expect(page.getByRole('heading',{name:'Record verification',exact:true})).toBeVisible();
   const status=page.locator('.audit-chain-status');
   await expect(status).toContainText('Not verified');
@@ -426,7 +434,7 @@ test('audit verifies green, replays tamper red on a copy, resets, and the receip
   await expect(status).toContainText('stored events were not changed');
   await page.getByRole('button',{name:'Reset replay',exact:true}).click();
   await expect(status).toContainText('Chain verified. Event history intact.');
-  await page.getByRole('navigation').getByRole('button',{name:'Applications',exact:true}).click();
+  await openDesk(page,'Applications');
   await page.getByRole('button',{name:'Closed 4'}).click();
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1006');
   await page.getByRole('button',{name:'DEMO-2026-1006',exact:true}).click();

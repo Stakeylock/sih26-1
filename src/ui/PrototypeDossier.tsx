@@ -8,6 +8,7 @@ import {
   FileText,
   LockKeyhole,
 } from 'lucide-react';
+import { DocumentPreview } from './DocumentPreview';
 import {
   actionLabels,
   allowedActions,
@@ -130,9 +131,9 @@ export function PrototypeDossier({
       </header>
 
       {app.form_data?.shc_appeal_active === 'true' && (
-        <div className="prototype-shc-alert" role="status" style={{ padding: '0.85rem 1.25rem', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '8px', margin: '0 0 1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <strong style={{ color: '#312e81' }}>APH Standing Hearing Committee (SHC) Appeal In Progress</strong>
-          <span style={{ fontSize: '0.85rem', color: '#4338ca' }}>A statutory appeal under APH Chapter 2 has been registered. Hearing panel review and compliance verification are underway.</span>
+        <div className="prototype-shc-alert" role="status" style={{ padding: '0.85rem 1.25rem', background: 'var(--info-soft)', border: '1px solid var(--info-border)', color: 'var(--info-text)', borderRadius: '8px', margin: '0 0 1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <strong style={{ color: 'var(--info-strong)' }}>APH Standing Hearing Committee (SHC) Appeal In Progress</strong>
+          <span style={{ fontSize: '0.85rem', color: 'var(--info-text)' }}>A statutory appeal under APH Chapter 2 has been registered. Hearing panel review and compliance verification are underway.</span>
         </div>
       )}
 
@@ -262,13 +263,10 @@ export function PrototypeDossier({
 
               {selectedDoc ? (
                 <div className="prototype-document-surface">
-                  <div className="prototype-document-preview">
-                    <FileText size={40} />
-                    <p className="quiet">
-                      Preview is unavailable in the synthetic demo. File bytes live in private
-                      object storage and are not rendered here.
-                    </p>
-                  </div>
+                  <DocumentPreview
+                    document={selectedDoc}
+                    claim={docClaims[0]?.statement_snapshot}
+                  />
                   <dl className="prototype-document-facts">
                     <div>
                       <dt>File security</dt>

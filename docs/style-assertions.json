@@ -1,10 +1,10 @@
 [
-  {"selector":".sidebar","prop":"backgroundColor","expected":"rgb(24, 33, 38)"},
-  {"selector":".sidebar","prop":"width","expected":"220px"},
+  {"selector":".mainnav","prop":"backgroundColor","expected":"rgb(23, 35, 47)"},
+  {"selector":".mainnav","prop":"height","expected":"56px"},
   {"selector":"body","prop":"backgroundColor","expected":"rgb(236, 239, 241)"},
   {"selector":".dispatch-header h1","prop":"fontSize","expected":"31px"},
   {"selector":".case-register","prop":"borderRadius","expected":"4px"},
   {"selector":".case-register","prop":"backgroundColor","expected":"rgb(255, 255, 255)"},
   {"selector":".button","prop":"borderRadius","expected":"6px"},
-  {"selector":".nav-item","prop":"fontSize","expected":"12px"}
+  {"selector":".section-tab","prop":"fontSize","expected":"13px"}
 ]

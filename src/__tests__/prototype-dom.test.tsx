@@ -191,11 +191,12 @@ describe('PrototypeDossier', () => {
     expect(html).toContain(text);
   });
 
-  it('shows the honest preview-unavailable state instead of fabricating file bytes', () => {
+  it('shows a clearly synthetic specimen preview instead of fabricating file bytes', () => {
     const html = renderToStaticMarkup(
       <PrototypeDossier {...payload()} back={() => {}} openReceipt={vi.fn()} openCase={vi.fn()} />,
     );
-    expect(html).toContain('Preview is unavailable in the synthetic demo');
+    expect(html).toContain('SYNTHETIC SPECIMEN');
+    expect(html).toContain('no file bytes are stored or displayed');
   });
 
   it('does not offer an action button when the role holds no permitted action', () => {

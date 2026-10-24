@@ -1,10 +1,11 @@
 import {ArrowRight,Clock3,GitBranch,LockKeyhole,Play,ReceiptText,ScanLine,ShieldCheck} from 'lucide-react';
 import {routeStages} from '../domain/model';
 import {Badge,Brand} from './common';
+import {ThemeToggle,type Theme} from './theme';
 
-export function Welcome({onEnter,onStory}:{onEnter:()=>void;onStory:()=>void}){
+export function Welcome({onEnter,onStory,theme,toggleTheme}:{onEnter:()=>void;onStory:()=>void;theme:Theme;toggleTheme:()=>void}){
   return <div className="welcome">
-    <header className="welcome-top"><Brand/><div className="welcome-top-meta"><span>SIH26262 / SYNTHETIC DEMONSTRATION</span><button className="text-button" onClick={onEnter}>Enter workspace <ArrowRight size={15}/></button></div></header>
+    <header className="welcome-top"><Brand/><div className="welcome-top-meta"><span>SIH26262 / SYNTHETIC DEMONSTRATION</span><ThemeToggle theme={theme} toggleTheme={toggleTheme} className="welcome-theme"/><button className="text-button" onClick={onEnter}>Enter workspace <ArrowRight size={15}/></button></div></header>
     <main className="welcome-main">
       <section className="welcome-copy" aria-labelledby="welcome-title">
         <span className="welcome-kicker">AICTE APPROVAL OPERATIONS / 2026-27</span>
