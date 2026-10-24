@@ -16,7 +16,7 @@ function config() {
     const payload = JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as {role?: string};
     if (payload.role !== 'anon') throw new Error('Only a publishable or legacy anonymous key is permitted.');
   } else if (!key.startsWith('sb_publishable_')) throw new Error('Invalid publishable key.');
-  return {url, key};
+  return {url,key};
 }
 export function createSupabaseRepository(): Repository {
   const {url, key} = config();
@@ -26,6 +26,10 @@ export function createSupabaseRepository(): Repository {
   }
   async function command(kind:string,id:string|null,payload:Record<string,unknown>,version:number|null,requestId:string){const result=await client.rpc('fp_governance_command',{_kind:kind,_id:id,_payload:payload,_expected_version:version,_request_id:requestId});check(result.error);}
   return {
+    async operationsCommand(kind,id,payload,expected,key=crypto.randomUUID()){const {data,error}=await client.rpc('fp_operations_command',{_kind:kind,_id:id,_payload:payload,_expected:expected,_request:key});check(error);return data??{};},
+    async caseCandidates(id){const {data,error}=await client.rpc('fp_case_candidates',{_id:id});check(error);return data??[];},
+    async readiness(){const {data,error}=await client.rpc('fp_operational_readiness',{});check(error);if(!data)throw new Error('Readiness check unavailable.');return data;},
+    async policyCommand(kind,id,payload,expected,key=crypto.randomUUID()){const {data,error}=await client.rpc('fp_policy_command',{_kind:kind,_id:id,_payload:payload,_expected:expected,_request:key});check(error);return data??{};},
     async saveScope(app,year,items,id=crypto.randomUUID()){await command('scope_save',app.id,{academic_year_start:year,items},app.version,id);},
     async reviewScope(app,note,id=crypto.randomUUID()){await command('scope_review',app.id,{note},app.version,id);},
     async reviewDocumentValidity(app,doc,input,id=crypto.randomUUID()){await command('document_validity',doc.id,{...input},app.version,id);},
@@ -34,6 +38,9 @@ export function createSupabaseRepository(): Repository {
     async previewNotice(notice){const {data,error}=await client.rpc('fp_notice_preview',{_id:notice.id});check(error);if(!data)throw new Error('Notice preview unavailable.');return data;},
     async adoptNotice(notice,impact,note,id=crypto.randomUUID()){await command('notice_adopt',notice.id,{note,impact_hash:impact.impact_hash},notice.revision,id);},
     async fulfilWithEvidence(app,obligation,evidence,note,id=crypto.randomUUID()){await command('obligation_fulfil',obligation.id,{evidence_ids:evidence,note},app.version,id);},
+    async captureAnalysis(app,id=crypto.randomUUID()){const {data,error}=await client.rpc('fp_capture_analysis',{_application:app.id,_expected_version:app.version,_request_id:id});check(error);if(!data)throw new Error('Analysis capture unavailable.');return data;},
+    async saveScenario(snapshot,parameters,id=crypto.randomUUID()){const {data,error}=await client.rpc('fp_save_analysis',{_snapshot:snapshot.id,_parameters:{...parameters},_request_id:id});check(error);if(!data)throw new Error('Scenario save unavailable.');return data;},
+    async inspectionCommand(kind,id,payload,version,requestId=crypto.randomUUID()){const {data,error}=await client.rpc('fp_inspection_command',{_kind:kind,_id:id,_payload:payload,_expected_version:version,_request_id:requestId});check(error);return data??{};},
     mode: 'connected',
     async identity() {
       const {data: {session}} = await client.auth.getSession();
@@ -48,7 +55,7 @@ export function createSupabaseRepository(): Repository {
     async signIn(email, password) { const {error} = await client.auth.signInWithPassword({email,password}); check(error); },
     async signOut() { const {error} = await client.auth.signOut({scope: 'local'}); check(error); },
     async workspace() {
-      const [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications,requirements,claims,claimEvidence,deficiencies,signals,grants,agents,scopeRequests,approvals,approvalScope,notices,deadlines,reminders] = await Promise.all([
+      const [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications,requirements,claims,claimEvidence,deficiencies,signals,grants,agents,scopeRequests,approvals,approvalScope,notices,deadlines,reminders,analysisSnapshots,analysisScenarios,experts,availability,conflicts,reservations,caseReviews,deliveries,workerHealth,deliveryAttempts] = await Promise.all([
         client.from('applications').select('*').order('created_at',{ascending:false}).limit(200),
         client.from('institutions').select('*').limit(200), client.from('workflow_templates').select('*').limit(50),
         client.from('application_documents').select('*').order('uploaded_at',{ascending:false}).limit(1000),
@@ -60,10 +67,11 @@ export function createSupabaseRepository(): Repository {
         client.from('integrity_signals').select('*').limit(2000),
         client.from('user_roles').select('*').limit(2000),
         client.from('agent_registry').select('*').limit(200),
-        client.from('application_scope_items').select('*').limit(4000),client.from('approval_records').select('*').limit(1000),client.from('approval_scope_items').select('*').limit(4000),client.from('policy_notices').select('*').limit(500),client.from('applied_deadlines').select('*').order('created_at',{ascending:false}).limit(2000),client.from('deadline_reminder_intents').select('*').limit(2000),
+        client.from('application_scope_items').select('*').limit(4000),client.from('approval_records').select('*').limit(1000),client.from('approval_scope_items').select('*').limit(4000),client.from('policy_notices').select('*').limit(500),client.from('applied_deadlines').select('*').order('created_at',{ascending:false}).limit(2000),client.from('deadline_reminder_intents').select('*').limit(2000),client.from('analysis_snapshots').select('*').order('captured_at',{ascending:false}).limit(100),client.from('analysis_scenarios').select('*').order('created_at',{ascending:false}).limit(200),client.from('inspection_experts').select('*').limit(500),client.from('expert_availability').select('*').limit(2000),client.from('expert_conflicts').select('*').limit(1000),client.from('expert_reservations').select('*').limit(2000),
+        client.rpc('fp_case_reviews',{}),client.from('delivery_outbox').select('*').order('created_at',{ascending:false}).limit(500),client.from('worker_health').select('*'),client.from('delivery_attempts').select('*').order('happened_at',{ascending:false}).limit(1000),
       ]);
-      for (const result of [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications,requirements,claims,claimEvidence,deficiencies,signals,grants,agents,scopeRequests,approvals,approvalScope,notices,deadlines,reminders]) check(result.error);
-      return {scope_requests:scopeRequests.data??[],approvals:approvals.data??[],approval_scope:approvalScope.data??[],notices:notices.data??[],deadlines:deadlines.data??[],reminder_intents:reminders.data??[],applications:applications.data??[],institutions:institutions.data??[],templates:templates.data??[],documents:documents.data??[],events:events.data??[],checklist:checklist.data??[],visits:visits.data??[],obligations:obligations.data??[],notifications:notifications.data??[],requirements:requirements.data??[],claims:claims.data??[],claim_evidence:claimEvidence.data??[],deficiencies:deficiencies.data??[],integrity_signals:signals.data??[],access_assignments:grants.data??[],agents:agents.data??[]};
+      for (const result of [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications,requirements,claims,claimEvidence,deficiencies,signals,grants,agents,scopeRequests,approvals,approvalScope,notices,deadlines,reminders,analysisSnapshots,analysisScenarios,experts,availability,conflicts,reservations,caseReviews,deliveries,workerHealth,deliveryAttempts]) check(result.error);
+      return {delivery_attempts:deliveryAttempts.data??[],case_reviews:caseReviews.data??[],delivery_outbox:deliveries.data??[],worker_health:workerHealth.data??[],inspection_experts:experts.data??[],expert_availability:availability.data??[],expert_conflicts:conflicts.data??[],expert_reservations:reservations.data??[],analysis_snapshots:analysisSnapshots.data??[],analysis_scenarios:analysisScenarios.data??[],scope_requests:scopeRequests.data??[],approvals:approvals.data??[],approval_scope:approvalScope.data??[],notices:notices.data??[],deadlines:deadlines.data??[],reminder_intents:reminders.data??[],applications:applications.data??[],institutions:institutions.data??[],templates:templates.data??[],documents:documents.data??[],events:events.data??[],checklist:checklist.data??[],visits:visits.data??[],obligations:obligations.data??[],notifications:notifications.data??[],requirements:requirements.data??[],claims:claims.data??[],claim_evidence:claimEvidence.data??[],deficiencies:deficiencies.data??[],integrity_signals:signals.data??[],access_assignments:grants.data??[],agents:agents.data??[]};
     },
     async createInstitution(input) { const v=institutionSchema.parse(input); const {error}=await client.rpc('fp_create_institution',{_name:v.name,_ref:v.aicte_ref,_region:v.region,_state:v.state}); check(error); },
     async createApplication(type,title,initialForm={}) { const {data,error}=await client.rpc('fp_create_application_draft',{_type:type,_title:titleSchema.parse(title),_form:initialForm}); check(error); if (!data) throw new Error('No application was created.'); return data; },

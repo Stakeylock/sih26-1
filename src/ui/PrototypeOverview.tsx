@@ -1,3 +1,4 @@
+import {neutralCopy} from '../domain/presentation';
 import { useMemo, useState } from 'react';
 import { ArrowRight, Search } from 'lucide-react';
 import { workingDaysUntil } from '../domain/clock';
@@ -160,11 +161,11 @@ export function PrototypeOverview({ data, identity, open }: Props) {
                     <strong>{institution}</strong>
                     <Badge status={app.status} />
                   </div>
-                  <p className="prototype-case-title">{app.title}</p>
+                  <p className="prototype-case-title">{neutralCopy(app.title)}</p>
                   <div className="prototype-case-facts">
                     <span className="mono">{app.ref_no}</span>
                     <span>{typeLabels[app.app_type]}</span>
-                    <span>{stage.label}</span>
+                    <span>{neutralCopy(stage.label)}</span>
                     <Due app={app} />
                   </div>
                   <div className="prototype-case-next">{next}</div>
@@ -196,13 +197,13 @@ export function PrototypeOverview({ data, identity, open }: Props) {
                     <Badge status={app.status} />
                   </div>
                   <h2>{institution}</h2>
-                  <p className="prototype-preview-title">{app.title}</p>
+                  <p className="prototype-preview-title">{neutralCopy(app.title)}</p>
 
                   <dl className="prototype-preview-facts">
                     <div>
                       <dt>Stage</dt>
                       <dd>
-                        {routeStageIndex(app.status) + 1} of 5 · {stage.label}
+                        {routeStageIndex(app.status) + 1} of 5 · {neutralCopy(stage.label)}
                       </dd>
                     </div>
                     <div>

@@ -46,7 +46,7 @@ export interface NoticeImpactItem {subject_key:string;application_id:string;obli
 export interface NoticeImpact {notice_id:string;notice_revision:number;items:NoticeImpactItem[];impact_hash:string}
 
 export function academicYear(start:number){return `${start}–${String(start+1).slice(-2)}`;}
-export function documentEligible(document:DocumentRecord,today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(Date.now())){
+export function documentEligible(document:Pick<DocumentRecord,'scan_status'|'sha256'|'subject_institution_id'|'validity_reviewed_at'|'validity_reviewed_by'|'issue_date'|'validity_mode'|'expires_on'>,today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(Date.now())){
   if(document.scan_status!=='clean'||!document.sha256||!document.subject_institution_id||!document.validity_reviewed_at||!document.validity_reviewed_by)return false;
   if(document.issue_date&&document.issue_date>today)return false;
   return (document.validity_mode==='no_stated_expiry'&&!document.expires_on)||(document.validity_mode==='dated'&&Boolean(document.expires_on&&document.expires_on>=today));

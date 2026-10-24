@@ -1,3 +1,6 @@
+import type {CaseReview,Delivery,DeliveryAttempt,WorkerHealth,Candidate,Readiness} from '../domain/operations';
+import type {InspectionExpert,ExpertAvailability,ExpertConflict,ExpertReservation} from '../domain/planning';
+import type {AnalysisSnapshot,SavedScenario} from '../domain/intelligence';
 import type {ApprovalRecord,ApprovalScopeItem,ScopeRequest,DeadlineNotice,DeadlineRevision,ReminderIntent,NoticeImpact} from '../domain/approvals';
 import type { Application, AuditEvent, ChecklistItem, DocumentRecord, Institution, Notification, Obligation, Template, Visit, Role } from '../domain/model';
 import type {HistoryPage} from '../domain/review';
@@ -8,6 +11,9 @@ type Fn<A, R> = { Args: A; Returns: R };
 export interface Database {
   public: {
     Tables: {
+      case_reviews:Table<CaseReview>;delivery_outbox:Table<Delivery>;delivery_attempts:Table<DeliveryAttempt>;worker_health:Table<WorkerHealth>;
+      inspection_experts:Table<InspectionExpert>;expert_availability:Table<ExpertAvailability>;expert_conflicts:Table<ExpertConflict>;expert_reservations:Table<ExpertReservation>;
+      analysis_snapshots:Table<AnalysisSnapshot>;analysis_scenarios:Table<SavedScenario>;
       application_scope_items:Table<ScopeRequest>;approval_records:Table<ApprovalRecord>;approval_scope_items:Table<ApprovalScopeItem>;policy_notices:Table<DeadlineNotice>;applied_deadlines:Table<DeadlineRevision>;deadline_reminder_intents:Table<ReminderIntent>;
       applications: Table<Application>; application_events: Table<AuditEvent>; application_documents: Table<DocumentRecord>;
       requirements: Table<Requirement>; application_claims: Table<Claim>; claim_evidence: Table<ClaimEvidence>; deficiencies: Table<Deficiency>; integrity_signals: Table<IntegritySignal>;
@@ -19,6 +25,13 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      fp_case_reviews:Fn<Record<string,never>,CaseReview[]>;
+      fp_operations_command:Fn<{_kind:string;_id:string|null;_payload:Record<string,unknown>;_expected:number|null;_request:string},Record<string,unknown>>;
+      fp_case_candidates:Fn<{_id:string},Candidate[]>;fp_operational_readiness:Fn<Record<string,never>,Readiness>;
+      fp_policy_command:Fn<{_kind:string;_id:string|null;_payload:Record<string,unknown>;_expected:number|null;_request:string},Record<string,unknown>>;
+      fp_inspection_command:Fn<{_kind:string;_id:string|null;_payload:Record<string,unknown>;_expected_version:number|null;_request_id:string},Record<string,unknown>>;
+      fp_capture_analysis:Fn<{_application:string;_expected_version:number;_request_id:string},AnalysisSnapshot>;
+      fp_save_analysis:Fn<{_snapshot:string;_parameters:Record<string,unknown>;_request_id:string},SavedScenario>;
       fp_governance_command:Fn<{_kind:string;_id:string|null;_payload:Record<string,unknown>;_expected_version:number|null;_request_id:string},Record<string,unknown>>;
       fp_notice_preview:Fn<{_id:string},NoticeImpact>;
       fp_create_institution: Fn<{_name: string; _ref: string; _region: string; _state: string}, undefined>;

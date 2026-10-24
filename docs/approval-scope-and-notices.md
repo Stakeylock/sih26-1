@@ -35,4 +35,4 @@ The implementation has automated PostgreSQL/PGlite tests and browser journeys fo
 
 Docker Desktop's Linux engine was unavailable during this implementation. Consequently live Supabase Auth, private storage, concurrent database transactions and the running reminder worker have not been revalidated for this migration. No hosted schema change or deployment was performed. Production readiness is not claimed.
 
-Formal hearing/appeal eligibility, hibernation, disclosure scraping and real AICTE/NSWS integrations remain outside this slice.
+Formal hearing/appeal eligibility, hibernation, disclosure scraping and real Institutional Review/NSWS integrations remain outside this slice.

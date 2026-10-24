@@ -5,7 +5,7 @@
     "version": 1,
     "code": "INSTITUTION_IDENTITY",
     "clause": "APH identity",
-    "statement": "Institution name and AICTE reference match the trust record",
+    "statement": "Institution name and reference match the trust record",
     "evidence_types": [
       "Affidavit"
     ],
