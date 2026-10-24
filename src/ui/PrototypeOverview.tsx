@@ -181,7 +181,7 @@ export function PrototypeOverview({ data, identity, open }: Props) {
         </section>
 
         {selected && (
-          <aside className="prototype-preview" aria-label="Selected case preview">
+          <aside className="prototype-preview" role="complementary" aria-label="Selected case preview" style={{display:'block'}}>
             {(() => {
               const app = selected;
               const institution =

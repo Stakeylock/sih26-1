@@ -54,23 +54,33 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await page.screenshot({path:'../../work/flowpilot-case.png',fullPage:true});
   for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Obligation register'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
-});
-test('overview attention reflects attached evidence and current review state',async({page})=>{
-  const preview=page.getByRole('complementary',{name:'Selected case preview'});
-  await expect(preview).toContainText('Why it needs attention');
-  await expect(preview).not.toContainText('clean scan required');
-  await expect(preview).not.toContainText('Board Resolution');
+});test('overview attention reflects attached evidence and current review state',async({page})=>{
+  await openDesk(page,'Trust Center');
+  await expect(page.getByRole('heading',{level:1,name:'Trust Center',exact:true})).toBeVisible();
+  const metrics=page.locator('.trust-metric');
+  await expect(metrics.nth(0)).toContainText('2');
+  await expect(metrics.nth(1)).toContainText('1');
+  await expect(metrics.nth(2)).toContainText('0');
+  await expect(metrics.nth(3)).toContainText('2');
+  await openDesk(page,'Applications');
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await expect(page.locator('.prototype-preview')).toBeVisible();
+  await expect(page.locator('.prototype-preview')).toContainText('Why it needs attention');
+  await expect(page.locator('.prototype-preview')).not.toContainText('clean scan required');
+  await expect(page.locator('.prototype-preview')).not.toContainText('Board Resolution');
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
   await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
-  const institutionPreview=page.getByRole('complementary',{name:'Selected case preview'});
-  await expect(institutionPreview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
-  await expect(institutionPreview).toContainText('2 of 9 claims awaiting verification.');
+  await expect(page.locator('.prototype-preview')).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
+  await expect(page.locator('.prototype-preview')).toContainText('2 of 9 claims awaiting verification.');
+
   await openDemoLab(page);
   await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Applications requiring attention',exact:true})).toBeVisible();
-  const prototypePreview=page.getByRole('complementary',{name:'Selected case preview'});
-  await expect(prototypePreview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
-  await expect(prototypePreview).toContainText('2 of 9 claims awaiting verification.');
+  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
+  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await expect(page.locator('.prototype-preview')).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
+  await expect(page.locator('.prototype-preview')).toContainText('2 of 9 claims awaiting verification.');
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');

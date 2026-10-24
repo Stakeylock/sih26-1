@@ -1,4 +1,4 @@
-import {ArrowRight,BarChart3,Clock3,FileStack,Plus,ShieldCheck,TrendingUp} from 'lucide-react';
+import {ArrowRight,BarChart3,Building2,ClipboardClock,Clock3,FileStack,Plus,ShieldCheck,TrendingUp} from 'lucide-react';
 import { actionLabels, allowedActions, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace } from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
 // Station label for a status. Same facts as statusLabels, phrased as the work in progress at the station.
@@ -47,43 +47,68 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
           <small>active dossiers</small>
         </div>
       </div>
-    </section>
-
-    {/* Hero Metrics Bar (Above the Fold) */}
-    <div className="overview-hero-metrics" aria-label="Regulatory Command Center Metrics">
-      <section className="hero-metric-card">
-        <div className="hero-metric-head"><span>Active Dossiers</span><FileStack size={16}/></div>
-        <strong className="hero-metric-value">{String(active.length).padStart(2,'0')}</strong>
-        <span className="hero-metric-note">{data.applications.length} visible dossiers across AICTE</span>
-      </section>
-
-      <section className="hero-metric-card card-clock">
-        <div className="hero-metric-head"><span>Time with officer / institution</span><Clock3 size={16}/></div>
-        <div className="dual-clock-split">
-          <div className="dual-clock-col">
-            <span>🏛 Council Review</span>
-            <strong>{authorityHolding.length} cases ({authAvgDays}d avg)</strong>
+    </section>      {/* Hero Metrics Bar (Above the Fold) */}
+      {/* Hero Stats Row — 4-column leader panel */}
+      <div className="overview-hero-metrics" role="region" aria-label="Regulatory Command Center Metrics">
+        {/* Card 1: Active Dossiers */}
+        <section aria-label="Active Dossiers">
+          <div className="hero-metric-card-inner">
+            <div className="hero-metric-head">
+              <span>Active Dossiers</span>
+              <FileStack size={14}/>
+            </div>
+            <div className="hero-metric-value" style={{fontSize:'34px'}}>{String(data.applications.length).padStart(2,'0')}</div>
+            <span className="hero-metric-note">{data.applications.length} visible dossiers across AICTE</span>
           </div>
-          <div className="dual-clock-col">
-            <span>🏫 Institution Return</span>
-            <strong>{institutionHolding.length} {institutionHolding.length===1?'case':'cases'} ({instAvgDays}d avg)</strong>
+        </section>
+
+        {/* Card 2: Time with officer / institution */}
+        <section aria-label="Time with officer / institution">
+          <div className="hero-metric-card-inner hero-metric-card-clock">
+            <div className="hero-metric-head">
+              <span>Time with officer / institution</span>
+              <Clock3 size={14}/>
+            </div>
+            <div className="dual-clock-split">
+              <div className="dual-clock-col">
+                <Building2 size={11}/>
+                <span className="font-medium">Council Review</span>
+                <span className="mono">{authorityHolding.length} cases ({authAvgDays}d avg)</span>
+              </div>
+              <div className="dual-clock-col">
+                <Building2 size={11}/>
+                <span className="font-medium">Institution Return</span>
+                <span className="mono">{institutionHolding.length} {institutionHolding.length===1?'case':'cases'} ({instAvgDays}d avg)</span>
+              </div>
+            </div>
+            <div className="hero-metric-note">Working days by responsible role</div>
           </div>
-        </div>
-        <span className="hero-metric-note" style={{marginTop:'4px'}}>Working days by responsible role</span>
-      </section>
+        </section>
 
-      <section className="hero-metric-card card-attention">
-        <div className="hero-metric-head"><span>Need Intervention</span><Clock3 size={16}/></div>
-        <strong className="hero-metric-value" style={{color:'var(--critical)'}}>{String(atRisk.length).padStart(2,'0')}</strong>
-        <span className="hero-metric-note">Due in &le;3 days or overdue</span>
-      </section>
+        {/* Card 3: Need Intervention */}
+        <section aria-label="Need Intervention">
+          <div className="hero-metric-card-inner hero-metric-card-attention">
+            <div className="hero-metric-head">
+              <span>Need Intervention</span>
+              <ClipboardClock size={14}/>
+            </div>
+            <div className="hero-metric-value" style={{color:'var(--critical)',fontSize:'34px'}}>{String(atRisk.length).padStart(2,'0')}</div>
+            <span className="hero-metric-note">Due in &le;3 days or overdue</span>
+          </div>
+        </section>
 
-      <section className="hero-metric-card card-verified">
-        <div className="hero-metric-head"><span>Within configured processing target</span><TrendingUp size={16}/></div>
-        <strong className="hero-metric-value" style={{color:'var(--verified)'}}>{sla}</strong>
-        <span className="hero-metric-note">{onTime} of {active.length} active meet the configured target</span>
-      </section>
-    </div>
+        {/* Card 4: Processing target */}
+        <section aria-label="Processing target achievement">
+          <div className="hero-metric-card-inner hero-metric-card-verified">
+            <div className="hero-metric-head">
+              <span>Within configured processing target</span>
+              <TrendingUp size={14}/>
+            </div>
+            <div className="hero-metric-value" style={{color:'var(--verified)',fontSize:'34px'}}>{sla}</div>
+            <span className="hero-metric-note">{onTime} of {active.length} active meet the configured target</span>
+          </div>
+        </section>
+      </div>
 
     <section className="dispatch-board" aria-label="Approval dispatch board">
       <div className="dispatch-column dispatch-action-column">

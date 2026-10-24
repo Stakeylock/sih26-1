@@ -44,10 +44,14 @@ export function DemoLab({onStartTour,onOpenPrototype}:{onStartTour:()=>void;onOp
         <div className="demo-lab-milestones" role="group" aria-label="Escalation milestones">
           {rehearsalStages.map((stage,index)=><button key={stage.stage} type="button" className={`button small ${rehearsalStep===index?'':'outline'}`} aria-pressed={rehearsalStep===index} onClick={()=>setRehearsalStep(index)}><strong>{stage.badge}</strong> · {stage.label}</button>)}
         </div>
-        {rehearsalStep!==null?<div className="demo-lab-result" role="status">
-          <div className="demo-lab-result-head"><strong>{rehearsalStages[rehearsalStep].label}</strong><span className="document-tag">Simulated recipient: {rehearsalStages[rehearsalStep].recipient}</span></div>
-          <p>{rehearsalStages[rehearsalStep].summary}</p>
-        </div>:<p className="demo-lab-hint">Select a milestone to preview the simulated notice, document state, and escalation tier.</p>}
+        {rehearsalStep!==null ? (
+          <div className="demo-lab-result" role="status">
+            <div className="demo-lab-result-head"><strong>{rehearsalStages[rehearsalStep].label}</strong><span className="document-tag">Simulated recipient: {rehearsalStages[rehearsalStep].recipient}</span></div>
+            <p>{rehearsalStages[rehearsalStep].summary}</p>
+          </div>
+        ) : (
+        <p className="demo-lab-hint">Select a milestone to preview the simulated notice, document state, and escalation tier.</p>
+      )}
       </div>
     </section>
     <p className="support-footnote demo-lab-footnote">Use Preview as in the top bar to test a role boundary. All controls operate on synthetic local data; no real AICTE data or regulatory decision is used.</p>
