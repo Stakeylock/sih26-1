@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-24",
+  "method_reference": "https://github.com/per-simmons/clone-app-pat-pro-public",
+  "motion_reference": "https://prompt-motion.com/twoclipping-5cba86",
+  "observed": {
+    "viewport": {"width": 1920, "height": 895},
+    "reference_player": {"width": 751, "height": 751, "duration_seconds": 14.058},
+    "reference_page_heading": {"font_family": "Geist, Geist Fallback", "font_size_px": 20}
+  },
+  "measurement_limit": "The animation is encoded video. Its internal typography, easing and geometry are not exposed as DOM styles. Player/page measurements are not presented as internal animation measurements.",
+  "adaptation": [
+    "one persistent UI surface with distinct readable states",
+    "restrained eased transitions and a single primary accent",
+    "separate content arrival from container movement",
+    "use the existing locally hosted Inter font and original React/CSS implementation",
+    "no downloaded or embedded reference video, audio, code or third-party tracking"
+  ]
+}

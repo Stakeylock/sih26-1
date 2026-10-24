@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-24",
+  "unit_and_pglite": {"passed": 171, "files": 18},
+  "playwright": {"passed": 50, "failed": 0},
+  "builds": {"demo": "passed", "connected": "passed"},
+  "landing_viewports": [390, 768, 1450],
+  "themes": ["light", "dark"],
+  "landing_accessibility": "All axe rules checked, including contrast",
+  "motion": "Pause/resume, replay, keyboard selection, reduced motion and offscreen suspension verified",
+  "case_data_mutations_from_illustration": 0,
+  "third_party_runtime_assets": 0,
+  "backend_or_schema_changes": false,
+  "production_readiness_claimed": false
+}

@@ -1,0 +1,39 @@
+{
+  "heading": {
+    "font": "Inter, sans-serif",
+    "fontSize": "72px",
+    "lineHeight": "77.76px",
+    "height": 156,
+    "radius": "0px",
+    "color": "rgb(23, 35, 50)",
+    "background": "rgba(0, 0, 0, 0)"
+  },
+  "primary": {
+    "font": "Inter, sans-serif",
+    "fontSize": "13px",
+    "lineHeight": "20px",
+    "height": 48,
+    "radius": "8px",
+    "color": "rgb(255, 255, 255)",
+    "background": "rgb(41, 76, 207)"
+  },
+  "illustration": {
+    "font": "Inter, sans-serif",
+    "fontSize": "14px",
+    "lineHeight": "normal",
+    "height": 715,
+    "radius": "15px",
+    "color": "rgb(23, 35, 50)",
+    "background": "rgb(255, 255, 255)"
+  },
+  "indicator": {
+    "font": "Inter, sans-serif",
+    "fontSize": "14px",
+    "lineHeight": "normal",
+    "height": 36,
+    "radius": "5px",
+    "color": "rgb(23, 35, 50)",
+    "background": "rgb(237, 241, 255)"
+  },
+  "externalAssets": []
+}

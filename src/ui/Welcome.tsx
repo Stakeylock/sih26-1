@@ -1,75 +1,34 @@
-import {ArrowRight,Clock3,FileMinus2,GitBranch,LockKeyhole,Play,ReceiptText,ScanLine,ShieldCheck} from 'lucide-react';
-import {Badge,Brand} from './common';
+import {ArrowRight,FileCheck2,GitBranch,History,Play,ShieldCheck} from 'lucide-react';
+import {Brand} from './common';
+import {lazy,Suspense} from 'react';
 import {ThemeToggle,type Theme} from './theme';
-import {useState,useEffect} from 'react';
+import './landing.css';
+const LandingJourney=lazy(()=>import('./LandingJourney').then(module=>({default:module.LandingJourney})));
 
 export function Welcome({onEnter,onStory,theme,toggleTheme}:{onEnter:()=>void;onStory:()=>void;theme:Theme;toggleTheme:()=>void}){
-  const [reducedMotion,setReducedMotion]=useState(()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const [animationPhase,setAnimationPhase]=useState(()=>reducedMotion?10:0);
-  useEffect(()=>{
-    const preference=window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update=()=>setReducedMotion(preference.matches);
-    preference.addEventListener('change',update);
-    return()=>preference.removeEventListener('change',update);
-  },[]);
-  useEffect(()=>{
-    setAnimationPhase(reducedMotion?10:0);
-    if(reducedMotion)return;
-    const timers=Array.from({length:10},(_,index)=>window.setTimeout(()=>setAnimationPhase(index+1),(index+1)*800));
-    return()=>timers.forEach(timer=>window.clearTimeout(timer));
-  },[reducedMotion]);
-  const evidenceVisible = animationPhase>=4 && animationPhase<7;
-  const replacementVisible = animationPhase>=7 && animationPhase<10;
-  return <div className="welcome">
-    <header className="welcome-top"><Brand/><div className="welcome-top-meta"><span>SIH26262 / SYNTHETIC DEMONSTRATION</span><ThemeToggle theme={theme} toggleTheme={toggleTheme} className="welcome-theme"/><button className="text-button" onClick={onEnter}>Enter workspace <ArrowRight size={15}/></button></div></header>
-    <main className="welcome-main">
-      <section className="welcome-copy" aria-labelledby="welcome-title">
-        <span className="welcome-kicker">AICTE APPROVAL OPERATIONS / 2026-27</span>
-        <h1 id="welcome-title">The file moves.<br/><em>The record stays.</em></h1>
-        <p className="welcome-lede">FlowPilot is a human-in-the-loop operations layer for AICTE approvals. One dossier, a visible route, a named owner at every handoff, and a receipt for every decision.</p>
-        <div className="welcome-actions"><button className="button welcome-story-button" onClick={onStory}><Play size={15}/>Run the 90-second story</button><button className="button outline" onClick={onEnter}>Open the dispatch board <ArrowRight size={15}/></button></div>
-        <dl className="welcome-proof">
-          <div><dt><span>01</span>One dossier</dt><dd>Institution, evidence, route, and decision in one record.</dd></div>
-          <div><dt><span>02</span>Named hands</dt><dd>Every stage names the role that owns the next move.</dd></div>
-          <div><dt><span>03</span>Receipts</dt><dd>Actor, reason, time, and workflow version are append-only.</dd></div>
-        </dl>
+  return <div className="landing-page">
+    <a className="landing-skip" href="#landing-content" onClick={event=>{event.preventDefault();document.getElementById('landing-content')?.focus();}}>Skip to content</a>
+    <header className="landing-header"><Brand/><div className="landing-header-actions"><span className="landing-demo-label"><span/>Synthetic demo</span><ThemeToggle theme={theme} toggleTheme={toggleTheme} className="landing-theme"/><button className="landing-entry" type="button" onClick={onEnter}>Enter workspace <ArrowRight size={15} aria-hidden="true"/></button></div></header>
+    <main id="landing-content" className="landing-content" tabIndex={-1}>
+      <section className="landing-hero" aria-labelledby="landing-title">
+        <div className="landing-copy">
+          <p className="landing-eyebrow"><GitBranch size={14} aria-hidden="true"/>An accountable path through approval</p>
+          <h1 id="landing-title"><span>The file moves.</span><span>The record stays.</span></h1>
+          <p className="landing-intro">Evidence, corrections, and the people responsible for the next step. One shared record from the first submission to the final review.</p>
+          <div className="landing-actions"><button type="button" className="landing-primary" onClick={onEnter}>Open demo workspace <ArrowRight size={17} aria-hidden="true"/></button><button type="button" className="landing-tour" onClick={onStory}><Play size={15} aria-hidden="true"/>Take a guided tour</button></div>
+          <p className="landing-disclosure">SIH26262 prototype. Synthetic cases only.<br/>No real AICTE data or regulatory decisions.</p>
+          <ul className="landing-proof" aria-label="Core workflow capabilities"><li><FileCheck2 size={16} aria-hidden="true"/>Versioned evidence</li><li><ShieldCheck size={16} aria-hidden="true"/>Human review</li><li><History size={16} aria-hidden="true"/>Recorded history</li></ul>
+        </div><Suspense fallback={<div className="landing-journey-loading" role="status">Loading review illustration…</div>}><LandingJourney/></Suspense>
       </section>
-      <section className="welcome-visual" aria-label="Animated preview of a case moving through the approval route">
-        <div className="welcome-visual-top"><span className="live-dot"/>ILLUSTRATIVE JOURNEY <span className="mono">DEMO-2026-1001</span><span className="welcome-synthetic">SYNTHETIC</span></div>
-        <article className={`welcome-case-card${animationPhase>=0&&animationPhase<4?'':' done'}`}><div className="welcome-case-top"><span className="mono">DEMO-2026-1001</span><Badge status="under_scrutiny"/></div><strong>Cedar Technical Institute</strong><span>Self-disclosure extension · 2026-27</span><div className="welcome-case-meta"><span><Clock3 size={13}/>2d remaining</span><span><ShieldCheck size={13}/>Scrutiny officer</span></div></article>
-        <div className="welcome-route" aria-hidden="true">
-          <svg className="welcome-route-svg" viewBox="0 0 200 40" aria-hidden="true">
-            <path className="welcome-route-path" d="M10 10 C50 10, 150 30, 190 30"/>
-            <polygon className="welcome-marker" points="0,0 0,10 10,5" fill="currentColor"/>
-          </svg>
+      <section className="landing-continuity" aria-labelledby="landing-continuity-title">
+        <div className="landing-section-heading"><p className="landing-eyebrow">Continuity, at every handoff</p><h2 id="landing-continuity-title">A correction should move<br/>the case forward, not erase its past.</h2></div>
+        <div className="landing-principles">
+          <article><FileCheck2 size={21} aria-hidden="true"/><h3>Keep the evidence in context.</h3><p>Claims stay linked to their document versions. Replacements add to the record, with a separate validity and acceptance review.</p></article>
+          <article><GitBranch size={21} aria-hidden="true"/><h3>Make the next action clear.</h3><p>Role-based routes keep submission, scrutiny, visits and authority decisions with the people permitted to act.</p></article>
+          <article><History size={21} aria-hidden="true"/><h3>Carry the obligations forward.</h3><p>Recorded approval scope and continuing conditions remain available after the application closes.</p></article>
         </div>
-        <article className={`welcome-case-card${animationPhase>=4?'':' next'}`}><div className="welcome-case-top"><span className="mono">DEMO-2026-1001</span><Badge status={animationPhase>=4?'pending_decision':'under_scrutiny'}/></div><strong>Cedar Technical Institute</strong><span>Self-disclosure extension · 2026-27</span><div className="welcome-case-meta"><span><Clock3 size={13}/>2d remaining</span><span><ShieldCheck size={13}/>Scrutiny officer</span></div></article>
-        <div className={`welcome-evidence-card${evidenceVisible?' shown':''}`}>
-          <div className="evidence-icon"><ShieldCheck size={12}/></div>
-          <div>
-            <strong>Evidence issue found</strong>
-            <p>Fire certificate expired on scrutiny date.</p>
-          </div>
-        </div>
-        <div className={`welcome-replacement-tile${replacementVisible?' shown':''}`}>
-          <div className="replacement-icon"><FileMinus2 size={12}/></div>
-          <div>
-            <strong>Replacement uploaded</strong>
-            <p>Awaiting authorised review</p>
-          </div>
-        </div>
-        <article className={`welcome-receipt-card${animationPhase===0?'':' is-mounted'}`} data-phase={animationPhase<10?'initial':'final'}><div className="welcome-receipt-head"><span>DECISION RECEIPT</span><ReceiptText size={16}/></div><strong>Scrutiny finding recorded</strong><p>Evidence reviewed by an authorised officer.</p><span className="mono">REGIONAL OFFICER · 17 OCT · v1.0</span></article>
-        <span className="welcome-visual-note">Illustrative sequence, not this record's current state.</span>
       </section>
     </main>
-    <section className="welcome-principles" aria-labelledby="welcome-principles-title">
-      <div className="welcome-principles-head"><span className="welcome-kicker">THE DESIGN BET</span><h2 id="welcome-principles-title">Built for the messy middle of a public process.</h2></div>
-      <div className="welcome-principle-grid">
-        <article><GitBranch size={20}/><span>01 / ROUTE</span><h3>No orphaned handoffs.</h3><p>Every queue item names the current authority, the next permitted action, and the deadline that makes it urgent.</p></article>
-        <article><ScanLine size={20}/><span>02 / EVIDENCE</span><h3>No black-box approvals.</h3><p>Assistive checks can flag a gap. They cannot change workflow status, release a file, or replace a reviewer.</p></article>
-        <article><LockKeyhole size={20}/><span>03 / RECORD</span><h3>No decision without a receipt.</h3><p>Actor, role, reason, evidence, time, and workflow version travel with the dossier after the meeting ends.</p></article>
-      </div>
-    </section>
-    <footer className="welcome-foot"><span>FlowPilot <span className="mono">/</span> Right process. Right authority. Right time.</span><span><ShieldCheck size={13}/>Synthetic data only. Not an AICTE service.</span></footer>
+    <footer className="landing-footer"><span>FlowPilot <span aria-hidden="true">/</span> Evidence review, with a record.</span><span><ShieldCheck size={14} aria-hidden="true"/>Independent prototype. Not an AICTE service.</span></footer>
   </div>;
 }
