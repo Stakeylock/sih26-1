@@ -26,7 +26,7 @@ describe('audit chain', () => {
     `, [id])).toBe(0);
 
     await as(db, ids.scrutiny);
-    await db.query(`select public.fp_verify_claim($1,'verified','Synthetic identity check against the trust record.')`, [claims.INSTITUTION_IDENTITY]);
+    await db.query(`select public.fp_verify_claim($1,'verified','Synthetic identity check against the trust record.',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.INSTITUTION_IDENTITY]);
     const second = await verify(id);
     expect(second.intact).toBe(true);
     expect(second.checked).toBe(first.checked + 1);

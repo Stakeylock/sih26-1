@@ -1,4 +1,4 @@
-import type { Claim, ClaimEvidence, ClaimStatus, Deficiency, Requirement } from './integrity';
+import type { Claim, Requirement } from './integrity';
 
 /* ------------------------------------------------------------------ *
  * Policy-change impact preview
@@ -114,93 +114,5 @@ export function policyImpact(
   return impacts;
 }
 
-/* ------------------------------------------------------------------ *
- * Replayable review record
- * ------------------------------------------------------------------ */
-
-export type ReviewKind = 'evidence_linked' | 'verified' | 'not_applicable' | 'deficiency_raised' | 'deficiency_resolved' | 'rechecked';
-
-export interface ReviewEntry {
-  at: string;
-  actor: string | null;
-  kind: ReviewKind;
-  claim_id: string;
-  clause: string;
-  statement: string;
-  note: string | null;
-  /** For `rechecked`, whether the resolution was accepted or reopened. */
-  result?: 'accepted' | 'reopened';
-}
-
-/**
- * Reconstructs the review reasoning recorded on a case (verifications, deficiency raises,
- * resolutions, re-checks, evidence links) as an ordered timeline, from the ledger itself.
- */
-export function reviewTimeline(
-  claims: readonly Claim[],
-  deficiencies: readonly Deficiency[],
-  claimEvidence: readonly ClaimEvidence[],
-): ReviewEntry[] {
-  const claimById = new Map(claims.map(claim => [claim.id, claim]));
-  const entries: ReviewEntry[] = [];
-  const base = (claim: Claim, at: string, actor: string | null, kind: ReviewKind, note: string | null, result?: 'accepted' | 'reopened') => {
-    if (!at) return;
-    entries.push({ at, actor, kind, claim_id: claim.id, clause: claim.clause_snapshot, statement: claim.statement_snapshot, note, ...(result ? { result } : {}) });
-  };
-
-  for (const claim of claims) {
-    if (claim.verified_at) base(claim, claim.verified_at, claim.verified_by, claim.status === 'not_applicable' ? 'not_applicable' : 'verified', claim.verification_note);
-  }
-  for (const deficiency of deficiencies) {
-    const claim = claimById.get(deficiency.claim_id);
-    if (!claim) continue;
-    base(claim, deficiency.raised_at, deficiency.raised_by, 'deficiency_raised', deficiency.observation);
-    if (deficiency.resolved_at) base(claim, deficiency.resolved_at, deficiency.resolved_by, 'deficiency_resolved', deficiency.resolution_note);
-    if (deficiency.rechecked_at) base(claim, deficiency.rechecked_at, deficiency.rechecked_by, 'rechecked', deficiency.recheck_note, deficiency.status === 'resolved' ? 'accepted' : 'reopened');
-  }
-  for (const link of claimEvidence) {
-    const claim = claimById.get(link.claim_id);
-    if (!claim) continue;
-    base(claim, link.linked_at, link.linked_by, 'evidence_linked', link.note);
-  }
-
-  return entries.sort((left, right) => Date.parse(left.at) - Date.parse(right.at) || left.claim_id.localeCompare(right.claim_id));
-}
-
-export interface ReplaySnapshot {
-  verified: number;
-  deficient: number;
-  unverified: number;
-  total: number;
-  statuses: Record<string, ClaimStatus>;
-}
-
-/**
- * Replays the review timeline up to (and including) `throughIndex` and returns the reconstructed
- * claim state at that moment — what the reviewer could see when the entry was recorded.
- */
-export function replayClaimState(claims: readonly Claim[], entries: readonly ReviewEntry[], throughIndex: number): ReplaySnapshot {
-  const statuses: Record<string, ClaimStatus> = {};
-  for (const claim of claims) statuses[claim.id] = 'unverified';
-  const limit = Math.max(-1, Math.min(throughIndex, entries.length - 1));
-  for (let index = 0; index <= limit; index += 1) {
-    const entry = entries[index];
-    if (!(entry.claim_id in statuses)) continue;
-    switch (entry.kind) {
-      case 'verified': statuses[entry.claim_id] = 'verified'; break;
-      case 'not_applicable': statuses[entry.claim_id] = 'not_applicable'; break;
-      case 'deficiency_raised': statuses[entry.claim_id] = 'deficient'; break;
-      case 'deficiency_resolved': statuses[entry.claim_id] = 'unverified'; break;
-      case 'rechecked': statuses[entry.claim_id] = entry.result === 'reopened' ? 'deficient' : 'verified'; break;
-      case 'evidence_linked': break;
-    }
-  }
-  const values = Object.values(statuses);
-  return {
-    verified: values.filter(status => status === 'verified' || status === 'not_applicable').length,
-    deficient: values.filter(status => status === 'deficient').length,
-    unverified: values.filter(status => status === 'unverified').length,
-    total: values.length,
-    statuses,
-  };
-}
+export {reviewTimeline,replayClaimState} from './review';
+export type {ReviewEntry} from './review';

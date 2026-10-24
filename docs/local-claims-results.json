@@ -1,0 +1,9 @@
+{
+  "passed": 13,
+  "scope": "local Supabase only",
+  "claims": 9,
+  "freshPrivateUploads": 7,
+  "remediation": "upload → quarantine → trusted fixture completion → resolve → recheck → decision",
+  "auditIntact": true,
+  "scanner": "Known fixture completion only; antivirus integration is still required for real files."
+}

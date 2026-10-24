@@ -9,7 +9,7 @@ beforeEach(async () => { await db.exec('begin'); });
 afterEach(async () => { await db.exec('reset role; rollback'); });
 
 const verifyAll = async (claims: Record<string, string>) => {
-  for (const claim of Object.values(claims)) await db.query(`select public.fp_verify_claim($1,'verified','Synthetic verification against the demo record.')`, [claim]);
+  for (const claim of Object.values(claims)) await db.query(`select public.fp_verify_claim($1,'verified','Synthetic verification against the demo record.',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claim]);
 };
 const status = (claim: string) => scalar<string>(db, 'select status::text from public.application_claims where id=$1', [claim]);
 
@@ -17,10 +17,10 @@ describe('claim evidence and verification', () => {
   it('links and verifies a claim, and blocks the owner from reviewing it', async () => {
     const { claims } = await readyClaims(db);
     await as(db, ids.institution);
-    expect(await failure(db, `select public.fp_verify_claim($1,'verified','Owner review')`, [claims.INSTITUTION_IDENTITY])).toContain('Assigned scrutiny');
-    expect(await failure(db, `select public.fp_raise_deficiency($1,'Missing synthetic evidence.','Upload the synthetic evidence.',now()+interval '7 days')`, [claims.INSTITUTION_IDENTITY])).toContain('Assigned scrutiny');
+    expect(await failure(db, `select public.fp_verify_claim($1,'verified','Owner review',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.INSTITUTION_IDENTITY])).toContain('Assigned scrutiny');
+    expect(await failure(db, `select public.fp_raise_deficiency($1,'Missing synthetic evidence.','Upload the synthetic evidence.',now()+interval '7 days',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.INSTITUTION_IDENTITY])).toContain('Assigned scrutiny');
     await as(db, ids.scrutiny);
-    await db.query(`select public.fp_verify_claim($1,'verified','Synthetic identity check against the trust record.')`, [claims.INSTITUTION_IDENTITY]);
+    await db.query(`select public.fp_verify_claim($1,'verified','Synthetic identity check against the trust record.',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.INSTITUTION_IDENTITY]);
     expect(await status(claims.INSTITUTION_IDENTITY)).toBe('verified');
     expect(await scalar<number>(db, `select count(*)::int from public.application_events where action='claim_verified'`)).toBe(1);
   });
@@ -28,8 +28,8 @@ describe('claim evidence and verification', () => {
   it('requires a reason to mark a claim not applicable', async () => {
     const { claims } = await readyClaims(db);
     await as(db, ids.scrutiny);
-    expect(await failure(db, `select public.fp_verify_claim($1,'not_applicable','short')`, [claims.BUILT_UP_AREA])).toContain('10 characters');
-    await db.query(`select public.fp_verify_claim($1,'not_applicable','The synthetic building plan is not applicable to this demo.')`, [claims.BUILT_UP_AREA]);
+    expect(await failure(db, `select public.fp_verify_claim($1,'not_applicable','short',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.BUILT_UP_AREA])).toContain('10 characters');
+    await db.query(`select public.fp_verify_claim($1,'not_applicable','The synthetic building plan is not applicable to this demo.',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.BUILT_UP_AREA]);
     expect(await status(claims.BUILT_UP_AREA)).toBe('not_applicable');
   });
 
@@ -39,15 +39,15 @@ describe('claim evidence and verification', () => {
     await db.query(`update public.application_documents set expires_on=current_date-1 where id=(select document_id from public.claim_evidence where claim_id=$1)`,[claims.FIRE_SAFETY]);
     await as(db, ids.scrutiny);
     const version = await scalar<number>(db, 'select version from public.applications where id=$1', [id]);
-    expect(await failure(db, `select public.fp_verify_claim($1,'verified','Expired certificate')`, [claims.FIRE_SAFETY])).toContain('current clean evidence');
+    expect(await failure(db, `select public.fp_verify_claim($1,'verified','Expired certificate',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.FIRE_SAFETY])).toContain('current clean evidence');
     expect(await failure(db, `select public.fp_transition($1,'pass_scrutiny','All synthetic claims reviewed','{"evc":false}',$2,$3)`, [id, version, crypto.randomUUID()])).toContain('mandatory claim');
   });
 
   it('unlinks evidence and makes verification fail', async () => {
     const { claims, docs } = await readyClaims(db);
     await as(db, ids.scrutiny);
-    await db.query('select public.fp_unlink_claim_evidence($1,$2)', [claims.ACADEMIC_YEAR, docs.Affidavit]);
-    expect(await failure(db, `select public.fp_verify_claim($1,'verified','No evidence')`, [claims.ACADEMIC_YEAR])).toContain('current clean evidence');
+    await db.query('select public.fp_unlink_claim_evidence($1,$2,(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())', [claims.ACADEMIC_YEAR, docs.Affidavit]);
+    expect(await failure(db, `select public.fp_verify_claim($1,'verified','No evidence',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.ACADEMIC_YEAR])).toContain('current clean evidence');
   });
 });
 
@@ -56,16 +56,18 @@ describe('deficiency loop', () => {
     const { id, claims, docs } = await readyClaims(db);
     await as(db, ids.scrutiny);
     const version = await scalar<number>(db, 'select version from public.applications where id=$1', [id]);
-    const deficiency = await scalar<string>(db, `select public.fp_raise_deficiency($1,'The synthetic building plan is missing.','Upload a current synthetic building plan.',now()+interval '7 days')`, [claims.BUILT_UP_AREA]);
+    const deficiency = await scalar<string>(db, `select public.fp_raise_deficiency($1,'The synthetic building plan is missing.','Upload a current synthetic building plan.',now()+interval '7 days',(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())`, [claims.BUILT_UP_AREA]);
     expect(await status(claims.BUILT_UP_AREA)).toBe('deficient');
     expect(await scalar<string>(db, 'select status::text from public.deficiencies where id=$1', [deficiency])).toBe('open');
-    expect(await failure(db, `select public.fp_transition($1,'pass_scrutiny','All synthetic claims reviewed','{"evc":false}',$2,$3)`, [id, version, crypto.randomUUID()])).toContain('mandatory claim');
+    expect(await failure(db, `select public.fp_transition($1,'pass_scrutiny','All synthetic claims reviewed','{"evc":false}',$2,$3)`, [id, version, crypto.randomUUID()])).toContain('reload');
+    const currentVersion=await scalar<number>(db,'select version from public.applications where id=$1',[id]);
+    expect(await failure(db, `select public.fp_transition($1,'pass_scrutiny','All synthetic claims reviewed','{"evc":false}',$2,$3)`, [id, currentVersion, crypto.randomUUID()])).toContain('mandatory claim');
     await as(db, ids.institution);
-    await db.query(`select public.fp_resolve_deficiency($1,$2,'Uploaded the current synthetic building plan.')`, [deficiency, docs['Building Plan']]);
+    await db.query(`select public.fp_resolve_deficiency($1,$2,'Uploaded the current synthetic building plan.',(select version from public.applications where id=(select application_id from public.deficiencies where id=$1)),gen_random_uuid())`, [deficiency, docs['Building Plan']]);
     expect(await scalar<string>(db, 'select status::text from public.deficiencies where id=$1', [deficiency])).toBe('resolved');
     expect(await status(claims.BUILT_UP_AREA)).toBe('unverified');
     await as(db, ids.scrutiny);
-    await db.query(`select public.fp_recheck_deficiency($1,'accepted','Synthetic plan accepted after re-check.')`, [deficiency]);
+    await db.query(`select public.fp_recheck_deficiency($1,'accepted','Synthetic plan accepted after re-check.',(select version from public.applications where id=(select application_id from public.deficiencies where id=$1)),gen_random_uuid())`, [deficiency]);
     expect(await status(claims.BUILT_UP_AREA)).toBe('verified');
   });
 
@@ -77,7 +79,7 @@ describe('deficiency loop', () => {
     await as(db, ids.institution);
     const version = await scalar<number>(db, 'select version from public.applications where id=$1', [id]);
     expect(await failure(db, `select public.fp_transition($1,'resubmit','Corrected the synthetic evidence.','{}',$2,$3)`, [id, version, crypto.randomUUID()])).toContain('Resolve or waive');
-    await db.query(`select public.fp_resolve_deficiency($1,$2,'Uploaded the current synthetic fire certificate.')`, [deficiency, docs['Fire Safety Certificate']]);
+    await db.query(`select public.fp_resolve_deficiency($1,$2,'Uploaded the current synthetic fire certificate.',(select version from public.applications where id=(select application_id from public.deficiencies where id=$1)),gen_random_uuid())`, [deficiency, docs['Fire Safety Certificate']]);
     expect((await transition(db, id, 'resubmit', 'Corrected the synthetic evidence.')).status).toBe('resubmitted');
   });
 });

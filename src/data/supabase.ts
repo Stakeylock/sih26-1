@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
+import type {CaseHistory,HistoryPage} from '../domain/review';
 import type { AuditVerification } from '../domain/integrity';
 import type { Repository,Advisory } from '../domain/model';
 import { institutionSchema, titleSchema, validateFile } from '../domain/validation';
@@ -32,7 +33,7 @@ export function createSupabaseRepository(): Repository {
       if (!user) return null;
       const [profile, roles] = await Promise.all([client.from('profiles').select('*').eq('id', user.id).single(), client.from('user_roles').select('*').eq('user_id',user.id).eq('active',true)]);
       check(profile.error); check(roles.error);
-      return {id: user.id, email: user.email ?? '', name: profile.data?.full_name || 'Workspace member', roles: roles.data ?? []};
+      return {id: user.id, email: user.email ?? '', name: profile.data?.full_name || 'Workspace member', roles: (roles.data ?? []).filter(role=>!role.revoked_at&&(!role.expires_at||Date.parse(role.expires_at)>Date.now()))};
     },
     subscribeAuth(callback) { const {data: {subscription}} = client.auth.onAuthStateChange(() => { queueMicrotask(callback); }); return () => subscription.unsubscribe(); },
     async signIn(email, password) { const {error} = await client.auth.signInWithPassword({email,password}); check(error); },
@@ -55,15 +56,29 @@ export function createSupabaseRepository(): Repository {
       return {applications:applications.data??[],institutions:institutions.data??[],templates:templates.data??[],documents:documents.data??[],events:events.data??[],checklist:checklist.data??[],visits:visits.data??[],obligations:obligations.data??[],notifications:notifications.data??[],requirements:requirements.data??[],claims:claims.data??[],claim_evidence:claimEvidence.data??[],deficiencies:deficiencies.data??[],integrity_signals:signals.data??[],access_assignments:grants.data??[],agents:agents.data??[]};
     },
     async createInstitution(input) { const v=institutionSchema.parse(input); const {error}=await client.rpc('fp_create_institution',{_name:v.name,_ref:v.aicte_ref,_region:v.region,_state:v.state}); check(error); },
-    async createApplication(type,title) { const {data,error}=await client.rpc('fp_create_application',{_type:type,_title:titleSchema.parse(title)}); check(error); if (!data) throw new Error('No application was created.'); return data; },
+    async createApplication(type,title,initialForm={}) { const {data,error}=await client.rpc('fp_create_application_draft',{_type:type,_title:titleSchema.parse(title),_form:initialForm}); check(error); if (!data) throw new Error('No application was created.'); return data; },
     async saveDraft(application,title,form) { const {error}=await client.rpc('fp_save_draft',{_id:application.id,_title:titleSchema.parse(title),_form:form,_version:application.version}); check(error); },
     async transition({application,action,reason,payload,requestId}) { const {error}=await client.rpc('fp_transition',{_id:application.id,_action:action,_reason:reason,_payload:payload,_expected_version:application.version,_request_id:requestId}); check(error); },
     async checklist(application,item,passed,note) { const {error}=await client.rpc('fp_checklist',{_id:application.id,_item:item,_passed:passed,_note:note}); check(error); },
-    async verifyClaim(_application,claim,result,note) { const {error}=await client.rpc('fp_verify_claim',{_claim:claim.id,_result:result,_note:note||null}); check(error); },
-    async linkClaimEvidence(_application,claim,document,note) { const {error}=await client.rpc('fp_link_claim_evidence',{_claim:claim.id,_document:document.id,_note:note||null}); check(error); },
-    async raiseClaimDeficiency(_application,claim,observation,remedy,dueAt) { const {error}=await client.rpc('fp_raise_deficiency',{_claim:claim.id,_observation:observation,_remedy:remedy,_due:dueAt}); check(error); },
-    async resolveClaimDeficiency(_application,deficiency,evidence,note) { const {error}=await client.rpc('fp_resolve_deficiency',{_deficiency:deficiency.id,_evidence:evidence.id,_note:note}); check(error); },
-    async recheckClaimDeficiency(_application,deficiency,result,note) { const {error}=await client.rpc('fp_recheck_deficiency',{_deficiency:deficiency.id,_result:result,_note:note}); check(error); },
+    async verifyClaim(application,claim,result,note,requestId=crypto.randomUUID()) { const {error}=await client.rpc('fp_verify_claim',{_claim:claim.id,_result:result,_note:note||null,_expected_version:application.version,_request_id:requestId}); check(error); },
+    async linkClaimEvidence(application,claim,document,note,requestId=crypto.randomUUID()) { const {error}=await client.rpc('fp_link_claim_evidence',{_claim:claim.id,_document:document.id,_note:note||null,_expected_version:application.version,_request_id:requestId}); check(error); },
+    async raiseClaimDeficiency(application,claim,observation,remedy,dueAt,requestId=crypto.randomUUID()) { const {error}=await client.rpc('fp_raise_deficiency',{_claim:claim.id,_observation:observation,_remedy:remedy,_due:dueAt,_expected_version:application.version,_request_id:requestId}); check(error); },
+    async resolveClaimDeficiency(application,deficiency,evidence,note,requestId=crypto.randomUUID()) { const {error}=await client.rpc('fp_resolve_deficiency',{_deficiency:deficiency.id,_evidence:evidence.id,_note:note,_expected_version:application.version,_request_id:requestId}); check(error); },
+    async recheckClaimDeficiency(application,deficiency,result,note,requestId=crypto.randomUUID()) { const {error}=await client.rpc('fp_recheck_deficiency',{_deficiency:deficiency.id,_result:result,_note:note,_expected_version:application.version,_request_id:requestId}); check(error); },
+    async history(application):Promise<CaseHistory> {
+      const events:CaseHistory['events']=[];let after=0;let through:number|null=null;let head:string|null=null;
+      for(let page=0;page<20;page++){
+        const response=await client.rpc('fp_case_history',{_application:application.id,_after:after,_through:through,_limit:100});check(response.error);
+        const data=response.data as HistoryPage|null;
+        if(!data)throw new Error('History page unavailable.');
+        if(through!==null&&(data.through!==through||data.head_hash!==head))throw new Error('History checkpoint changed. Reload the case.');
+        through=data.through;head=data.head_hash;
+        for(const event of data.events){if(event.application_id!==application.id||event.sequence!==after+1)throw new Error('History sequence is incomplete.');events.push(event);after=event.sequence;}
+        if(data.complete)return {events,through,head_hash:head,complete:after===through};
+        if(data.next_after!==after||!data.events.length)throw new Error('History did not advance.');
+      }
+      return {events,through:through??after,head_hash:head,complete:false,message:'This case exceeds the current history-read limit.'};
+    },
     async verifyAudit(application) {
       const {data,error}=await client.rpc('fp_verify_audit_chain',{_application:application.id});
       check(error);

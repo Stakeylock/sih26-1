@@ -79,20 +79,22 @@ export async function upload(db:PGlite,id:string,type:string,hash='b'.repeat(64)
   await as(db,ids.institution);
   return doc;
 }
-export async function readyClaims(db:PGlite) {
+export async function readyClaims(db:PGlite,extraTypes:string[]=[]) {
   const id=await draft(db,'extension_self_disclosure');
   await db.query(`select public.fp_save_draft($1,'Self-disclosure extension 2026-27',$2,1)`,[id,{academic_year:'2026-27',intake:'120',faculty_count:'40',declaration:'Synthetic declaration for testing'}]);
   const docs:Record<string,string>={};
   const types=['Affidavit','Faculty List','Land Document','Building Plan','Fire Safety Certificate','Undertaking'];
   for(const [i,type] of types.entries()) docs[type]=await upload(db,id,type,String(i+1).padStart(2,'0').repeat(32));
+  const extraDocuments:string[]=[];
+  for(const type of extraTypes)extraDocuments.push(await upload(db,id,type,'ea'.repeat(32)));
   const claims:Record<string,string>={};
   for(const code of ['INSTITUTION_IDENTITY','ACADEMIC_YEAR','SANCTIONED_INTAKE','FACULTY_STRENGTH','STUDENT_FACULTY_RATIO','LAND_OWNERSHIP','BUILT_UP_AREA','FIRE_SAFETY','UNDERTAKING']) claims[code]=await scalar<string>(db,`select c.id from public.application_claims c join public.requirements r on r.id=c.requirement_id where c.application_id=$1 and r.code=$2`,[id,code]);
   const links=[['INSTITUTION_IDENTITY','Affidavit'],['ACADEMIC_YEAR','Affidavit'],['SANCTIONED_INTAKE','Affidavit'],['FACULTY_STRENGTH','Faculty List'],['STUDENT_FACULTY_RATIO','Faculty List'],['LAND_OWNERSHIP','Land Document'],['BUILT_UP_AREA','Building Plan'],['FIRE_SAFETY','Fire Safety Certificate'],['UNDERTAKING','Undertaking']];
-  for(const [code,type] of links) await db.query('select public.fp_link_claim_evidence($1,$2,null)',[claims[code],docs[type]]);
+  for(const [code,type] of links) await db.query('select public.fp_link_claim_evidence($1,$2,null,(select version from public.applications where id=(select application_id from public.application_claims where id=$1)),gen_random_uuid())',[claims[code],docs[type]]);
   await transition(db,id,'submit');
   await as(db,ids.scrutiny);
   await transition(db,id,'start_scrutiny');
-  return {id,docs,claims};
+  return {id,docs,claims,extraDocuments};
 }
 export async function grantRole(db:PGlite,userId:string,role:string,region:string|null,opts:{expiresAt?:string|null;reason?:string}={}) {
   await as(db,ids.admin);

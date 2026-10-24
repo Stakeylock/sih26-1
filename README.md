@@ -5,8 +5,11 @@ A locally editable React/TypeScript application continuing the existing Lovable 
 ## Open the app
 
 - Isolated browser demo: http://127.0.0.1:5174
-- Authenticated Supabase demo: http://127.0.0.1:5173
-- Run `Start-FlowPilot.ps1` to restart the local app and advisory service. Install application dependencies first with `npm ci` if needed.
+- Authenticated local workspace: http://127.0.0.1:5173/#overview
+- Local advisory backend: http://127.0.0.1:8787/api/automation/health
+- Local Supabase Auth, Data API, and private Storage: http://127.0.0.1:55321
+- With Docker Desktop running, run `Start-FlowPilot.ps1` or `npm run local:start`. The launcher starts an isolated FlowPilot stack, applies checked migrations, provisions synthetic accounts, and starts both frontends and the API. Install dependencies first with `npm ci` if needed.
+- The connected app now uses the ignored `.env.connected.local`, generated from the local stack. The existing hosted `.env.local` is preserved and is not used by this local connected mode.
 - The connected app requires explicitly provisioned accounts. Integration accounts have randomly generated passwords in the ignored `.env.integration.local` file. No credentials are included in this README, source archive, or reports. The connected UI has no role selector.
 - In the isolated demo, use **Preview as** to explore the five roles. **Ctrl/Cmd+K** opens workspace search. Its seed documents are synthetic references without downloadable bytes; newly selected files add metadata only.
 
@@ -14,7 +17,7 @@ A locally editable React/TypeScript application continuing the existing Lovable 
 
 React 19 + TypeScript + Vite; self-hosted Inter and Lucide icons; Supabase Auth/PostgreSQL/Storage. Database functions validate live sessions, role and region, application state, optimistic version, required evidence, and idempotency keys. Writes and append-only audit events commit together. Client roles never authorize mutations.
 
-`src/domain` contains types and display helpers. `src/data` contains separate connected and isolated-demo adapters. `src/ui` contains application views. `supabase/reference/lovable-baseline.sql` preserves the original two Lovable migrations. The two dated hardening migrations have been applied to the exact Lovable demo database, project `mbgwfamvrjulbebwsnoh`. The separately connected, unrelated Supabase project was not modified.
+`src/domain` contains types and display helpers. `src/data` contains separate connected and isolated-demo adapters. `src/ui` contains application views. `supabase/reference/lovable-baseline.sql` preserves the original Lovable migrations. Eight migrations were previously applied to the isolated local PostgreSQL database. The ninth correction-review migration is staged and SQL-tested; Docker is currently unavailable, so its connected verification remains pending. Migration checksums protect the local bootstrap path. See `docs/LOCAL_RUN.md` and `docs/ASTRA_REVIEW.md` for current scope and checks.
 
 ### n8n and LangGraph
 
@@ -40,7 +43,7 @@ node node_modules/@playwright/test/cli.js test --config playwright.connected.con
 node scripts/release-check.mjs
 ```
 
-The database tests run real PostgreSQL semantics using PGlite because Docker Desktop failed to start on this computer. Docker settings and data were left intact. This verifies SQL/RLS behavior, not a full containerized Supabase installation. Hosted API tests independently cover real Auth, RLS, storage, concurrent transitions, and persistence.
+The fast SQL security suite uses PGlite. A full local Supabase Docker stack now independently verifies Auth, PostgreSQL, RLS, private Storage, concurrency, and claim remediation through real HTTP APIs. Local published ports are checked for loopback binding. The launcher only operates on containers labelled for `flowpilot-sih26-local`; other projects are left alone.
 
 Read `docs/VALIDATION.md` and the JSON evidence files. The release gate intentionally fails. The previous Vercel deployment has not been replaced. No production readiness claim is made.
 

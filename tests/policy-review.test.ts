@@ -62,59 +62,20 @@ describe('policyImpact (affected live cases)', () => {
   });
 });
 
-describe('reviewTimeline', () => {
-  const entries = reviewTimeline(claims, deficiencies, claimEvidence);
-
-  it('records verifications, the deficiency raise, and evidence links in time order', () => {
-    const kinds = entries.reduce<Record<string, number>>((acc, entry) => ({ ...acc, [entry.kind]: (acc[entry.kind] ?? 0) + 1 }), {});
-    expect(kinds.verified).toBe(6);
-    expect(kinds.deficiency_raised).toBe(1);
-    expect(kinds.evidence_linked).toBe(8);
-    expect(entries).toHaveLength(15);
+describe('review snapshots',()=>{
+  const events=workspace.events.filter(event=>event.application_id===app.id).sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)).map((event,index)=>({...event,sequence:index+1}));
+  const entries=reviewTimeline(events);
+  it('keeps legacy actions as records without inventing their earlier claim state',()=>{
+    expect(entries[0].snapshot).toBeNull();
+    expect(replayClaimState(claims,entries,0)).toBeNull();
   });
-
-  it('is sorted ascending by timestamp', () => {
-    for (let i = 1; i < entries.length; i += 1) {
-      expect(Date.parse(entries[i].at)).toBeGreaterThanOrEqual(Date.parse(entries[i - 1].at));
-    }
+  it('shows the captured baseline, rather than claiming reconstructed prior reviews',()=>{
+    expect(entries.at(-1)?.baseline).toBe(true);
+    expect(replayClaimState(claims,entries,entries.length-1)).toMatchObject({verified:6,current:6,deficient:1,unverified:2,total:9});
   });
-
-  it('carries the recorded reasoning note on each entry', () => {
-    const raised = entries.find(entry => entry.kind === 'deficiency_raised')!;
-    expect(raised.statement).toContain('Fire safety certificate');
-    expect(raised.note).toBeTruthy();
-  });
-});
-
-describe('replayClaimState', () => {
-  const claimsAll = claims;
-  const entries = reviewTimeline(claimsAll, deficiencies, claimEvidence);
-
-  it('starts with every claim awaiting review', () => {
-    const snapshot = replayClaimState(claimsAll, entries, -1);
-    expect(snapshot).toMatchObject({ verified: 0, deficient: 0, unverified: 9, total: 9 });
-  });
-
-  it('reconstructs the current state after replaying every entry', () => {
-    const snapshot = replayClaimState(claimsAll, entries, entries.length - 1);
-    expect(snapshot.verified).toBe(claimsAll.filter(c => ['verified', 'not_applicable'].includes(c.status)).length);
-    expect(snapshot.deficient).toBe(1);
-    expect(snapshot.unverified).toBe(2);
-    expect(snapshot.total).toBe(9);
-  });
-
-  it('does not mark the fire claim deficient until its deficiency entry is replayed', () => {
-    const fireId = deficiencies[0].claim_id;
-    const fireIndex = entries.findIndex(entry => entry.claim_id === fireId && entry.kind === 'deficiency_raised');
-    const before = replayClaimState(claimsAll, entries, fireIndex - 1);
-    const after = replayClaimState(claimsAll, entries, fireIndex);
-    expect(before.statuses[fireId]).toBe('unverified');
-    expect(after.statuses[fireId]).toBe('deficient');
-  });
-
-  it('evidence links alone do not change a claim status', () => {
-    const linkIndex = entries.findIndex(entry => entry.kind === 'evidence_linked');
-    const snapshot = replayClaimState(claimsAll, entries, linkIndex);
-    expect(Object.values(snapshot.statuses).every(status => status === 'unverified')).toBe(true);
+  it('retains the captured snapshot after current claim rows change',()=>{
+    const original=structuredClone(claims[0]);Object.assign(claims[0],{status:'deficient',verified_at:null});
+    expect(replayClaimState(claims,entries,entries.length-1)?.verified).toBe(6);
+    Object.assign(claims[0],original);
   });
 });

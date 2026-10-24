@@ -1,4 +1,12 @@
-# Validation record · 22 October 2026
+# Validation record
+
+Correction-review slice, **24 October 2026**: both demo and connected builds pass; 151 automated unit/SQL/domain tests and 31 demo browser checks, including the merged dark-mode history and policy views cover the revised source. The main application dependency audit previously reported zero findings and no dependencies were added in this slice. The ninth migration records review bases and immutable snapshots; its SQL is exercised in PGlite with explicit authenticated roles. Read [ASTRA_REVIEW.md](ASTRA_REVIEW.md) for the exact scope and remaining boundary.
+
+The latest upstream top navigation, dark mode and specimen previews were pulled at `f63a8fe` before reapplying this slice. The Docker engine is unavailable in this session. The ninth migration has **not** been applied to the previously provisioned local PostgreSQL stack or any hosted project. New real Auth/REST/Storage and concurrent-session checks remain unverified. Earlier connected results below are historical. The isolated demo and deterministic advisory can run independently; n8n remains disabled.
+
+Latest local run: **23 October 2026**. See [LOCAL_RUN.md](LOCAL_RUN.md) for the corrected stack and reproducible commands. Both builds, 91 unit/security tests, 28 browser tests, 11 core local integration checks, and 13 claim-remediation checks passed. All eight migrations are applied to the isolated local Supabase database. The review fixes are local changes; no hosted database or public deployment was modified. n8n and unvalidated production malware scanning remain release limits.
+
+The record below is retained as historical evidence from 22 October 2026 and does not describe the current local stack.
 
 Environment: local Work mode, connected only to the exact FlowPilot Lovable demo database. Synthetic identities and fixtures only.
 

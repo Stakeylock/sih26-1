@@ -8,12 +8,13 @@ import type {Application, Workspace} from '../domain/model';
 const proposed = requirementsV2Json as Requirement[];
 
 export function PolicyImpact({data, app}:{data:Workspace; app:Application}){
-  const current = useMemo(() => data.requirements.filter(r => r.app_type === app.app_type), [data.requirements, app.app_type]);
+  const pack=data.claims.find(claim=>claim.application_id===app.id)?.requirement_version_snapshot;
+  const current = useMemo(() => data.requirements.filter(r => r.app_type === app.app_type&&(pack===undefined||r.version===pack)), [data.requirements, app.app_type,pack]);
   const diff = useMemo(() => diffRequirements(current, proposed.filter(r => r.app_type === app.app_type)), [current, app.app_type]);
   const impacts = useMemo(() => policyImpact(data.applications, data.claims, diff), [data.applications, data.claims, diff]);
   const changedCodes = new Set(diff.changed.map(c => c.code));
 
-  return <section id="policy" className="dossier-paper"><div className="dossier-paper-heading"><div><span className="section-index">06</span><div><h2>Policy change impact</h2><p>Preview a handbook revision and see which live cases and evidence requirements it touches.</p></div></div><span className="mono">APH v{diff.fromVersion} → v{diff.toVersion}</span></div>
+  return <section id="policy" className="dossier-paper"><div className="dossier-paper-heading"><div><span className="section-index">06</span><div><h2>Policy change impact</h2><p>Compare synthetic example requirements. This preview does not publish or adopt policy.</p></div></div><span className="mono">DEMO PACK v{diff.fromVersion} → v{diff.toVersion}</span></div>
     <div className="policy-body">
       <div className="policy-diff">
         <div className="policy-group added"><span className="policy-group-label"><FilePlus2 size={12}/>New required checks</span>{diff.added.length?diff.added.map(r=><div className="policy-item" key={r.code}><code>{r.code}</code><span>{r.statement}</span><small>Evidence: {r.evidence_types.join(' · ')}</small></div>):<p className="policy-none">None — no new checks introduced.</p>}</div>
@@ -23,7 +24,7 @@ export function PolicyImpact({data, app}:{data:Workspace; app:Application}){
 
       <div className="policy-cases"><span className="policy-cases-label">Affected live cases · {impacts.length}</span>{impacts.length?impacts.map(impact=><div className="policy-case" key={impact.application_id}><span className="mono">{impact.ref_no}</span><div className="policy-case-tags">{impact.added.map(a=><b key={a.code} className="tag add">+ {a.code}</b>)}{impact.removed.map(r=><b key={r.code} className="tag remove">− {r.code}</b>)}{impact.changed.map(c=><b key={c.code} className="tag change">~ {c.code}</b>)}</div></div>):<p className="policy-none">No live case on this route is affected.</p>}</div>
 
-      <p className="policy-note"><strong>Snapshot preserved.</strong> Each dossier keeps the policy snapshot recorded at its own review ({changedCodes.size?`${[...changedCodes].join(', ')} changes apply to new or re-opened checks only`:'no recorded verification is rewritten'}). Recorded verifications retain their original basis; adopting v{diff.toVersion} never silently re-clears a cleared claim.</p>
+      <p className="policy-note"><strong>Preview only.</strong> {changedCodes.size?`Changed checks: ${[...changedCodes].join(', ')}. `:''}No requirement snapshot or recorded verification is changed. A reviewed adoption workflow is not implemented.</p>
     </div>
   </section>;
 }

@@ -6,5 +6,33 @@
   {
     "file": "20261022164412_revoke_implicit_writes.sql",
     "sha256": "d89c5ae7ac9f64aa33a6abda2f3fc379a58a71fc873ace6ef34915850cd9fc44"
+  },
+  {
+    "file": "20261023100000_claim_ledger.sql",
+    "sha256": "dfb4ee78cc27a5ddac770d4d62e454e07f36f4336c36bb8ba589aaab129be129"
+  },
+  {
+    "file": "20261023110000_claim_rpcs.sql",
+    "sha256": "7257012b7b259aea5bcd33403f43d8e6afa50b4404934ead7e04fd575b77c72b"
+  },
+  {
+    "file": "20261023120000_evidence_integrity.sql",
+    "sha256": "e81e91d8bed4466308156a9314bc02cd5e85fd23196ceec62bba687013c74191"
+  },
+  {
+    "file": "20261023130000_audit_chain.sql",
+    "sha256": "5655d800d8ab285024f12cbd4aa52af728a046f60ac1f131988b160d12db2239"
+  },
+  {
+    "file": "20261023140000_trust_access.sql",
+    "sha256": "61fcf8253c2896c61f4589511e607335aa2f5be46cbbef5e02ee7c1ca04f2131"
+  },
+  {
+    "file": "20261023163901_fix_integrity_boundaries.sql",
+    "sha256": "89ea597dd194bf2c9971ed9e86e94dc10995e71780fd15ddf54c0c71ad48546d"
+  },
+  {
+    "file": "20261024024009_correction_review_basis.sql",
+    "sha256": "a6300e0f0ae24bf3edc464d5ede1b38943367bd6263ffd0470622a6e5d00d084"
   }
 ]
