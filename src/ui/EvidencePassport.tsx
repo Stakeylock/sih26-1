@@ -14,34 +14,8 @@ export function EvidencePassport({document,app,data,openCase,close}:{document:Do
     <DocumentPreview document={document} claim={claims[0]?.statement_snapshot}/>
     <dl className="passport-grid"><div><dt><Fingerprint size={13}/>SHA-256</dt><dd className="mono">{document.sha256??'Not computed · scanner has not released this file'}</dd></div><div><dt><ShieldCheck size={13}/>Scan status</dt><dd>{scan}</dd></div><div><dt><Clock3 size={13}/>Expiry</dt><dd>{document.expires_on?`${date(document.expires_on)}${expired?' · expired':' · current'}`:'No expiry recorded'}</dd></div><div><dt>Issuer / document number</dt><dd>{document.issuer??'Not recorded'}{document.document_number?` · ${document.document_number}`:''}</dd></div><div><dt>Uploaded</dt><dd>{date(document.uploaded_at)}</dd></div><div><dt>Case</dt><dd>{app.ref_no} · {app.region}</dd></div></dl>
     <section className="passport-section">
-      <h3>APH Document Intelligence (Assistive Pre-check)</h3>
-      <div style={{padding:'8px 12px',background:'var(--surface-muted,#f8fafc)',borderRadius:'6px',fontSize:'13px'}}>
-        <div style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}>
-          <span><strong>Document Class:</strong> {document.doc_type}</span>
-          <span className="document-tag clean"><Check size={11}/>Format Verified</span>
-        </div>
-        {document.doc_type==='Land Document'&&(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px',marginTop:'6px',fontSize:'12px'}}>
-            <div><span style={{color:'var(--foreground-muted,#57697c)',display:'block'}}>Tenure Type</span><strong>Registered 33-Year Lease</strong></div>
-            <div><span style={{color:'var(--foreground-muted,#57697c)',display:'block'}}>Survey / Plot</span><strong>Sy. No. 142/2A, Medchal</strong></div>
-            <div><span style={{color:'var(--foreground-muted,#57697c)',display:'block'}}>APH Clause 1.4 Norm</span><strong style={{color:'var(--verified)'}}>Compliant (Min. 30 Yrs)</strong></div>
-            <div><span style={{color:'var(--foreground-muted,#57697c)',display:'block'}}>Registration Authority</span><strong>State Sub-Registrar</strong></div>
-          </div>
-        )}
-        {document.doc_type==='Fire Safety Certificate'&&(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px',marginTop:'6px',fontSize:'12px'}}>
-            <div><span style={{color:'var(--foreground-muted,#57697c)',display:'block'}}>Issuing Authority</span><strong>{document.issuer||'State Fire & Emergency Services'}</strong></div>
-            <div><span style={{color:'var(--foreground-muted,#57697c)',display:'block'}}>Certificate No.</span><strong className="mono">{document.document_number||'FS-NOC-2025-8812'}</strong></div>
-            <div><span style={{color:'var(--foreground-muted,#57697c)',display:'block'}}>Validity Status</span><strong style={{color:expired?'var(--critical)':'var(--verified)'}}>{expired?'Expired on Scrutiny Date':'Current'}</strong></div>
-            <div><span style={{color:'var(--foreground-muted,#57697c)',display:'block'}}>APH Preflight Action</span><strong>{expired?'Deficiency Flagged (Claim 7)':'Ready for Scrutiny'}</strong></div>
-          </div>
-        )}
-        {document.doc_type!=='Land Document'&&document.doc_type!=='Fire Safety Certificate'&&(
-          <p style={{margin:'4px 0 0',fontSize:'12px',color:'var(--foreground-muted,#57697c)'}}>
-            Structure and integrity metadata verified. Final factual determination remains with the assigned scrutiny officer in the Claim Ledger.
-          </p>
-        )}
-      </div>
+      <h3>Document checks</h3>
+      <p className="passport-empty">This synthetic record has no automated content extraction. Format, scan status, and expiry come from the record above; a reviewer checks the document against its linked claim.</p>
     </section>
     <section className="passport-section"><h3>Duplicate use</h3>{duplicates.length?<ul className="passport-list">{duplicates.map(item=>{const other=data.applications.find(application=>application.id===item.application_id);return <li key={item.id}><span className="passport-list-icon warning"><Link2 size={14}/></span><div><strong>{other?.ref_no??item.application_id} · {item.doc_type}</strong><p>The same SHA-256 is attached to another case. A duplicate is a signal, not a verdict; a human must disposition it.</p>{openCase&&other&&<button className="text-button" onClick={()=>{close();openCase(other.id);}}>Open the other case</button>}</div></li>;})}</ul>:<p className="passport-empty">No other case shares this hash.</p>}</section>
     <section className="passport-section"><h3>Linked claims</h3>{claims.length?<ul className="passport-list">{claims.map(claim=><li key={claim.id}><span className={`passport-list-icon ${claim.status==='verified'?'clean':'warning'}`}>{claim.status==='verified'?<Check size={14}/>:<AlertTriangle size={14}/>}</span><div><strong>{claim.clause_snapshot} · {claim.status.replaceAll('_',' ')}</strong><p>{claim.statement_snapshot}</p></div></li>)}</ul>:<p className="passport-empty">This document is not linked to a claim.</p>}</section>

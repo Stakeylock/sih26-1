@@ -127,8 +127,8 @@ try {
     await page.waitForTimeout(300);
     const reportsText = await page.evaluate(() => document.body.innerText);
     expect(
-      'Section B: Regional matrix section 03 rendered',
-      reportsText.includes('Pan-India Regional Pendency & Bottlenecks') &&
+      'Section B: Regional matrix rendered',
+      reportsText.includes('Active cases by region') &&
         reportsText.includes('North') &&
         reportsText.includes('East'),
     );

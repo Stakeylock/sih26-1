@@ -19,11 +19,11 @@ export function Welcome({onEnter,onStory,theme,toggleTheme}:{onEnter:()=>void;on
         </dl>
       </section>
       <section className="welcome-visual" aria-label="Animated preview of a case moving through the approval route">
-        <div className="welcome-visual-top"><span className="live-dot"/>LIVE CASE <span className="mono">DEMO-2026-1001</span><span className="welcome-synthetic">SYNTHETIC</span></div>
+        <div className="welcome-visual-top"><span className="live-dot"/>ILLUSTRATIVE JOURNEY <span className="mono">DEMO-2026-1001</span><span className="welcome-synthetic">SYNTHETIC</span></div>
         <article className="welcome-case-card"><div className="welcome-case-top"><span className="mono">DEMO-2026-1001</span><Badge status="under_scrutiny"/></div><strong>Cedar Technical Institute</strong><span>Self-disclosure extension · 2026-27</span><div className="welcome-case-meta"><span><Clock3 size={13}/>2d remaining</span><span><ShieldCheck size={13}/>Scrutiny officer</span></div></article>
         <div className="welcome-route" aria-hidden="true">{routeStages.map((stage,index)=><div className={`welcome-station ${index<2?'reached':''} ${index===2?'current':''}`} key={stage.key}><span>{String(index+1).padStart(2,'0')}</span><strong>{stage.label}</strong></div>)}<i className="welcome-pulse"/></div>
         <article className="welcome-receipt-card"><div className="welcome-receipt-head"><span>DECISION RECEIPT</span><ReceiptText size={16}/></div><strong>Approved</strong><p>Evidence accepted. Human decision recorded.</p><span className="mono">REGIONAL OFFICER · 17 OCT · v1.0</span></article>
-        <span className="welcome-visual-note">One case. Five hands. Zero orphaned handoffs.</span>
+        <span className="welcome-visual-note">Illustrative sequence, not this record's current state.</span>
       </section>
     </main>
     <section className="welcome-principles" aria-labelledby="welcome-principles-title">
