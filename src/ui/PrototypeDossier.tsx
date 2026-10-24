@@ -531,7 +531,7 @@ export function PrototypeDossier({
             <div className="prototype-advisory">
               <div className="spread">
                 <span className="document-tag clean">Advisory only</span>
-                <span className="quiet">n8n follow-up: {advisory.automation.state}</span>
+                <span className="quiet">Follow-up: {advisory.automation.state}</span>
               </div>
               <p>{advisory.summary}</p>
               {advisory.warnings.length > 0 && (

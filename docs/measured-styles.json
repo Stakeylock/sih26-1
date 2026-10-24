@@ -9,8 +9,8 @@
   ".dispatch-header h1": {
     "fontSize": "31px"
   },
-  ".case-register": {
-    "borderRadius": "4px",
+  ".stage-board": {
+    "borderRadius": "0px",
     "backgroundColor": "rgb(255, 255, 255)"
   },
   ".button": {

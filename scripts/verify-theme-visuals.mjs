@@ -47,9 +47,8 @@ try{
     expect(`${screen.name}: no horizontal overflow`,!overflow);
     await page.screenshot({path:`scratch-visual/dark-${screen.name}-1440.png`,fullPage:true});
     if(screen.name==='overview'){
-      const search=await page.locator('.overview-search').evaluate(el=>({wrapper:getComputedStyle(el).backgroundColor,input:getComputedStyle(el.querySelector('input')).backgroundColor}));
-      expect('overview search wrapper is dark',search.wrapper==='rgb(15, 23, 32)');
-      expect('overview search input is transparent',search.input==='rgba(0, 0, 0, 0)');
+      const preview=await page.locator('.overview-preview').evaluate(el=>getComputedStyle(el).backgroundColor);
+      expect('overview preview is dark paper',preview==='rgb(20, 28, 37)');
     }
     if(!['welcome','prototype','prototype-case','receipt'].includes(screen.name)){
       const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
@@ -60,18 +59,20 @@ try{
   }
 
   await page.goto(`${BASE}/#case/demo-app-0`,{waitUntil:'networkidle'});
-  const memorandumButton=page.getByRole('button',{name:/Deficiency Memorandum/});
-  expect('memorandum action present',await memorandumButton.count()===1);
-  if(await memorandumButton.count()){
-    await memorandumButton.click();
+  const summaryButton=page.getByRole('button',{name:'Correction summary',exact:true});
+  expect('correction summary action present',await summaryButton.count()===1);
+  if(await summaryButton.count()){
+    await summaryButton.click();
     await page.waitForTimeout(250);
-    const sheet=await page.locator('.memorandum-sheet').evaluate(el=>({background:getComputedStyle(el).backgroundColor,color:getComputedStyle(el).color}));
-    expect('memorandum renders as light paper',sheet.background==='rgb(255, 253, 248)');
-    expect('memorandum text is dark on paper',sheet.color==='rgb(24, 33, 38)');
-    await page.screenshot({path:'scratch-visual/dark-memorandum-1440.png'});
+    const dialog=page.getByRole('dialog',{name:'Synthetic correction summary'});
+    expect('correction summary dialog opens',await dialog.count()===1);
+    const sheet=await dialog.evaluate(el=>({background:getComputedStyle(el).backgroundColor,color:getComputedStyle(el).color}));
+    expect('correction summary renders on dark paper',sheet.background==='rgb(20, 28, 37)');
+    expect('correction summary text is light',sheet.color==='rgb(230, 237, 245)');
+    await page.screenshot({path:'scratch-visual/dark-correction-summary-1440.png'});
     const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
     const serious=results.violations.filter(v=>v.impact==='serious'||v.impact==='critical');
-    expect('memorandum: no serious axe violations',serious.length===0);
+    expect('correction summary: no serious axe violations',serious.length===0);
     if(serious.length)console.log(serious.flatMap(v=>v.nodes.map(n=>`  ${v.id} ${n.target.join(' ')} :: ${(n.failureSummary??'').replace(/\n/g,' ')}`)).join('\n'));
   }
 

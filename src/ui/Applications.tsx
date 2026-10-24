@@ -3,7 +3,7 @@ import {ArrowLeft,ArrowRight,Check,Plus,Search} from 'lucide-react';
 import {nextAuthority,regions,routeStage,statusLabels,typeLabels,type AppType,type Application,type Identity,type Repository,type Workspace} from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
 import {ApplicationRow} from './Overview';
-import {Badge,Due,Empty,Panel,SecurityNote,ViewHeader} from './common';
+import {Badge,Due,Empty,Panel,ViewHeader} from './common';
 export type Run=(operation:()=>Promise<void>,message:string)=>Promise<boolean>;
 export function Applications({data,query,setQuery,open,create,identity}:{data:Workspace;query:string;setQuery:(q:string)=>void;open:(id:string)=>void;create:()=>void;identity:Identity}){
   const [status,setStatus]=useState('all');const [region,setRegion]=useState('all');const [scope,setScope]=useState<'active'|'all'|'closed'>('active');
@@ -51,6 +51,6 @@ export function NewApplication({data,identity,repo,run,open,back,busy}:{data:Wor
         </>}
         <div className="form-actions">{step===1&&<button type="button" className="button secondary" onClick={()=>setStep(0)}>Back</button>}<button className="button" disabled={busy||!template||invalidIntake}>{busy?'Creating…':step===0?'Continue to institution details':'Save draft & continue to evidence'}<ArrowRight size={16}/></button></div>
       </form>
-    </Panel><SecurityNote/>
+    </Panel>
   </>;
 }

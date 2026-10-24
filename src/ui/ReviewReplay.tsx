@@ -13,7 +13,7 @@ export function ReviewReplay({app,history,error,retry}:{app:Application;history:
   const snapshot=replayClaimState([],entries,index);
   const selected=entries[index];
   const coverage=history?historyCoverage(history):null;
-  return <section id="replay" className="dossier-paper"><div className="dossier-paper-heading"><div><span className="section-index">07</span><div><h2>Replayable review record</h2><p>Inspect recorded snapshots. Earlier actions without a snapshot remain limited records.</p></div></div><span className="mono">WORKFLOW v{app.template_version} · {entries.length} EVENTS</span></div>
+  return <section id="replay" className="dossier-paper"><div className="dossier-paper-heading"><div><div><h2>Replayable review record</h2><p>Inspect recorded snapshots. Earlier actions without a snapshot remain limited records.</p></div></div><span className="mono">WORKFLOW v{app.template_version} · {entries.length} EVENTS</span></div>
     <div className="replay-body">
       {error?<div className="callout warning"><strong>History unavailable</strong><p>{error}</p><button className="button outline" onClick={retry}>Retry history</button></div>:!history?<p role="status">Loading case history…</p>:<>
         {coverage?.message&&<p className="callout warning">{coverage.message}</p>}

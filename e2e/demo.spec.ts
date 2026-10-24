@@ -4,6 +4,7 @@ const SECTIONS:Record<string,string>={'Overview':'Workbench','Applications':'App
 const PILL:Record<string,string>={'Alerts & escalations':'Alerts','Audit logs':'Audit'};
 async function openDesk(page:Page,label:string){if(label==='Settings'){await page.getByRole('button',{name:'Settings',exact:true}).click();return;}const section=SECTIONS[label];if(section)await page.getByRole('navigation').getByRole('button',{name:section,exact:true}).click();if(!section||section!==label)await page.getByRole('navigation').getByRole('button',{name:PILL[label]??label,exact:true}).click();}
 async function openDrawer(page:Page,label:string){await page.getByRole('button',{name:'Open navigation'}).click();await page.getByRole('navigation').getByRole('button',{name:label,exact:true}).click();}
+async function openCase(page:Page,ref:string){await openDesk(page,'Applications');await page.getByRole('textbox',{name:'Search applications'}).fill(ref);await page.getByRole('button',{name:ref,exact:true}).click();}
 test.beforeEach(async({page})=>{await page.goto('/#overview');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();});
 test('public landing explains the approval record and starts the guided story',async({page})=>{
   await page.goto('/');
@@ -46,13 +47,28 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await expect(page.getByRole('heading',{name:'Time since last update',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Open Scrutiny stage',exact:true})).toBeVisible();
   await openDesk(page,'Applications');
-  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
   await page.screenshot({path:'../../work/flowpilot-case.png',fullPage:true});
   for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Obligation register'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
+});
+test('overview attention reflects attached evidence and current review state',async({page})=>{
+  const preview=page.getByRole('complementary',{name:'Selected case preview'});
+  await expect(preview).toContainText('Why it needs attention');
+  await expect(preview).not.toContainText('clean scan required');
+  await expect(preview).not.toContainText('Board Resolution');
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
+  const institutionPreview=page.getByRole('complementary',{name:'Selected case preview'});
+  await expect(institutionPreview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
+  await expect(institutionPreview).toContainText('2 of 9 claims awaiting verification.');
+  await page.getByRole('navigation').getByRole('button',{name:'Needs attention',exact:true}).click();
+  await expect(page.getByRole('heading',{level:1,name:'Applications requiring attention',exact:true})).toBeVisible();
+  const prototypePreview=page.getByRole('complementary',{name:'Selected case preview'});
+  await expect(prototypePreview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
+  await expect(prototypePreview).toContainText('2 of 9 claims awaiting verification.');
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
@@ -77,7 +93,7 @@ test('institution creates and saves a synthetic draft; unsafe upload is rejected
 });
 test('evidence passport surfaces duplicate use and linked claims',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await page.locator('.document').filter({hasText:'fire_safety_certificate.pdf'}).first().getByRole('button',{name:/View document record/}).click();
   const passport=page.getByRole('dialog');
@@ -105,7 +121,7 @@ test('evidence passport remains readable at 390px',async({page})=>{
 });
 test('scrutiny verifies a claim and records a reasoned deficiency',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await expect(page.getByRole('button',{name:'Accept scrutiny',exact:true})).toBeDisabled();
   await expect(page.getByText('Resolve 3 unresolved items before accepting scrutiny.',{exact:true})).toBeVisible();
   const verified=page.locator('.claim-row').filter({hasText:'Institution name and AICTE reference match the trust record'});
@@ -125,7 +141,7 @@ test('scrutiny verifies a claim and records a reasoned deficiency',async({page})
 });
 test('an institution can upload only the replacement type for an open claim deficiency',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await expect(page.getByLabel('Upload Affidavit')).toHaveCount(0);
   await expect(page.getByLabel('Upload Faculty List')).toHaveCount(0);
@@ -135,7 +151,7 @@ test('an institution can upload only the replacement type for an open claim defi
 });
 test('claims raise, resolve, and re-check across institution and scrutiny',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   const scrutinyRow=()=>page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
   await scrutinyRow().getByRole('button',{name:'Raise deficiency',exact:true}).click();
   const raise=page.getByRole('dialog');
@@ -146,7 +162,7 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
   await expect(scrutinyRow()).toContainText('Deficiency open');
 
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   const institutionRow=()=>page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'});
   await institutionRow().getByRole('button',{name:'Resolve',exact:true}).click();
   const resolve=page.getByRole('dialog');
@@ -157,7 +173,7 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
   await expect(institutionRow()).toContainText('awaiting re-check');
 
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await scrutinyRow().getByRole('button',{name:'Re-check',exact:true}).click();
   const recheck=page.getByRole('dialog');
   await recheck.getByLabel('Re-check note').fill('Reconciled register checked; the faculty list now matches.');
@@ -168,9 +184,7 @@ test('claims raise, resolve, and re-check across institution and scrutiny',async
 });
 test('behavioral: replacement certificate clears the fire claim while missing infrastructure evidence still blocks',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
-  await openDesk(page,'Applications');
-  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   const fire=()=>page.locator('.claim-row').filter({hasText:'Fire safety certificate is valid on the scrutiny date'});
   await fire().getByRole('button',{name:'Resolve',exact:true}).click();
   const resolve=page.getByRole('dialog');
@@ -185,7 +199,7 @@ test('behavioral: replacement certificate clears the fire claim while missing in
   await expect(ratio).toContainText('Sanctioned intake');
 
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await fire().getByRole('button',{name:'Re-check',exact:true}).click();
   const recheck=page.getByRole('dialog');
   await recheck.getByLabel('Re-check note').fill('Current replacement certificate checked for this demonstration.');
@@ -209,7 +223,7 @@ test('behavioral: replacement certificate clears the fire claim while missing in
 });
 test('claim dialogs hold focus and close with Escape',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await page.locator('.claim-row').filter({hasText:'Faculty count and cadre ratio'}).getByRole('button',{name:'Verify',exact:true}).click();
   const dialog=page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -320,8 +334,7 @@ test('dossier is the page header and keeps authority and return path',async({pag
   await expect(page.getByText('Return in route:',{exact:false})).toBeVisible();
   await expect(page.getByText('Synthetic record',{exact:true})).toBeVisible();
   await openDesk(page,'Applications');
-  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await expect(page.getByText('Next authority:',{exact:false})).toContainText('Scrutiny officer');
   await expect(page.locator('.dossier-route-note')).toContainText('Current handoff: Scrutiny · Scrutiny officer');
 });
@@ -383,7 +396,7 @@ test('mobile overview orders header, priority, and stage workload without the du
   });
   expect(ordered).toBe(true);
   await expect(page.locator('.dispatch-action-column').getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
-  await expect(page.locator('.case-register')).toBeHidden();
+  await expect(page.locator('.case-register')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 test('application register matches region, stage, and status columns',async({page})=>{
@@ -427,9 +440,11 @@ test('mobile applications use case cards and the dossier route stays inside the 
   await expect(page.locator('.workflow-rail-scroll')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
-test('overview lists every active case and reports follow the selected scope',async({page})=>{
+test('overview keeps the full active scope visible and reports follow the selected scope',async({page})=>{
   await expect(page.getByRole('heading',{name:'Work by stage',exact:true})).toBeVisible();
-  await expect(page.locator('.case-register tbody tr')).toHaveCount(7);
+  await expect(page.locator('.dispatch-header')).toContainText('7 active cases');
+  await openDesk(page,'Applications');
+  await expect(page.locator('.applications-table tbody tr')).toHaveCount(7);
   await openDesk(page,'Reports');
   await expect(page.locator('.support-header-count')).toContainText('07');
   await expect(page.locator('.support-header-count')).toContainText('active cases');
@@ -455,8 +470,7 @@ test('alerts offer queue navigation and route visuals expose a return branch',as
 });
 test('claim ledger shows nine claims and stays within a 390px viewport',async({page})=>{
   await openDesk(page,'Applications');
-  await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1001');
-  await page.getByRole('button',{name:'DEMO-2026-1001',exact:true}).click();
+  await openCase(page,'DEMO-2026-1001');
   await expect(page.getByRole('heading',{name:'Claim ledger',exact:true})).toBeVisible();
   await expect(page.locator('.claim-row')).toHaveCount(9);
   await expect(page.locator('.claim-summary')).toContainText('6 of 9 verified or not applicable');
