@@ -6,11 +6,10 @@ test('active dossier metric excludes closed cases and follows the selected role'
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
   await expect(count).toHaveText('02');
 });
-test('landing illustration advances and stops at a static state for reduced motion',async({page})=>{
+test('landing illustration advances and stops for reduced motion',async({page})=>{
   await page.clock.install();await page.emulateMedia({reducedMotion:'no-preference'});await page.goto('/');
-  const receipt=page.locator('.welcome-receipt-card');await expect(receipt).toHaveAttribute('data-phase','initial');
-  await page.clock.fastForward(3300);await expect(page.locator('.welcome-evidence-card')).toHaveClass(/shown/);
-  await page.emulateMedia({reducedMotion:'reduce'});await expect(receipt).toHaveAttribute('data-phase','final');
-  await page.clock.fastForward(12000);await expect(receipt).toHaveAttribute('data-phase','final');
-  await expect(page.getByText("Illustrative sequence, not this record's current state.",{exact:true})).toBeVisible();
+  const illustration=page.getByRole('figure',{name:'Illustrative evidence review'});await illustration.scrollIntoViewIfNeeded();
+  await expect(illustration).toHaveAttribute('data-step','evidence');await page.clock.fastForward(4500);await expect(illustration).toHaveAttribute('data-step','correction');
+  await page.emulateMedia({reducedMotion:'reduce'});await expect(illustration).toHaveAttribute('data-playing','false');await page.clock.fastForward(12000);await expect(illustration).toHaveAttribute('data-step','correction');
+  await expect(page.getByText('Automatic motion is off. Choose any step above.',{exact:true})).toBeVisible();
 });

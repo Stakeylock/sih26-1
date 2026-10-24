@@ -10,8 +10,8 @@ test.beforeEach(async({page})=>{await page.goto('/#overview');await page.evaluat
 test('public landing explains the approval record and starts the guided story',async({page})=>{
   await page.goto('/');
   await expect(page.getByRole('heading',{level:1,name:/The file moves/})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Run the 90-second story',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Run the 90-second story',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Take a guided tour',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Take a guided tour',exact:true}).click();
   await expect(page.getByRole('complementary',{name:'Guided demonstration story'})).toBeVisible();
   await expect(page.getByText('Start where the deadline is closest.',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Next handoff',exact:true}).click();
@@ -22,7 +22,7 @@ test('public landing explains the approval record and starts the guided story',a
 });
 test('landing enters the dispatch board',async({page})=>{
   await page.goto('/');
-  await page.getByRole('button',{name:'Open the dispatch board',exact:true}).click();
+  await page.getByRole('button',{name:'Open demo workspace',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
 });
 test('closed case exposes a printable decision receipt',async({page})=>{
