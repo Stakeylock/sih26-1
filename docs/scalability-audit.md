@@ -1,41 +1,46 @@
-# Scalability and reliability audit
+# Scalability and reliability implementation audit
 
-**Reviewed:** 2026-10-25
+Reviewed 2026-10-25 against the implementation and local services.
 
-**Validation:** Demo build passed; 260 unit/SQL tests and 77 browser E2E tests passed after the merge. This is not a production load test or deployment certification.
+The previously identified code gaps are now implemented and exercised locally. Remote production deployment and environment-specific recovery validation remain operational steps; these results establish no production user-capacity claim.
 
-**Scope:** Current Clauseway source, Supabase migrations, local worker scripts, and repository tests.
+## Implemented controls
 
-## Summary
+| Area | Implementation and evidence |
+|---|---|
+| Atomic workflow and notification intent | Row-locked expected-version transitions retain their request receipts and per-case audit events. Configured returns, claim corrections and final decisions register an in-app delivery intent in the same transaction. Event/recipient/channel uniqueness prevents duplicate intents. See migrations `20261025142712_reliable_workers_and_paged_reads.sql` and `20261025150205_complete_workflow_notification_boundary.sql`, and `tests/reliability.test.ts`. |
+| Server pagination | `fp_application_page` applies role scope, search, status and region filters in Postgres with deadline/id cursors and a maximum of 100 records. The connected UI requests 25 per page. `fp_case_bundle` independently loads the selected authorised case, including cases outside the initial window. Related workspace queries are restricted to the loaded case IDs. The initial dashboard window and its total scope are explicitly identified. See `src/ui/RemoteApplications.tsx`, `src/data/supabase.ts`, and `e2e/connected-register.spec.ts`. |
+| Read performance and authorization | Live role grants and session state are cached once per SQL statement using initplans, preserving owner, region, draft, expiration and revocation boundaries. The measured bottleneck was repeated per-row permission evaluation during register counts. Cursor indexes and the saved query plan support the actual filters. See migration `20261025144551_cache_read_scope_for_pagination.sql` and the before/after results. |
+| Durable deadline work | Pending intents persist independently of the browser. Bounded database processing uses row locks, current deadline-revision checks, per-item exception recovery, retry backoff and an exhausted state after five attempts. In-app insertion and completion share a transaction. `tests/governance.test.ts` interrupts reminder insertion and verifies recovery without a duplicate. |
+| Delivery recovery | Token leases, retries, attempt history, source invalidation and explicit ambiguous SMTP states remain enforced. The service processes durable work continuously. SQL tests reject stale tokens; real integration retains a pending update while the worker is stopped and delivers one effect after restart. |
+| Actual malware scanning | Direct private-storage uploads finalize a scan job. A recovery scan finds uploaded objects whose finalize response was lost. The worker verifies size and byte type, sends actual bytes to ClamAV INSTREAM, and records the byte hash and engine/signature version. Operational failure retains quarantine; exhausted work is visible. Real integration rejects the harmless antivirus test and a MIME mismatch and accepts three clean images. |
+| Worker service package | `Dockerfile.worker` and `deploy/compose.worker.yml` provide pinned images, restart policy, health checks, private ports, a persistent signature volume and an unprivileged worker with a read-only filesystem. Remote configuration requires an exact expected HTTPS Supabase host and server-only secret. This package is built and running locally; no remote production deployment has been performed. |
+| Job diagnostics | Case operations lists actual scan/deadline state, attempts and errors. Scoped managers can perform idempotent, version-checked retries with an audit reason. Readiness reports current worker/scanner heartbeats, queue age and failed work. See `src/ui/WorkerJobs.tsx` and migration `20261025145530_worker_readiness_metrics.sql`. |
+| Audit integrity | Per-case hash chains and append ordering remain in the case transaction. Existing SQL and browser tamper tests pass. The chain is tamper-evident under its stated database assumptions; it does not prove that an evidence claim is true. |
+| Reproducible measurement | `scripts/scale-benchmark.mjs` creates and removes only a uniquely named disposable database on loopback Postgres. It applies the real migrations, seeds 10,000 applications/events/obligations and 1,000 delivery intents, then measures 25/50/100 virtual clients using a 25-connection pool with background delivery. Reports include script/schema hashes, timing, errors, connection/lock samples, queue data, query plans, conflicting-write results and isolation checks. |
 
-The project already has several meaningful reliability controls: database-enforced role and case scope, row-locked versioned transitions, retry receipts, per-case hash-linked audit events, private object storage, bounded worker batches, and leased notification delivery. Those controls are covered by SQL-backed tests in several areas.
+## Latest measured local workload
 
-The project is **not yet validated for scale**. The connected workspace fetch is capped rather than cursor-paginated; background workers and the mail sink are explicitly local-only; malware scanning is a release gate; and there is no representative 10,000-case load test or measured latency/queue data. Do not claim a supported user count or production-scale capacity.
+| Virtual clients | Duration | Register p95 | Case detail p95 | Transition p95 | Error rate |
+|---|---|---|---|---|---|
+| 25 | 10.2s | 89.04 ms | 19.4 ms | 33.51 ms | 0% |
+| 50 | 10.5s | 150.47 ms | 83.88 ms | 42.03 ms | 0% |
+| 100 | 11.1s | 273.07 ms | 206.17 ms | 66.66 ms | 0% |
 
-## Findings
+These timings include database connection-pool wait on the shared local machine. The benchmark uses real Postgres and application migrations with synthetic Auth/Storage metadata. It excludes HTTP, hosted authentication, storage-byte transfer and wide-area network effects. The separate real Supabase/ClamAV integration covers those local service boundaries. The conflicting-write probe records one success, one stale-version conflict and one event; the isolation probe exposes zero foreign institution cases.
 
-| Area | Status | Evidence and limits |
-|---|---|---|
-| Modular monolith | Implemented | React app, domain modules, Supabase/Postgres RPCs and local workers are in one repository. No service split or distributed message broker is required by the current design. |
-| Authorization and atomic workflow transitions | Implemented | `fp_private.transition` locks the case row, checks the expected version and authorization, then writes the state change, event, and transition receipt in one database transaction. `fp_private.transition_receipts.request_id` is a primary key; its stored actor, case, input, and result bind retries to the original request. See `supabase/migrations/20261022160724_harden_flowpilot.sql`, later transition definitions in `supabase/migrations/20261024105147_approval_scope_and_notices.sql` and `supabase/migrations/20261024202254_scoped_operations_delivery.sql`, plus `tests/security.test.ts` and `tests/claim-rpcs.test.ts`. |
-| Transactional notification outbox | Partial | `delivery_outbox` records source-bound work; workers claim bounded batches under row locks, use expiring lease tokens, and record attempts. In-app notifications are unique by `outbox_id`. This is a separate operations command and is not automatically attached to every workflow transition. The SMTP path is a local test sink, not real production email. See `supabase/migrations/20261024202254_scoped_operations_delivery.sql`, `scripts/process-outbox.mjs`, and `tests/operations-db.test.ts`. |
-| Deadline processing | Partial | `deadline_reminder_intents` are durable, unique per deadline and recipient, indexed for pending due work, and processed in bounded batches with stale-revision checks. A failed database transaction leaves work pending for a later run. There is no attempt/backoff or failed-job state for reminders, and the supplied worker is local-only. See `supabase/migrations/20261024105147_approval_scope_and_notices.sql`, `scripts/process-deadlines.mjs`, and `tests/governance.test.ts`. |
-| Audit integrity | Implemented, with stated limits | Events carry per-application sequence, previous hash, and event hash; verification detects altered or incomplete chains. Event appends are serialized with the case transaction. The chain is tamper-evident under its database and hash assumptions; it does not prove the underlying evidence is true and cannot protect against every fully privileged administrator. See `supabase/migrations/20261024024009_correction_review_basis.sql`, `src/domain/integrity.ts`, `tests/audit-chain.test.ts`, and `tests/audit.test.ts`. |
-| General list reads and pagination | Partial | `src/data/supabase.ts` loads workspace-wide collections with fixed limits (for example, 200 applications, 1,000 documents, and 500 events). Per-case history has a bounded cursor RPC (`fp_case_history`, 100 events per page, at most 20 pages), but the main registers do not expose cursor pagination or query only the selected page. RLS still applies to the database reads. Current list limits prevent unbounded responses but can silently omit older rows from a larger workspace. |
-| Query indexes and query-plan evidence | Partial | Migrations define targeted indexes for case/status, documents, deadlines, outbox state, and event history. The repo does not include representative `EXPLAIN (ANALYZE, BUFFERS)` results or a repeatable plan review against a large synthetic dataset. Index changes should follow measured query plans. |
-| Evidence storage and scanning | Partial | The client uploads bytes directly to the private `application-docs` bucket after a server-authorized metadata reservation. Uploads are size/type bounded and remain `pending` until a trusted scanner records a hash, timestamp, and engine; storage policies restrict upload and download. No malware-scanner provider is integrated, and readiness checks explicitly leave scanning as a release gate. See `src/data/supabase.ts`, `supabase/migrations/20261022160724_harden_flowpilot.sql`, and `tests/operations-db.test.ts`. |
-| Background worker deployment | Partial | `scripts/process-deadlines.mjs` and `scripts/process-outbox.mjs` use a server-only service credential and reject non-loopback Supabase hosts. This is a safe local demonstration boundary, not a production scheduler or deployed worker service. `scripts/setup-local-worker.mjs` also targets loopback only. |
-| Concurrency and idempotency tests | Implemented for core behavior | SQL-backed tests cover stale-version conflicts, duplicate request receipts, role/scope denial, outbox leases, stale source invalidation, uncertain SMTP reconciliation, and audit-chain tampering. These test database invariants; they are not a throughput test with concurrent virtual users. |
-| Load and capacity testing | Missing | No 10,000-case synthetic load fixture, k6/Artillery workload, or measured p50/p95 latency, throughput, lock waits, queue age, or error rate was found. No capacity or concurrent-user claim is supported. |
+## Validation and operator evidence
 
-## Smallest viable next steps
+- Demo and connected builds passed.
+- 271 unit/SQL tests, 77 demo browser tests and two connected browser tests passed.
+- Supabase local security/performance advisors: no warning/error findings.
+- Root application dependency audit: zero reported vulnerabilities.
+- ClamAV and the worker container are running and healthy on loopback.
+- `docs/scale-results.json`: latest sustained database workload with provenance.
+- `docs/scale-results-before.json` and `docs/scale-results-smoke.json`: equivalent short probes before/after the policy optimization.
+- `docs/reliability-integration-results.json`: actual upload, quarantine, scan and worker-restart results.
+- `docs/reliability-operations.md`: startup, deployment configuration and repeatable commands.
 
-1. **Paginate the connected application register.** Add a role-scoped, cursor-based server query with a hard page-size ceiling. Keep the case detail RPC authoritative and preserve the current RLS boundaries. Add SQL tests for cursor order, page limits, and institution/region isolation before moving other collections.
-2. **Prove worker recovery.** Keep the current bounded queues. Add a test that expires an in-app delivery lease, lets a replacement worker claim it, rejects the old lease token, and records one notification. Add equivalent deadline retry/recovery coverage before introducing new queue infrastructure.
-3. **Connect scanning only after choosing an actual provider.** The integration must receive uploaded object bytes, quarantine failures, and mark `clean` only from a trusted server-side result. Keep the existing explicit release gate until then.
-4. **Measure a representative database workload.** Use a disposable Postgres/Supabase environment, seed reproducible synthetic data, and record schema, machine tier, run duration, p50/p95, errors, query plans, and queue lag. Increase virtual users in steps; do not infer national production capacity from a local run.
-5. **Review query plans and indexes from those measurements.** Keep the case transition and authorization paths independent from any eventually updated dashboard aggregates.
+## Environment-specific rollout
 
-## Current demonstrated claim
-
-The source supports saying that Clauseway has database-enforced version checks, scoped access, per-case audit verification, and bounded local workers. It does **not** support a claim that the system has been load-tested for a particular number of users or production volumes. Report those stronger claims only after the deployment environment and measurements above exist.
+Apply the migrations and deploy the worker package on the chosen staging/production Docker host using server-only secrets, then repeat synthetic scanning, isolation, retry, restart and workload validation on that infrastructure. Restore drills and a production capacity/SLO assessment remain separate operational evidence. Reference registries retain their existing bounded reads; additional large catalogs can adopt the same cursor pattern as the case register.

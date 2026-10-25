@@ -1,0 +1,11 @@
+import {useEffect,useState} from 'react';
+import type {Application,Repository} from '../domain/model';
+import type {WorkerJobs} from '../domain/register';
+import type {Run} from './Applications';
+export function WorkerJobsPanel({app,repo,manager,note,run,busy}:{app:Application;repo:Repository;manager:boolean;note:string;run:Run;busy:boolean}){
+ const [jobs,setJobs]=useState<WorkerJobs|null>(null),[error,setError]=useState(''),[refresh,setRefresh]=useState(0);
+ useEffect(()=>{if(!repo.workerJobs)return;let active=true;setJobs(null);setError('');void repo.workerJobs(app.id).then(value=>{if(active)setJobs(value);}).catch(e=>{if(active)setError(e instanceof Error?e.message:'Job records unavailable.');});return()=>{active=false;};},[repo,app.id,app.version,refresh]);
+ if(!repo.workerJobs)return null;
+ const rows=[...(jobs?.scans??[]).map(row=>({...row,kind:'scan' as const})),...(jobs?.deadlines??[]).map(row=>({...row,kind:'deadline' as const}))];
+ return <section className="dossier-paper intelligence-panel"><div className="spread"><h2>Background jobs</h2><button className="button secondary small" onClick={()=>setRefresh(value=>value+1)}>Refresh jobs</button></div>{error&&<p role="alert">{error}</p>}{jobs?<><p className="muted">Updated {new Date(jobs.checked_at).toLocaleTimeString()} · {rows.filter(row=>row.status==='exhausted').length} failed · {rows.filter(row=>['pending','retry_wait','processing'].includes(row.status)).length} waiting or processing</p><div className="table-scroll"><table><caption>Scanning and deadline work for this case</caption><thead><tr><th>Job</th><th>State</th><th>Attempts</th><th>Detail</th><th>Action</th></tr></thead><tbody>{rows.map(row=><tr key={row.id}><td>{row.kind}<small><code>{row.id}</code></small></td><td>{row.status.replaceAll('_',' ')}</td><td>{row.attempts}</td><td>{row.last_error??'No error recorded'}</td><td>{manager&&repo.retryJob&&['retry_wait','exhausted'].includes(row.status)&&<button className="text-button" disabled={busy||note.trim().length<10} onClick={()=>void run(()=>repo.retryJob!(row.kind,row.id,app.version,note),'Retry recorded.').then(ok=>{if(ok)setRefresh(value=>value+1);})}>Retry with recorded reason</button>}</td></tr>)}</tbody></table></div>{!rows.length&&<p>No background jobs recorded for this case.</p>}</>:!error&&<p role="status">Loading background jobs…</p>}</section>;
+}

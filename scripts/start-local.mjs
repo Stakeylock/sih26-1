@@ -14,11 +14,13 @@ try{
   ensureLocalNetwork();
   runNode(['node_modules/supabase/dist/supabase.js','start','--workdir','local','--network-id',localNetwork,'--exclude','realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor'],'supabase-start');
   runNode(['scripts/local-setup.mjs'],'local-setup');
+  runNode(['scripts/setup-local-worker.mjs'],'worker-setup');
+  const workerLog=openSync(resolve(runtime,'workers.private.log'),'a');try{const worker=spawnSync('docker',['compose','-f','deploy/compose.worker.yml','up','-d','--build','--wait','--wait-timeout','180'],{cwd:root,windowsHide:true,stdio:['ignore',workerLog,workerLog]});if(worker.status!==0)throw new Error('Background workers did not become healthy. See .runtime/workers.private.log.');}finally{closeSync(workerLog);}
   if(existsSync('.env.automation.local')){const config=readFileSync('.env.automation.local','utf8');if(/^N8N_WEBHOOK_URL=.+/m.test(config))throw new Error('n8n must remain disabled until its dependency gate is cleared.');}
   const envArgs=['--env-file=.env.connected.local',...(existsSync('.env.automation.local')?['--env-file=.env.automation.local']:[])];
   await start('backend',[...envArgs,'automation/server.mjs'],'http://127.0.0.1:8787/api/automation/health','127.0.0.1:55321',{AUTOMATION_ALLOW_DEMO:'true'});
-  await start('frontend-connected',['node_modules/vite/bin/vite.js','--mode','connected','--host','127.0.0.1','--port','5173'],'http://127.0.0.1:5173/','FlowPilot');
-  await start('frontend-demo',['node_modules/vite/bin/vite.js','--mode','demo','--host','127.0.0.1','--port','5174'],'http://127.0.0.1:5174/','FlowPilot');
+  await start('frontend-connected',['node_modules/vite/bin/vite.js','--mode','connected','--host','127.0.0.1','--port','5173'],'http://127.0.0.1:5173/','Clauseway');
+  await start('frontend-demo',['node_modules/vite/bin/vite.js','--mode','demo','--host','127.0.0.1','--port','5174'],'http://127.0.0.1:5174/','Clauseway');
   const status={connectedFrontend:'http://127.0.0.1:5173/#overview',demoFrontend:'http://127.0.0.1:5174/',backend:'http://127.0.0.1:8787/api/automation/health',supabase:'http://127.0.0.1:55321',scope:'loopback only',n8n:'disabled'};
   writeFileSync(resolve(runtime,'status.json'),JSON.stringify(status,null,2)+'\n');console.log(JSON.stringify(status,null,2));
 }catch(error){console.error(error.message);process.exitCode=1;}

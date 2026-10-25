@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-10-25T15:09:02.473732+00:00",
+  "environment": "loopback local Supabase",
+  "advisors_minimum_level": "warn",
+  "advisor_findings": [],
+  "application_dependency_vulnerabilities": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  }
+}

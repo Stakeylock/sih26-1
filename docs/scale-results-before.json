@@ -1,0 +1,201 @@
+{
+  "at": "2026-10-25T14:43:12.078Z",
+  "dataset": {
+    "applications": 10000,
+    "events": 10000,
+    "obligations": 10000,
+    "pending_notifications": 1000
+  },
+  "infrastructure": {
+    "engine": "PostgreSQL 17.11 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+    "host_cpus": 32,
+    "host_memory_bytes": 68470194176,
+    "database_connections": 25
+  },
+  "workloads": [
+    {
+      "virtual_clients": 25,
+      "duration_ms": 5202.1,
+      "metrics": {
+        "read_page": {
+          "requests": 25,
+          "p50_ms": 4983.4,
+          "p95_ms": 5045.3
+        },
+        "read_case": {
+          "requests": 25,
+          "p50_ms": 19.31,
+          "p95_ms": 23.4
+        },
+        "write": {
+          "requests": 25,
+          "p50_ms": 17.88,
+          "p95_ms": 22.05
+        },
+        "worker": {
+          "requests": 1,
+          "p50_ms": 76.67,
+          "p95_ms": 76.67
+        }
+      },
+      "errors": [],
+      "error_rate": 0,
+      "max_observed_lock_waiters": 0
+    },
+    {
+      "virtual_clients": 50,
+      "duration_ms": 9937.23,
+      "metrics": {
+        "read_page": {
+          "requests": 50,
+          "p50_ms": 9327.31,
+          "p95_ms": 9686.43
+        },
+        "read_case": {
+          "requests": 50,
+          "p50_ms": 4415.12,
+          "p95_ms": 4672.9
+        },
+        "write": {
+          "requests": 50,
+          "p50_ms": 97.27,
+          "p95_ms": 108.32
+        },
+        "worker": {
+          "requests": 1,
+          "p50_ms": 76.02,
+          "p95_ms": 76.02
+        }
+      },
+      "errors": [],
+      "error_rate": 0,
+      "max_observed_lock_waiters": 0
+    },
+    {
+      "virtual_clients": 100,
+      "duration_ms": 19640.57,
+      "metrics": {
+        "read_page": {
+          "requests": 100,
+          "p50_ms": 14072.3,
+          "p95_ms": 19453.76
+        },
+        "read_case": {
+          "requests": 100,
+          "p50_ms": 9156.56,
+          "p95_ms": 14218.44
+        },
+        "write": {
+          "requests": 100,
+          "p50_ms": 164.02,
+          "p95_ms": 367.01
+        },
+        "worker": {
+          "requests": 1,
+          "p50_ms": 72.88,
+          "p95_ms": 72.88
+        }
+      },
+      "errors": [],
+      "error_rate": 0,
+      "max_observed_lock_waiters": 0
+    }
+  ],
+  "checks": {
+    "concurrent_same_version": {
+      "successes": 1,
+      "conflicts": 1,
+      "events": 1
+    },
+    "isolation": {
+      "foreign_cases": 0
+    }
+  },
+  "limitations": [
+    "Loopback Postgres with the actual application migrations and synthetic Auth/Storage metadata.",
+    "Database RPC timings include pool wait; they exclude HTTP, hosted Auth, storage bytes and wide-area network latency.",
+    "25 database connections serve up to 100 virtual clients. No production capacity claim."
+  ],
+  "query_plan": [
+    {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0.29,
+        "Total Cost": 127.87,
+        "Plan Rows": 25,
+        "Plan Width": 24,
+        "Actual Startup Time": 0.368,
+        "Actual Total Time": 3.379,
+        "Actual Rows": 25,
+        "Actual Loops": 1,
+        "Shared Hit Blocks": 293,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0,
+        "Plans": [
+          {
+            "Node Type": "Index Only Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Scan Direction": "Forward",
+            "Index Name": "applications_region_due_cursor",
+            "Relation Name": "applications",
+            "Alias": "applications",
+            "Startup Cost": 0.29,
+            "Total Cost": 8823.89,
+            "Plan Rows": 1729,
+            "Plan Width": 24,
+            "Actual Startup Time": 0.368,
+            "Actual Total Time": 3.374,
+            "Actual Rows": 25,
+            "Actual Loops": 1,
+            "Index Cond": "(region = 'South'::text)",
+            "Rows Removed by Index Recheck": 0,
+            "Filter": "fp_private.can_view(id)",
+            "Rows Removed by Filter": 0,
+            "Heap Fetches": 39,
+            "Shared Hit Blocks": 293,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          }
+        ]
+      },
+      "Planning": {
+        "Shared Hit Blocks": 0,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.065,
+      "Triggers": [],
+      "Execution Time": 3.397
+    }
+  ],
+  "queue": {
+    "pending": 925,
+    "oldest_age_seconds": 46.700935
+  },
+  "passed": true
+}

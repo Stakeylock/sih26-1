@@ -6,8 +6,11 @@ import { workingDaysUntil } from '../domain/clock';
 import { workspaceHolidays } from '../domain/calendar';
 import {ApplicationRow} from './Overview';
 import {Badge,Due,Empty,Panel,ViewHeader} from './common';
+import {RemoteApplications} from './RemoteApplications';
 export type Run=(operation:()=>Promise<void>,message:string)=>Promise<boolean>;
-export function Applications({data,query,setQuery,open,create,identity}:{data:Workspace;query:string;setQuery:(q:string)=>void;open:(id:string)=>void;create:()=>void;identity:Identity}){
+type ApplicationsProps={data:Workspace;query:string;setQuery:(q:string)=>void;open:(id:string)=>void;create:()=>void;identity:Identity;repo?:Repository};
+export function Applications(props:ApplicationsProps){return props.repo?.mode==='connected'&&props.repo.applicationPage?<RemoteApplications {...props} repo={props.repo}/>:<LocalApplications {...props}/>;}
+function LocalApplications({data,query,setQuery,open,create,identity}:ApplicationsProps){
   const [status,setStatus]=useState('all');const [region,setRegion]=useState('all');const [scope,setScope]=useState<'active'|'all'|'closed'>('active');
   const [selectedId,setSelectedId]=useState<string|null>(null);
   const isActive=(a:Application)=>!['draft','approved','rejected'].includes(a.status);

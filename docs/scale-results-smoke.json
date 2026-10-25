@@ -1,0 +1,353 @@
+{
+  "at": "2026-10-25T14:46:29.297Z",
+  "dataset": {
+    "applications": 10000,
+    "events": 10000,
+    "obligations": 10000,
+    "pending_notifications": 1000
+  },
+  "infrastructure": {
+    "engine": "PostgreSQL 17.11 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+    "host_cpus": 32,
+    "host_memory_bytes": 68470194176,
+    "database_connections": 25
+  },
+  "workloads": [
+    {
+      "virtual_clients": 25,
+      "duration_ms": 339.54,
+      "metrics": {
+        "read_page": {
+          "requests": 25,
+          "p50_ms": 147.06,
+          "p95_ms": 153.77
+        },
+        "read_case": {
+          "requests": 25,
+          "p50_ms": 46,
+          "p95_ms": 50.23
+        },
+        "write": {
+          "requests": 25,
+          "p50_ms": 24.23,
+          "p95_ms": 26.67
+        },
+        "worker": {
+          "requests": 1,
+          "p50_ms": 85.06,
+          "p95_ms": 85.06
+        }
+      },
+      "errors": [],
+      "error_rate": 0,
+      "max_observed_lock_waiters": 0
+    },
+    {
+      "virtual_clients": 50,
+      "duration_ms": 320.78,
+      "metrics": {
+        "read_page": {
+          "requests": 50,
+          "p50_ms": 108.64,
+          "p95_ms": 143.32
+        },
+        "read_case": {
+          "requests": 50,
+          "p50_ms": 63.3,
+          "p95_ms": 86.18
+        },
+        "write": {
+          "requests": 50,
+          "p50_ms": 40.41,
+          "p95_ms": 44.35
+        },
+        "worker": {
+          "requests": 1,
+          "p50_ms": 74.56,
+          "p95_ms": 74.56
+        }
+      },
+      "errors": [],
+      "error_rate": 0,
+      "max_observed_lock_waiters": 0
+    },
+    {
+      "virtual_clients": 100,
+      "duration_ms": 507.98,
+      "metrics": {
+        "read_page": {
+          "requests": 100,
+          "p50_ms": 184.95,
+          "p95_ms": 269.27
+        },
+        "read_case": {
+          "requests": 100,
+          "p50_ms": 155.7,
+          "p95_ms": 211
+        },
+        "write": {
+          "requests": 100,
+          "p50_ms": 70.99,
+          "p95_ms": 76.41
+        },
+        "worker": {
+          "requests": 1,
+          "p50_ms": 72.41,
+          "p95_ms": 72.41
+        }
+      },
+      "errors": [],
+      "error_rate": 0,
+      "max_observed_lock_waiters": 0
+    }
+  ],
+  "checks": {
+    "concurrent_same_version": {
+      "successes": 1,
+      "conflicts": 1,
+      "events": 1
+    },
+    "isolation": {
+      "foreign_cases": 0
+    }
+  },
+  "limitations": [
+    "Loopback Postgres with the actual application migrations and synthetic Auth/Storage metadata.",
+    "Database RPC timings include pool wait; they exclude HTTP, hosted Auth, storage bytes and wide-area network latency.",
+    "25 database connections serve up to 100 virtual clients. No production capacity claim."
+  ],
+  "query_plan": [
+    {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 2.09,
+        "Total Cost": 150.15,
+        "Plan Rows": 25,
+        "Plan Width": 24,
+        "Actual Startup Time": 0.202,
+        "Actual Total Time": 0.251,
+        "Actual Rows": 25,
+        "Actual Loops": 1,
+        "Shared Hit Blocks": 42,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0,
+        "Plans": [
+          {
+            "Node Type": "Result",
+            "Parent Relationship": "InitPlan",
+            "Subplan Name": "InitPlan 1",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0,
+            "Total Cost": 0.26,
+            "Plan Rows": 1,
+            "Plan Width": 32,
+            "Actual Startup Time": 0.105,
+            "Actual Total Time": 0.105,
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 3,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          {
+            "Node Type": "Result",
+            "Parent Relationship": "InitPlan",
+            "Subplan Name": "InitPlan 2",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0,
+            "Total Cost": 0.26,
+            "Plan Rows": 1,
+            "Plan Width": 32,
+            "Actual Startup Time": 0,
+            "Actual Total Time": 0,
+            "Actual Rows": 0,
+            "Actual Loops": 0,
+            "Shared Hit Blocks": 0,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          {
+            "Node Type": "Result",
+            "Parent Relationship": "InitPlan",
+            "Subplan Name": "InitPlan 3",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0,
+            "Total Cost": 0.26,
+            "Plan Rows": 1,
+            "Plan Width": 32,
+            "Actual Startup Time": 0.036,
+            "Actual Total Time": 0.036,
+            "Actual Rows": 1,
+            "Actual Loops": 1,
+            "Shared Hit Blocks": 3,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          {
+            "Node Type": "Index Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Scan Direction": "Forward",
+            "Index Name": "applications_region_due_cursor",
+            "Relation Name": "applications",
+            "Alias": "applications",
+            "Startup Cost": 1.31,
+            "Total Cost": 7694.35,
+            "Plan Rows": 1299,
+            "Plan Width": 24,
+            "Actual Startup Time": 0.201,
+            "Actual Total Time": 0.248,
+            "Actual Rows": 25,
+            "Actual Loops": 1,
+            "Index Cond": "(region = 'South'::text)",
+            "Rows Removed by Index Recheck": 0,
+            "Filter": "(((owner_id = (((InitPlan 1).col1 ->> 'actor'::text))::uuid) AND (((InitPlan 2).col1 ->> 'institution'::text))::boolean) OR ((status <> 'draft'::app_status) AND ((((InitPlan 3).col1 ->> 'national'::text))::boolean OR (ANY (region = (hashed SubPlan 5).col1)))))",
+            "Rows Removed by Filter": 0,
+            "Shared Hit Blocks": 42,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "ProjectSet",
+                "Parent Relationship": "SubPlan",
+                "Subplan Name": "SubPlan 5",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 0.26,
+                "Total Cost": 0.78,
+                "Plan Rows": 100,
+                "Plan Width": 32,
+                "Actual Startup Time": 0.034,
+                "Actual Total Time": 0.035,
+                "Actual Rows": 1,
+                "Actual Loops": 1,
+                "Shared Hit Blocks": 3,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0,
+                "Plans": [
+                  {
+                    "Node Type": "Result",
+                    "Parent Relationship": "InitPlan",
+                    "Subplan Name": "InitPlan 4",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 0,
+                    "Total Cost": 0.26,
+                    "Plan Rows": 1,
+                    "Plan Width": 32,
+                    "Actual Startup Time": 0.029,
+                    "Actual Total Time": 0.029,
+                    "Actual Rows": 1,
+                    "Actual Loops": 1,
+                    "Shared Hit Blocks": 3,
+                    "Shared Read Blocks": 0,
+                    "Shared Dirtied Blocks": 0,
+                    "Shared Written Blocks": 0,
+                    "Local Hit Blocks": 0,
+                    "Local Read Blocks": 0,
+                    "Local Dirtied Blocks": 0,
+                    "Local Written Blocks": 0,
+                    "Temp Read Blocks": 0,
+                    "Temp Written Blocks": 0
+                  },
+                  {
+                    "Node Type": "Result",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 0,
+                    "Total Cost": 0.01,
+                    "Plan Rows": 1,
+                    "Plan Width": 0,
+                    "Actual Startup Time": 0,
+                    "Actual Total Time": 0,
+                    "Actual Rows": 1,
+                    "Actual Loops": 1,
+                    "Shared Hit Blocks": 0,
+                    "Shared Read Blocks": 0,
+                    "Shared Dirtied Blocks": 0,
+                    "Shared Written Blocks": 0,
+                    "Local Hit Blocks": 0,
+                    "Local Read Blocks": 0,
+                    "Local Dirtied Blocks": 0,
+                    "Local Written Blocks": 0,
+                    "Temp Read Blocks": 0,
+                    "Temp Written Blocks": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "Planning": {
+        "Shared Hit Blocks": 0,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.113,
+      "Triggers": [],
+      "Execution Time": 0.28
+    }
+  ],
+  "queue": {
+    "pending": 925,
+    "oldest_age_seconds": 12.711575
+  },
+  "passed": true
+}

@@ -73,3 +73,9 @@ The user-supplied `per-simmons/clone-app-pat-pro-public` repository is a reconst
 - Visual QA reference: https://github.com/per-simmons/clone-app-pat-pro-public
 
 No proprietary Awwwards/Attio code, logos, or marketing assets were copied.
+
+## Reliability services and measurements
+
+The connected register uses server-filtered cursor pages and fetches case details independently. The local worker service runs deadline reminders, durable in-app delivery and actual ClamAV document scanning. Start it with `npm run workers:start`; inspect it with `npm run workers:health`. The local launcher also starts these services.
+
+See [reliability operations](docs/reliability-operations.md) and the updated [scalability audit](docs/scalability-audit.md). Reproduce service-boundary validation with `npm run test:reliability:local` and the disposable 10,000-case database workload with `npm run test:scale:local`. Remote deployment requires its own host configuration and validation.

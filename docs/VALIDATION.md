@@ -34,3 +34,7 @@ The automated accessibility check covers serious/critical axe findings in the te
 The n8n integration is implemented and was exercised locally, but it is deliberately disabled because its upstream runtime dependency tree did not pass the security gate. The main application and LangGraph advisory remain separate from those dependencies.
 
 The connected browser flow passed against the hosted Supabase demo with the local advisory service. n8n was then left disabled; connected advisories remain available independently.
+
+## 2026-10-25 reliability implementation
+
+Demo/connected builds passed. The unit/SQL suite passed 271 tests; demo E2E passed 77 and connected E2E passed two. The actual local Supabase/ClamAV integration passed quarantine, file hash, antivirus test, MIME mismatch, isolation and worker-restart checks. Local database advisors reported no warning/error findings, and the application dependency audit reported zero vulnerabilities. The sustained disposable Postgres workload and its limitations are recorded in `scale-results.json`; service results are in `reliability-integration-results.json`. See `reliability-operations.md` for reproduction and deployment configuration.
