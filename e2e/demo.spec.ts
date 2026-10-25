@@ -331,8 +331,9 @@ test('demo lab gathers simulation controls outside working navigation',async({pa
   await expect(page.getByRole('button',{name:'Needs attention',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Reset synthetic workspace',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Start guided story',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:/T-90 advance notice/}).click();
-  await expect(page.getByRole('status')).toContainText('Institution registrar');
+  await page.getByRole('button',{name:/90 days before/}).click();
+  await expect(page.getByRole('status')).toContainText('Example window before expiry');
+  await expect(page.getByRole('status')).toContainText('does not set a notice deadline or evidence rule');
   await expect(page.getByText(/Workspace snapshot .+ \d+ applications in scope/)).toBeVisible();
   await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Applications requiring attention',exact:true})).toBeVisible();
@@ -366,7 +367,8 @@ test('supporting desks keep task-specific composition',async({page})=>{
   await expect(page.getByRole('button',{name:'Verify fulfilment',exact:true})).toBeVisible();
   await openDesk(page,'Alerts & escalations');
   await expect(page.getByRole('heading',{level:1,name:'Escalation desk',exact:true})).toBeVisible();
-  await expect(page.getByText('2 escalations require review · 2 informational updates.',{exact:true})).toBeVisible();
+  const escalationCount=await page.locator('.alert-row.escalation').count(),informationCount=await page.locator('.alert-row.notice').count();
+  await expect(page.locator('.support-header p')).toHaveText(new RegExp(`^${escalationCount} escalation${escalationCount===1?'':'s'} require${escalationCount===1?'s':''} review · ${informationCount} informational update${informationCount===1?'':'s'}\\.$`));
   await expect(page.getByRole('button',{name:/Open case|Review case/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Mark read',exact:true}).first()).toBeVisible();
   await openDesk(page,'Reports');
