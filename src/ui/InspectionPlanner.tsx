@@ -2,7 +2,7 @@ import {neutralCopy} from '../domain/presentation';
 import {formatDateTime} from './DisplayPreferences';
 import {useEffect,useState} from 'react';
 import type {Identity,Repository,Workspace} from '../domain/model';
-import {activeConflictsFor,expertReadiness} from '../domain/planning';
+import {activeConflictsFor,expertReadiness,regionBlocker} from '../domain/planning';
 import type {Run} from './Applications';
 import './intelligence.css';
 function localDate(value:string){const date=new Date(value);return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);}
@@ -12,7 +12,8 @@ export function InspectionPlanner({data,identity,repo,run,busy,initialApplicatio
  const [start,setStart]=useState(()=>future(3)),[end,setEnd]=useState(()=>future(3.1)),[mode,setMode]=useState('physical'),[members,setMembers]=useState<string[]>([]),[note,setNote]=useState(''),[manageNote,setManageNote]=useState(''),[report,setReport]=useState(''),[recommendation,setRecommendation]=useState('recommend');
  const regions=[...new Set(identity.roles.flatMap(role=>role.role==='national_admin'?['North','South','East','West','Central','North-East']:['regional_officer','evc_coordinator'].includes(role.role)&&role.region?[role.region]:[]))];
  const canSchedule=Boolean(app&&app.owner_id!==identity.id&&identity.roles.some(role=>role.role==='evc_coordinator'&&role.region===app.region));
- const canManage=Boolean(app&&app.owner_id!==identity.id&&(identity.roles.some(role=>role.role==='national_admin'||role.role==='regional_officer'&&role.region===app.region)||canSchedule&&visit?.coordinator_id===identity.id));
+  const canManage=Boolean(app&&app.owner_id!==identity.id&&(identity.roles.some(role=>role.role==='national_admin'||role.role==='regional_officer'&&role.region===app.region)||canSchedule&&visit?.coordinator_id===identity.id));
+  const regionBlock=app&&app.owner_id!==identity.id?regionBlocker(identity,app):null;
  useEffect(()=>{if(!data.applications.some(item=>item.id===appId))setAppId(cases[0]?.id??'');},[data.applications,appId]);
  useEffect(()=>{if(visit){setStart(localDate(visit.scheduled_for));setEnd(localDate(visit.ends_at??new Date(Date.parse(visit.scheduled_for)+2*3600000).toISOString()));setMode(visit.visit_mode??'physical');setMembers(visit.panel_snapshot?.map(item=>item.expert_id)??[]);}else setMembers([]);setNote('');setManageNote('');setReport('');},[appId,visit?.id]);
  async function manage(kind:string){if(!app||!visit)return;await run(()=>repo.inspectionCommand(kind,visit.id,{note:manageNote,...(kind==='report'?{report,recommendation}:{})},app.version).then(()=>{}),'Inspection '+kind+' recorded in case history.');}
@@ -20,7 +21,7 @@ export function InspectionPlanner({data,identity,repo,run,busy,initialApplicatio
   {regions.length>0&&<details><summary>Expert directory and availability</summary><ExpertDirectory data={data} regions={regions} repo={repo} run={run} busy={busy}/></details>}
   <label className="field">Inspection application<select value={appId} onChange={event=>setAppId(event.target.value)}><option value="">Choose an inspection-ready case</option>{cases.map(item=><option key={item.id} value={item.id}>{item.ref_no} · {neutralCopy(item.title)}</option>)}{app&&!cases.some(item=>item.id===app.id)&&<option value={app.id}>{app.ref_no} · inspection complete</option>}</select></label>
   {app&&['evc_pending','evc_scheduled'].includes(app.status)&&<>
-   {!canSchedule&&<p className="callout">A coordinator grant in this case’s region is required to reserve a panel.</p>}
+   {!canSchedule&&<p className="callout">{regionBlock??'A coordinator grant in this case’s region is required to reserve a panel.'}</p>}
    {visit&&<p className="muted">Visit record: {visit.planning_state??'legacy'} · v{visit.version??1} · {visit.visit_mode??'mode not recorded'}{!visit.resource_planned?' · add a resource plan before confirming.':''}</p>}
    {app&&+(activeConflictsFor(data.expert_conflicts,app.institution_id).length)>0&&<p className="callout">Recorded active conflict declarations against this case's institution: {activeConflictsFor(data.expert_conflicts,app.institution_id).length}. Excluded members are marked inline below.</p>}
    {canSchedule&&<form onSubmit={event=>{event.preventDefault();void run(()=>repo.inspectionCommand('plan',app.id,{starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString(),mode,expert_ids:members,note,visit_id:visit?.id??null},app.version).then(()=>{}),'Expert window reserved. Confirm the panel after reviewing its declarations.');}}><div className="form-grid"><label className="field">Inspection starts (local time)<input type="datetime-local" value={start} onChange={event=>setStart(event.target.value)} required/></label><label className="field">Inspection ends (local time)<input type="datetime-local" value={end} onChange={event=>setEnd(event.target.value)} required/></label><label className="field">Inspection mode<select value={mode} onChange={event=>setMode(event.target.value)}><option value="physical">Physical</option><option value="online">Online</option><option value="hybrid">Hybrid</option></select></label></div>
