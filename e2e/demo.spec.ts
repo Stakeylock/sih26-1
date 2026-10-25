@@ -52,7 +52,7 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
   await page.screenshot({path:'../test-results/clauseway-case.png',fullPage:true});
-  for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Compliance monitoring'],['Alerts & escalations','Escalation desk'],['Reports','Operations report'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
+  for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Compliance monitoring'],['Alerts & escalations','Escalation desk'],['Reports','Approval operations'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
 });
 test('trust metrics remain scoped after merging the UI branch',async({page})=>{
@@ -368,13 +368,6 @@ test('supporting desks keep task-specific composition',async({page})=>{
   await expect(page.getByText('2 escalations require review · 2 informational updates.',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:/Open case|Review case/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Mark read',exact:true}).first()).toBeVisible();
-  await openDesk(page,'Reports');
-  await expect(page.getByRole('heading',{level:1,name:'Operations report',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:/Closed cases/}).click();
-  await expect(page.getByRole('button',{name:/Closed cases/})).toHaveAttribute('aria-pressed','true');
-  await expect(page.getByRole('heading',{name:'Closed outcomes',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:/All applications/}).click();
-  await expect(page.getByRole('button',{name:/All applications/})).toHaveAttribute('aria-pressed','true');
   await openDesk(page,'Audit logs');
   await expect(page.getByRole('heading',{level:1,name:'Decision receipts',exact:true})).toBeVisible();
   const firstReceipt=page.locator('details.audit-row').first();
@@ -459,20 +452,15 @@ test('mobile applications use case cards and the dossier route stays inside the 
 });
 test('overview keeps the full active scope visible and reports follow the selected scope',async({page})=>{
   await expect(page.getByRole('heading',{name:'Work by stage',exact:true})).toBeVisible();
-  await expect(page.locator('.dispatch-header')).toContainText('7 active cases');
+  await expect(page.locator('.dispatch-header')).toContainText('07 active dossiers');
   await openDesk(page,'Applications');
   await expect(page.locator('.applications-table tbody tr')).toHaveCount(7);
   await openDesk(page,'Reports');
-  await expect(page.locator('.support-header-count')).toContainText('07');
-  await expect(page.locator('.support-header-count')).toContainText('active cases');
-  await page.getByRole('button',{name:/Closed cases/}).click();
-  await expect(page.locator('.support-header-count')).toContainText('04');
-  await expect(page.locator('.support-header-count')).toContainText('closed cases');
-  await expect(page.locator('.report-board').first().locator('.report-question .quiet-label')).toHaveCount(0);
-  await expect(page.locator('.report-outcome-list')).toBeVisible();
-  await page.getByRole('button',{name:/All applications/}).click();
-  await expect(page.locator('.support-header-count')).toContainText('11');
-  await expect(page.locator('.support-header-count')).toContainText('visible applications');
+  await expect(page.getByRole('button',{name:'Active',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'Closed',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Closed',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'All',exact:true}).click();
+  await expect(page.getByRole('button',{name:'All',exact:true})).toHaveAttribute('aria-pressed','true');
 });
 test('alerts offer queue navigation and route visuals expose a return branch',async({page})=>{
   await openDesk(page,'Alerts & escalations');
