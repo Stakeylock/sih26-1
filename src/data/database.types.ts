@@ -4,6 +4,8 @@ import type {AnalysisSnapshot,SavedScenario} from '../domain/intelligence';
 import type {ApprovalRecord,ApprovalScopeItem,ScopeRequest,DeadlineNotice,DeadlineRevision,ReminderIntent,NoticeImpact} from '../domain/approvals';
 import type { Application, AuditEvent, ChecklistItem, DocumentRecord, Institution, Notification, Obligation, Template, Visit, Role } from '../domain/model';
 import type {HistoryPage} from '../domain/review';
+import type {ApplicationPage,WorkerJobs} from '../domain/register';
+import type {Workspace} from '../domain/model';
 import type { AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement, AgentRecord } from '../domain/integrity';
 // Matches the checked-in baseline + hardening migration. Mutations use RPC only.
 type Table<T> = { Row: {[K in keyof T]: T[K]}; Insert: {[K in keyof T]?: T[K]}; Update: {[K in keyof T]?: T[K]}; Relationships: [] };
@@ -25,6 +27,11 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      fp_application_page:Fn<{_scope:string;_query:string;_region:string|null;_status:string|null;_cursor:import('../domain/register').RegisterCursor|null;_limit:number},ApplicationPage>;
+      fp_case_bundle:Fn<{_id:string},Partial<Workspace>>;
+      fp_worker_jobs:Fn<{_application:string},WorkerJobs>;
+      fp_enqueue_scan:Fn<{_document:string},undefined>;
+      fp_job_retry:Fn<{_kind:string;_id:string;_expected:number;_note:string;_request:string},undefined>;
       fp_case_reviews:Fn<Record<string,never>,CaseReview[]>;
       fp_operations_command:Fn<{_kind:string;_id:string|null;_payload:Record<string,unknown>;_expected:number|null;_request:string},Record<string,unknown>>;
       fp_case_candidates:Fn<{_id:string},Candidate[]>;fp_operational_readiness:Fn<Record<string,never>,Readiness>;

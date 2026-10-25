@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-25T15:06:02.013Z",
+  "environment": "loopback Supabase and real ClamAV container",
+  "passed": true,
+  "scanner_engine": "ClamAV 1.5.4/28164/Sun Oct 25 06:24:12 2026",
+  "clean_documents": 3,
+  "malware_test_rejected": true,
+  "mime_mismatch_rejected": true,
+  "quarantine_download_blocked": true,
+  "hashes_verified": true,
+  "cross_institution_denied": true,
+  "page_limit_verified": true,
+  "worker_restart_recovered": true,
+  "in_app_effects": 1,
+  "external_messages": 0
+}

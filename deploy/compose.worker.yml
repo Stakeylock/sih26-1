@@ -1,0 +1,32 @@
+name: clauseway-workers
+services:
+  clamav:
+    image: clamav/clamav@sha256:e19130cdebaeacc71fa46eab3ed6f69941f2f22aa5e08d55e9197f8edf43ce5e
+    restart: unless-stopped
+    ports: ["127.0.0.1:53310:3310"]
+    volumes: ["signatures:/var/lib/clamav"]
+    mem_limit: 3g
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    init: true
+    env_file: ["${CLAUSEWAY_WORKER_ENV_FILE:-../.env.server.local}"]
+    environment:
+      SUPABASE_URL: "${WORKER_SUPABASE_URL:-http://host.docker.internal:55321}"
+      WORKER_TARGET: "${WORKER_TARGET:-local}"
+      WORKER_EXPECTED_SUPABASE_HOST: "${WORKER_EXPECTED_SUPABASE_HOST:-}"
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      WORKER_HEALTH_HOST: 0.0.0.0
+    ports: ["127.0.0.1:8791:8791"]
+    depends_on:
+      clamav:
+        condition: service_healthy
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+volumes:
+  signatures:

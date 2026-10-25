@@ -14,6 +14,8 @@ try{
   ensureLocalNetwork();
   runNode(['node_modules/supabase/dist/supabase.js','start','--workdir','local','--network-id',localNetwork,'--exclude','realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor'],'supabase-start');
   runNode(['scripts/local-setup.mjs'],'local-setup');
+  runNode(['scripts/setup-local-worker.mjs'],'worker-setup');
+  const workerLog=openSync(resolve(runtime,'workers.private.log'),'a');try{const worker=spawnSync('docker',['compose','-f','deploy/compose.worker.yml','up','-d','--build','--wait','--wait-timeout','180'],{cwd:root,windowsHide:true,stdio:['ignore',workerLog,workerLog]});if(worker.status!==0)throw new Error('Background workers did not become healthy. See .runtime/workers.private.log.');}finally{closeSync(workerLog);}
   if(existsSync('.env.automation.local')){const config=readFileSync('.env.automation.local','utf8');if(/^N8N_WEBHOOK_URL=.+/m.test(config))throw new Error('n8n must remain disabled until its dependency gate is cleared.');}
   const envArgs=['--env-file=.env.connected.local',...(existsSync('.env.automation.local')?['--env-file=.env.automation.local']:[])];
   await start('backend',[...envArgs,'automation/server.mjs'],'http://127.0.0.1:8787/api/automation/health','127.0.0.1:55321',{AUTOMATION_ALLOW_DEMO:'true'});

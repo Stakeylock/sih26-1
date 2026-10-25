@@ -26,6 +26,10 @@ export function createSupabaseRepository(): Repository {
   }
   async function command(kind:string,id:string|null,payload:Record<string,unknown>,version:number|null,requestId:string){const result=await client.rpc('fp_governance_command',{_kind:kind,_id:id,_payload:payload,_expected_version:version,_request_id:requestId});check(result.error);}
   return {
+    async applicationPage(q){const {data,error}=await client.rpc('fp_application_page',{_scope:q.scope,_query:q.query,_region:q.region,_status:q.status,_cursor:q.cursor,_limit:q.limit});check(error);if(!data)throw new Error('Register unavailable.');return data;},
+    async caseBundle(id){const {data,error}=await client.rpc('fp_case_bundle',{_id:id});check(error);if(!data)throw new Error('Case unavailable.');return data;},
+    async workerJobs(id){const {data,error}=await client.rpc('fp_worker_jobs',{_application:id});check(error);if(!data)throw new Error('Worker records unavailable.');return data;},
+    async retryJob(kind,id,version,note,key=crypto.randomUUID()){const {error}=await client.rpc('fp_job_retry',{_kind:kind,_id:id,_expected:version,_note:note,_request:key});check(error);},
     async operationsCommand(kind,id,payload,expected,key=crypto.randomUUID()){const {data,error}=await client.rpc('fp_operations_command',{_kind:kind,_id:id,_payload:payload,_expected:expected,_request:key});check(error);return data??{};},
     async caseCandidates(id){const {data,error}=await client.rpc('fp_case_candidates',{_id:id});check(error);return data??[];},
     async readiness(){const {data,error}=await client.rpc('fp_operational_readiness',{});check(error);if(!data)throw new Error('Readiness check unavailable.');return data;},
@@ -55,23 +59,27 @@ export function createSupabaseRepository(): Repository {
     async signIn(email, password) { const {error} = await client.auth.signInWithPassword({email,password}); check(error); },
     async signOut() { const {error} = await client.auth.signOut({scope: 'local'}); check(error); },
     async workspace() {
+      const first=await client.rpc('fp_application_page',{_scope:'all',_query:'',_region:null,_status:null,_cursor:null,_limit:100});check(first.error);if(!first.data)throw new Error('Workspace page unavailable.');
+      const caseIds=first.data.items.map(app=>app.id),institutionIds=[...new Set(first.data.items.map(app=>app.institution_id))];
+      const [windowDocuments,windowClaims]=await Promise.all([client.from('application_documents').select('*').in('application_id',caseIds).order('uploaded_at',{ascending:false}).limit(1000),client.from('application_claims').select('*').in('application_id',caseIds).limit(2000)]);check(windowDocuments.error);check(windowClaims.error);const claimIds=windowClaims.data?.map(row=>row.id)??[];
+
       const [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications,requirements,claims,claimEvidence,deficiencies,signals,grants,agents,scopeRequests,approvals,approvalScope,notices,deadlines,reminders,analysisSnapshots,analysisScenarios,experts,availability,conflicts,reservations,caseReviews,deliveries,workerHealth,deliveryAttempts] = await Promise.all([
-        client.from('applications').select('*').order('created_at',{ascending:false}).limit(200),
-        client.from('institutions').select('*').limit(200), client.from('workflow_templates').select('*').limit(50),
-        client.from('application_documents').select('*').order('uploaded_at',{ascending:false}).limit(1000),
-        client.from('application_events').select('*').order('created_at',{ascending:false}).limit(500),
-        client.from('checklist_items').select('*').limit(1000),client.from('evc_visits').select('*').limit(200),
-        client.from('obligations').select('*').limit(500),client.from('notifications').select('*').order('created_at',{ascending:false}).limit(100),
-        client.from('requirements').select('*').limit(2000),client.from('application_claims').select('*').limit(2000),
-        client.from('claim_evidence').select('*').limit(4000),client.from('deficiencies').select('*').limit(2000),
-        client.from('integrity_signals').select('*').limit(2000),
+        Promise.resolve({data:first.data.items,error:null}),
+        client.from('institutions').select('*').in('id',institutionIds).limit(200), client.from('workflow_templates').select('*').limit(50),
+        Promise.resolve(windowDocuments),
+        client.from('application_events').select('*').in('application_id',caseIds).order('created_at',{ascending:false}).limit(500),
+        client.from('checklist_items').select('*').in('application_id',caseIds).limit(1000),client.from('evc_visits').select('*').in('application_id',caseIds).limit(200),
+        client.from('obligations').select('*').in('application_id',caseIds).limit(500),client.from('notifications').select('*').order('created_at',{ascending:false}).limit(100),
+        client.from('requirements').select('*').limit(2000),Promise.resolve(windowClaims),
+        client.from('claim_evidence').select('*').in('claim_id',claimIds).limit(4000),client.from('deficiencies').select('*').in('application_id',caseIds).limit(2000),
+        client.from('integrity_signals').select('*').in('application_id',caseIds).limit(2000),
         client.from('user_roles').select('*').limit(2000),
         client.from('agent_registry').select('*').limit(200),
-        client.from('application_scope_items').select('*').limit(4000),client.from('approval_records').select('*').limit(1000),client.from('approval_scope_items').select('*').limit(4000),client.from('policy_notices').select('*').limit(500),client.from('applied_deadlines').select('*').order('created_at',{ascending:false}).limit(2000),client.from('deadline_reminder_intents').select('*').limit(2000),client.from('analysis_snapshots').select('*').order('captured_at',{ascending:false}).limit(100),client.from('analysis_scenarios').select('*').order('created_at',{ascending:false}).limit(200),client.from('inspection_experts').select('*').limit(500),client.from('expert_availability').select('*').limit(2000),client.from('expert_conflicts').select('*').limit(1000),client.from('expert_reservations').select('*').limit(2000),
-        client.rpc('fp_case_reviews',{}),client.from('delivery_outbox').select('*').order('created_at',{ascending:false}).limit(500),client.from('worker_health').select('*'),client.from('delivery_attempts').select('*').order('happened_at',{ascending:false}).limit(1000),
+        client.from('application_scope_items').select('*').in('application_id',caseIds).limit(4000),client.from('approval_records').select('*').limit(1000),client.from('approval_scope_items').select('*').limit(4000),client.from('policy_notices').select('*').limit(500),client.from('applied_deadlines').select('*').in('application_id',caseIds).order('created_at',{ascending:false}).limit(2000),client.from('deadline_reminder_intents').select('*').in('application_id',caseIds).limit(2000),client.from('analysis_snapshots').select('*').in('application_id',caseIds).order('captured_at',{ascending:false}).limit(100),client.from('analysis_scenarios').select('*').in('application_id',caseIds).order('created_at',{ascending:false}).limit(200),client.from('inspection_experts').select('*').limit(500),client.from('expert_availability').select('*').limit(2000),client.from('expert_conflicts').select('*').limit(1000),client.from('expert_reservations').select('*').in('application_id',caseIds).limit(2000),
+        client.rpc('fp_case_reviews',{}),client.from('delivery_outbox').select('*').in('application_id',caseIds).order('created_at',{ascending:false}).limit(500),client.from('worker_health').select('*'),client.from('delivery_attempts').select('*').order('happened_at',{ascending:false}).limit(1000),
       ]);
       for (const result of [applications,institutions,templates,documents,events,checklist,visits,obligations,notifications,requirements,claims,claimEvidence,deficiencies,signals,grants,agents,scopeRequests,approvals,approvalScope,notices,deadlines,reminders,analysisSnapshots,analysisScenarios,experts,availability,conflicts,reservations,caseReviews,deliveries,workerHealth,deliveryAttempts]) check(result.error);
-      return {delivery_attempts:deliveryAttempts.data??[],case_reviews:caseReviews.data??[],delivery_outbox:deliveries.data??[],worker_health:workerHealth.data??[],inspection_experts:experts.data??[],expert_availability:availability.data??[],expert_conflicts:conflicts.data??[],expert_reservations:reservations.data??[],analysis_snapshots:analysisSnapshots.data??[],analysis_scenarios:analysisScenarios.data??[],scope_requests:scopeRequests.data??[],approvals:approvals.data??[],approval_scope:approvalScope.data??[],notices:notices.data??[],deadlines:deadlines.data??[],reminder_intents:reminders.data??[],applications:applications.data??[],institutions:institutions.data??[],templates:templates.data??[],documents:documents.data??[],events:events.data??[],checklist:checklist.data??[],visits:visits.data??[],obligations:obligations.data??[],notifications:notifications.data??[],requirements:requirements.data??[],claims:claims.data??[],claim_evidence:claimEvidence.data??[],deficiencies:deficiencies.data??[],integrity_signals:signals.data??[],access_assignments:grants.data??[],agents:agents.data??[]};
+      return {read_window:{loaded_cases:first.data.items.length,total_cases:first.data.counts.all,as_of:first.data.as_of},delivery_attempts:deliveryAttempts.data??[],case_reviews:caseReviews.data??[],delivery_outbox:deliveries.data??[],worker_health:workerHealth.data??[],inspection_experts:experts.data??[],expert_availability:availability.data??[],expert_conflicts:conflicts.data??[],expert_reservations:reservations.data??[],analysis_snapshots:analysisSnapshots.data??[],analysis_scenarios:analysisScenarios.data??[],scope_requests:scopeRequests.data??[],approvals:approvals.data??[],approval_scope:approvalScope.data??[],notices:notices.data??[],deadlines:deadlines.data??[],reminder_intents:reminders.data??[],applications:applications.data??[],institutions:institutions.data??[],templates:templates.data??[],documents:documents.data??[],events:events.data??[],checklist:checklist.data??[],visits:visits.data??[],obligations:obligations.data??[],notifications:notifications.data??[],requirements:requirements.data??[],claims:claims.data??[],claim_evidence:claimEvidence.data??[],deficiencies:deficiencies.data??[],integrity_signals:signals.data??[],access_assignments:grants.data??[],agents:agents.data??[]};
     },
     async createInstitution(input) { const v=institutionSchema.parse(input); const {error}=await client.rpc('fp_create_institution',{_name:v.name,_ref:v.aicte_ref,_region:v.region,_state:v.state}); check(error); },
     async createApplication(type,title,initialForm={}) { const {data,error}=await client.rpc('fp_create_application_draft',{_type:type,_title:titleSchema.parse(title),_form:initialForm}); check(error); if (!data) throw new Error('No application was created.'); return data; },
@@ -116,6 +124,7 @@ export function createSupabaseRepository(): Repository {
       const {data:doc,error:readError}=await client.from('application_documents').select('*').eq('id',id).single(); check(readError);
       if (!doc) throw new Error('Document reservation is unavailable.');
       const {error:uploadError}=await client.storage.from('application-docs').upload(doc.file_path,file,{upsert:false,contentType:file.type,cacheControl:'0'}); check(uploadError);
+      const queued=await client.rpc('fp_enqueue_scan',{_document:id});check(queued.error);
       // A trusted scanner must inspect the uploaded bytes before setting clean.
       // No client-side "scan passed" assertion can release a quarantined file.
     },

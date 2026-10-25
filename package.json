@@ -21,7 +21,12 @@
     "outbox:process": "node scripts/process-outbox.mjs",
     "mail:sink": "node scripts/local-mail-sink.mjs",
     "test:recon:local": "node scripts/review-integration.mjs",
-    "worker:setup:local": "node scripts/setup-local-worker.mjs"
+    "worker:setup:local": "node scripts/setup-local-worker.mjs",
+    "workers:start": "docker compose -f deploy/compose.worker.yml up -d --build --wait",
+    "workers:stop": "docker compose -f deploy/compose.worker.yml stop worker",
+    "workers:health": "node -e \"fetch('http://127.0.0.1:8791/health').then(async r=>{console.log(await r.text());process.exit(r.ok?0:1)})\"",
+    "test:reliability:local": "node scripts/reliability-integration.mjs",
+    "test:scale:local": "node scripts/scale-benchmark.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",
@@ -44,6 +49,7 @@
     "@types/three": "0.186.0",
     "@vitejs/plugin-react": "6.1.2",
     "happy-dom": "21.0.4",
+    "pg": "8.23.1",
     "supabase": "2.121.0",
     "typescript": "7.0.2",
     "vite": "8.3.5",

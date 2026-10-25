@@ -40,7 +40,7 @@ export interface DeadlineRevision {
 }
 export interface ReminderIntent {
   id:string;deadline_id:string;application_id:string;recipient_id:string;scheduled_for:string;
-  status:'pending'|'sent'|'superseded'|'cancelled';sent_at:string|null;
+  status:'pending'|'sent'|'superseded'|'cancelled'|'retry_wait'|'exhausted';sent_at:string|null;attempts?:number;next_attempt_at?:string;last_error?:string|null;
 }
 export interface NoticeImpactItem {subject_key:string;application_id:string;obligation_id:string|null;reference:string;old_due_at:string|null;new_due_at:string;trigger_at:string|null;revision:number}
 export interface NoticeImpact {notice_id:string;notice_revision:number;items:NoticeImpactItem[];impact_hash:string}

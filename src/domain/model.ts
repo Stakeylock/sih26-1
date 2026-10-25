@@ -80,6 +80,10 @@ export const actionLabels: Record<Action, string> = { submit: 'Submit applicatio
 export interface Transition { application: Application; action: Action; reason: string; payload: Record<string, unknown>; requestId: string }
 export interface Advisory {engine:string;advisoryOnly:boolean;model:string;summary:string;warnings:string[];trace:string[];disclaimer:string;automation:{id:string;state:string}}
 export interface Repository {
+  applicationPage?(query:import('./register').RegisterQuery):Promise<import('./register').ApplicationPage>;
+  caseBundle?(id:string):Promise<Partial<Workspace>>;
+  workerJobs?(id:string):Promise<import('./register').WorkerJobs>;
+  retryJob?(kind:'scan'|'deadline',id:string,version:number,note:string,key?:string):Promise<void>;
   operationsCommand(kind:string,id:string|null,payload:Record<string,unknown>,expected:number|null,requestId?:string):Promise<Record<string,unknown>>;
   caseCandidates(applicationId:string):Promise<Candidate[]>;readiness():Promise<Readiness>;
   policyCommand(kind:string,id:string|null,payload:Record<string,unknown>,expected:number|null,requestId?:string):Promise<Record<string,unknown>>;
@@ -113,6 +117,7 @@ export interface Repository {
   advanceClock?(days: number): Promise<ClockReport>;
   advisory(application:Application,documents:DocumentRecord[]):Promise<Advisory>;
 }
+export interface Workspace {read_window?:{loaded_cases:number;total_cases:number;as_of:string}}
 export function allowedActions(app: Application, identity: Identity, mode: 'demo'|'connected' = 'connected'): Action[] {
   const has = (role: Role) => identity.roles.some(r => r.role === role && (r.region === app.region || role === 'national_admin'));
   if (app.owner_id === identity.id) {
