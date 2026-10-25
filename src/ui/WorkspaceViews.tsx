@@ -10,6 +10,7 @@ import {missingInputs,regions,roleLabels,routeStage,routeStages,statusLabels,typ
 import {Badge,Empty,Panel,ViewHeader} from './common';
 import type {Run} from './Applications';
 import { workingDaysUntil } from '../domain/clock';
+import { csv } from '../domain/intelligence';
 function stageKeyFor(app:Application,stages:TemplateDefinition['stages']){
   if(['approved','rejected'].includes(app.status))return 'outcome';
   if(app.status==='draft')return stages.find(stage=>stage.key==='submission')?.key??stages[0]?.key??'unknown';
@@ -114,7 +115,7 @@ function exportRosterCsv(applications: Workspace['applications'], data: Workspac
     const daysLabel = remaining === null ? 'None' : remaining < 0 ? `${Math.abs(remaining)}d overdue` : `${remaining}d remaining`;
     return [
       app.ref_no,
-      `"${app.title.replace(/"/g, '""')}"`,
+      app.title,
       app.region,
       typeLabels[app.app_type] || app.app_type,
       routeStage(app.status).label,
@@ -123,9 +124,10 @@ function exportRosterCsv(applications: Workspace['applications'], data: Workspac
       app.sla_due_at ? app.sla_due_at.slice(0, 10) : 'N/A',
       daysLabel,
       defCount
-    ].join(',');
+    ];
   });
-  const blob = new Blob([headers.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const body = csv([headers, ...rows]);
+  const blob = new Blob([body], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);

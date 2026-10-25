@@ -1375,6 +1375,18 @@ demo-lab-link{margin-top:10px;gap:5px;font-size:calc(11px * var(--text-scale,1))
 .demo-lab-card p{flex:1;margin:0 0 16px;font-size:calc(11px * var(--text-scale,1));line-height:1.6;color:var(--muted)}
 .demo-lab-card .button{align-self:flex-start;margin-top:auto}
 .demo-lab-rehearsal{margin-bottom:16px}
+.demo-lab-guide{margin-bottom:16px}
+.demo-lab-guide-steps{list-style:none;margin:0;padding:0}
+.demo-lab-guide-steps li{display:flex;align-items:flex-start;gap:14px;padding:14px 0 12px;border-top:1px solid var(--rule)}
+.demo-lab-guide-steps li:first-child{border-top:none}
+.demo-lab-guide-index{flex:none;width:26px;padding-top:2px;color:var(--muted)}
+.demo-lab-guide-copy{flex:1;min-width:0}
+.demo-lab-guide-copy strong{display:block;font-size:calc(13px * var(--text-scale,1))}
+.demo-lab-guide-copy p{margin:4px 0 6px;font-size:calc(12px * var(--text-scale,1));line-height:1.55;color:var(--muted)}
+.demo-lab-guide-copy small{font-size:calc(11px * var(--text-scale,1));color:var(--muted)}
+.demo-lab-guide-steps li.unmet .demo-lab-guide-copy strong{color:var(--muted)}
+.demo-lab-guide-steps button{flex:none;align-self:center}
+.demo-lab-guide-steps li.unmet button{opacity:.55;cursor:not-allowed}
 .demo-lab-rehearsal-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
 .demo-lab-rehearsal-body{padding:16px 20px 20px}
 .demo-lab-milestones{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
@@ -1391,7 +1403,6 @@ demo-lab-link{margin-top:10px;gap:5px;font-size:calc(11px * var(--text-scale,1))
 @media(max-width:760px){.demo-lab-grid{grid-template-columns:1fr}.demo-lab-rehearsal-body{padding:14px 16px 16px}.demo-lab-rehearsal-actions{justify-content:space-between;width:100%}}
 @media(max-width:420px){.topnav .context-back span{display:none}}
 
-/* Working governance surfaces share the dossier typography and theme tokens. */
 .governance-view,.document-validity{padding:24px;min-width:0}
 .governance-view h3,.document-validity h3{margin:24px 0 12px}
 .scope-editor{border:1px solid var(--rule);border-radius:8px;padding:16px;margin:16px 0;min-width:0}

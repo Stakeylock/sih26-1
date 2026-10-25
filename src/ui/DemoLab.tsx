@@ -2,6 +2,8 @@ import {neutralCopy} from '../domain/presentation';
 import {useState} from 'react';
 import {FastForward,Play,RefreshCw,RotateCcw,TriangleAlert} from 'lucide-react';
 import {ViewHeader} from './common';
+import {guideSteps} from './demoGuide';
+import type {Role,Workspace} from '../domain/model';
 
 const rehearsalStages=[
   {stage:'t_minus_90',label:'T-90 advance notice',badge:'90d ahead',recipient:'Institution registrar',summary:'A simulated 90-day advance notice asks the institution to execute and register a renewed 30-year lease deed.'},
@@ -11,9 +13,10 @@ const rehearsalStages=[
   {stage:'escalated_hq',label:'T+15 headquarters escalation',badge:'T+15 days',recipient:'Member secretary and committee',summary:'A simulated level-two escalation moves the overdue undertaking to headquarters review.'}
 ];
 
-export function DemoLab({onStartTour,onOpenPrototype}:{onStartTour:()=>void;onOpenPrototype:()=>void}){
+export function DemoLab({data,onStartTour,onOpenPrototype,onSwitch}:{data:Workspace;onStartTour:()=>void;onOpenPrototype:()=>void;onSwitch:(role:Role,route:string)=>void}){
   const [rehearsalStep,setRehearsalStep]=useState<number|null>(null);
   const reset=()=>{void import('../data/demo').then(module=>module.resetDemo());};
+  const steps=guideSteps(data);
   return <>
     <ViewHeader title="Demo lab" summary="Simulation controls for the synthetic workspace. Nothing here changes a real record."/>
     <div className="demo-lab-grid">
@@ -33,6 +36,17 @@ export function DemoLab({onStartTour,onOpenPrototype}:{onStartTour:()=>void;onOp
         <button className="button outline" type="button" onClick={onOpenPrototype}><TriangleAlert size={14}/>Open prototype worklist</button>
       </section>
     </div>
+    <section className="support-surface demo-lab-guide">
+      <div className="support-surface-heading"><div><h2>Guided walkthrough</h2><p>Six steps, each armed from the live synthetic records. A step switches the preview role and opens the exact work surface; unmet steps explain what is missing instead of inventing work.</p></div><span className="quiet-label">{steps.filter(step=>step.armed).length} of {steps.length} armed</span></div>
+      <ol className="demo-lab-guide-steps">
+        {steps.map((step,index)=><li key={step.id} className={step.armed?'armed':'unmet'}>
+          <span className="demo-lab-guide-index"><strong>{String(index+1).padStart(2,'0')}</strong></span>
+          <div className="demo-lab-guide-copy"><strong>{step.title}</strong><p>{step.armedBecause??step.unmetNote}</p><small>{step.roleLabel} · {step.routeLabel}</small></div>
+          <button className="button small" type="button" disabled={!step.armed} aria-label={`Open as ${step.roleLabel}`} onClick={()=>onSwitch(step.role,step.route)}>{step.armed?'Open as '+step.roleLabel:'Step unmet'}</button>
+        </li>)}
+      </ol>
+      <p className="support-footnote">Arming reads only the loaded workspace. Review actions are yours to record back in the opened surface.</p>
+    </section>
     <section className="support-surface demo-lab-rehearsal">
       <div className="support-surface-heading">
         <div><h2>Deadline escalation rehearsal</h2><p>Step through the synthetic escalation ladder used in this demo. It does not dispatch notices or change an obligation.</p></div>
