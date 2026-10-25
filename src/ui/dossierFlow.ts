@@ -1,5 +1,6 @@
 import type { Claim, Deficiency } from '../domain/integrity';
 import type { Application, Workspace } from '../domain/model';
+import { expiryState } from '../domain/expiry';
 
 export type FlowState = Claim['status'];
 
@@ -46,13 +47,12 @@ export function claimThreads(app: Application, data: Workspace): FlowThread[] {
   const claims = data.claims.filter(claim => claim.application_id === app.id);
   const documents = data.documents.filter(document => document.application_id === app.id);
   const byId = new Map(documents.map(document => [document.id, document]));
-  const today = new Date().toISOString().slice(0, 10);
   return claims.map(claim => {
     const evidence: FlowEvidence[] = [];
     for (const link of data.claim_evidence.filter(item => item.claim_id === claim.id)) {
       const document = byId.get(link.document_id);
       if (!document) continue;
-      evidence.push({ id: document.id, file_name: document.file_name, doc_type: document.doc_type, expires_on: document.expires_on ?? null, scan_status: document.scan_status, expired: Boolean(document.expires_on && document.expires_on < today) });
+      evidence.push({ id: document.id, file_name: document.file_name, doc_type: document.doc_type, expires_on: document.expires_on ?? null, scan_status: document.scan_status, expired: expiryState(document.expires_on) === 'expired' });
     }
     const corrections: FlowCorrection[] = data.deficiencies.filter(item => item.claim_id === claim.id).map(item => ({ id: item.id, observation: item.observation, remedy: item.remedy, due_at: item.due_at, status: item.status, raised_by: item.raised_by, raised_at: item.raised_at, resolved_at: item.resolved_at, resolution_note: item.resolution_note, rechecked_at: item.rechecked_at, recheck_note: item.recheck_note }));
     const linkedIds = new Set(evidence.map(item => item.id));
@@ -61,7 +61,7 @@ export function claimThreads(app: Application, data: Workspace): FlowThread[] {
       for (const document of documents) {
         if (document.doc_type !== docType || linkedIds.has(document.id)) continue;
         if (document.scan_status !== 'clean') continue;
-        if (document.expires_on && document.expires_on < today) continue;
+        if (expiryState(document.expires_on) === 'expired') continue;
         replacements.push({ id: document.id, file_name: document.file_name, doc_type: document.doc_type, expires_on: document.expires_on ?? null, scan_status: document.scan_status, expired: false });
       }
     }

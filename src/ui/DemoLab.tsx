@@ -1,9 +1,11 @@
 import {neutralCopy} from '../domain/presentation';
-import {useState} from 'react';
-import {FastForward,FileStack,Play,RefreshCw,RotateCcw,TriangleAlert} from 'lucide-react';
+import {useEffect,useState} from 'react';
+import {CalendarClock,FastForward,FileStack,Play,RefreshCw,RotateCcw,TriangleAlert} from 'lucide-react';
 import {ViewHeader} from './common';
 import {guideSteps} from './demoGuide';
-import type {Role,Workspace} from '../domain/model';
+import {advanceDemoClock,DEMO_CLOCK_EVENT,demoClockOffset,resetDemoClock} from '../domain/virtualClock';
+import type {ClockReport} from '../domain/consequences';
+import type {Repository,Role,Workspace} from '../domain/model';
 
 const rehearsalStages=[
   {stage:'t_minus_90',label:'T-90 advance notice',badge:'90d ahead',recipient:'Institution registrar',summary:'A simulated 90-day advance notice asks the institution to execute and register a renewed 30-year lease deed.'},
@@ -13,12 +15,58 @@ const rehearsalStages=[
   {stage:'escalated_hq',label:'T+15 headquarters escalation',badge:'T+15 days',recipient:'Member secretary and committee',summary:'A simulated level-two escalation moves the overdue undertaking to headquarters review.'}
 ];
 
-export function DemoLab({data,onStartTour,onOpenPrototype,onOpenFlow,onSwitch}:{data:Workspace;onStartTour:()=>void;onOpenPrototype:()=>void;onOpenFlow:()=>void;onSwitch:(role:Role,route:string)=>void}){
+const kindLabels={reminder:'Reminder',overdue:'Overdue',escalation:'Escalation',expiry:'Validity lapse'} as const;
+
+export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwitch,onRefresh}:{data:Workspace;repo:Repository;onStartTour:()=>void;onOpenPrototype:()=>void;onOpenFlow:()=>void;onSwitch:(role:Role,route:string)=>void;onRefresh:()=>void}){
   const [rehearsalStep,setRehearsalStep]=useState<number|null>(null);
+  const [offset,setOffset]=useState(()=>demoClockOffset());
+  const [clockBusy,setClockBusy]=useState(false);
+  const [clockError,setClockError]=useState<string|null>(null);
+  const [clockReport,setClockReport]=useState<ClockReport|null>(null);
+  useEffect(()=>{
+    const sync=()=>setOffset(demoClockOffset());
+    window.addEventListener(DEMO_CLOCK_EVENT,sync);
+    return ()=>window.removeEventListener(DEMO_CLOCK_EVENT,sync);
+  },[]);
+  const advance=(days:number)=>{
+    if(clockBusy||repo.mode!=='demo')return;
+    setClockBusy(true);setClockError(null);
+    void repo.advanceClock!(days).then(report=>{
+      advanceDemoClock(days);
+      setClockReport(report);
+      onRefresh();
+    }).catch((error:unknown)=>{setClockError(error instanceof Error?error.message:'Demo calendar advance failed.');}).finally(()=>setClockBusy(false));
+  };
   const reset=()=>{void import('../data/demo').then(module=>module.resetDemo());};
   const steps=guideSteps(data);
+  const counters=[['Reminders',clockReport?.reminders.length??null],['Overdue marks',clockReport?.overdue.length??null],['Escalations',clockReport?.escalations.length??null],['Validity lapses',clockReport?.expiries.length??null]] as const;
+  const rows=clockReport?[...clockReport.overdue,...clockReport.escalations,...clockReport.expiries,...clockReport.reminders]:[];
   return <>
     <ViewHeader title="Demo lab" summary="Simulation controls for the synthetic workspace. Nothing here changes a real record."/>
+    <section className="support-surface demo-lab-clock">
+      <div className="support-surface-heading">
+        <div><h2>Demo calendar</h2><p>Shifts the workspace review clock ahead by whole days. The consequence planner then re-derives each open deadline from its recorded date as a dry run, and the outcome is recorded as SYSTEM notes in the affected cases.</p></div>
+        <span className="quiet-label"><CalendarClock size={14}/>{offset>0?`+${offset} calendar day${offset===1?'':'s'}`:'Real onward time'}</span>
+      </div>
+      <div className="demo-lab-clock-actions">
+        {[1,7,30].map(days=><button key={days} className="button outline" type="button" disabled={clockBusy} onClick={()=>advance(days)}><FastForward size={14}/>+{days} day{days===1?'':'s'}</button>)}
+        <button className="button text" type="button" disabled={clockBusy||offset===0} onClick={()=>{setClockReport(null);resetDemoClock();}}><RotateCcw size={12}/>Reset calendar</button>
+      </div>
+      {clockError&&<p className="callout">{clockError}</p>}
+      {clockReport&&<div className="demo-lab-clock-report" role="status">
+        <div className="demo-lab-clock-counters">
+          {counters.map(([label,count])=><div key={label} className="demo-clock-stat"><strong>{count??0}</strong><span>{label}</span></div>)}
+        </div>
+        {rows.length>0?<ul className="demo-lab-clock-rows">
+          {rows.map((row,index)=><li key={`${row.target}-${row.on}-${index}`}>
+            <span className={`document-tag ${row.kind==='reminder'?'pending':'demo'}`}>{kindLabels[row.kind]}</span>
+            <div><strong>{row.ref?row.ref+' · ':''}{neutralCopy(row.title)}</strong><p>{row.detail}</p></div>
+            <span className="mono">{row.on}</span>
+          </li>)}
+        </ul>:<p className="muted">No new deadline crossings fell inside the shifted window.</p>}
+        <p className="support-footnote">Planning output derived only from recorded deadlines and validity dates. Cases show the same dates without the shifted clock; a SYSTEM note is recorded per affected case in the audit trail. Nothing is dispatched, verified, or approved.</p>
+      </div>}
+    </section>
     <div className="demo-lab-grid">
       <section className="support-surface demo-lab-card">
         <h2>Reset synthetic workspace</h2>

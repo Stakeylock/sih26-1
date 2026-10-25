@@ -5,6 +5,8 @@ import type {AnalysisSnapshot,SavedScenario,ScenarioParameters} from './intellig
 import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
 import type {CaseHistory} from './review';
 import type {ApprovalRecord,ApprovalScopeItem,DeadlineNotice,DeadlineRevision,NoticeImpact,NoticeInput,ReminderIntent,ScopeInput,ScopeRequest,ValidityInput,ValidityMode} from './approvals';
+import {demoNow} from './virtualClock';
+import type {ClockReport} from './consequences';
 
 export type { Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
 export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'regional_officer', 'national_admin'] as const;
@@ -108,6 +110,7 @@ export interface Repository {
   tamperReplay(application: Application): Promise<AuditVerification>;
   upload(application: Application, type: string, file: File): Promise<void>; download(document: DocumentRecord): Promise<void>;
   markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>;
+  advanceClock?(days: number): Promise<ClockReport>;
   advisory(application:Application,documents:DocumentRecord[]):Promise<Advisory>;
 }
 export function allowedActions(app: Application, identity: Identity, mode: 'demo'|'connected' = 'connected'): Action[] {
@@ -125,7 +128,7 @@ export function allowedActions(app: Application, identity: Identity, mode: 'demo
   if (app.status === 'pending_decision' && (has('regional_officer') || has('national_admin'))) return ['approve', 'reject'];
   return [];
 }
-export function daysUntil(date: string | null, now = Date.now()) { return date ? Math.ceil((Date.parse(date) - now) / 86400000) : null; }
+export function daysUntil(date: string | null, now = demoNow()) { return date ? Math.ceil((Date.parse(date) - now) / 86400000) : null; }
 export function missingInputs(app: Application, documents: DocumentRecord[]) {
   return [...app.template_snapshot.required_fields.filter(f => !app.form_data[f.key]?.trim()).map(f => f.label),
     ...app.template_snapshot.required_documents.filter(type => !documents.some(d => d.application_id === app.id && d.doc_type === type && d.scan_status === 'clean')).map(d => `${d} (clean scan required)`)];
