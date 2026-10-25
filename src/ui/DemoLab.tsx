@@ -2,6 +2,7 @@ import {neutralCopy} from '../domain/presentation';
 import {useEffect,useState} from 'react';
 import {CalendarClock,FastForward,FileStack,Play,RefreshCw,RotateCcw,TriangleAlert} from 'lucide-react';
 import {ViewHeader} from './common';
+import {formatDateTime} from './DisplayPreferences';
 import {guideSteps} from './demoGuide';
 import {advanceDemoClock,DEMO_CLOCK_EVENT,demoClockOffset,resetDemoClock} from '../domain/virtualClock';
 import type {ClockReport} from '../domain/consequences';
@@ -123,5 +124,6 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
       </div>
     </section>
     <p className="support-footnote demo-lab-footnote">Use Preview as in the top bar to test a role boundary. All controls operate on synthetic local data; no real Institutional Review data or regulatory decision is used.</p>
+    <p className="support-footnote demo-lab-footnote">Workspace snapshot {formatDateTime(Date.now())} · {data.applications.length} applications in scope. Planning reflects only what is recorded in this snapshot.</p>
   </>;
 }

@@ -16,6 +16,7 @@ import { allowedActions, missingInputs } from '../domain/model';
 import { titleSchema, validateFile } from '../domain/validation';
 import {captureReviewSnapshot} from '../domain/review';
 import {planClockAdvance} from '../domain/consequences';
+import {workspaceHolidays} from '../domain/calendar';
 import type {ClockConsequence} from '../domain/consequences';
 import {buildReviewBasis,reviewBasisCurrent,canUploadEvidence,currentClaimEvidence,demoRatioRule,evaluateDemoRatio} from '../domain/evidence';
 const templates = templatesJson as Template[];
@@ -257,7 +258,7 @@ export function createDemoRepository(role:Role='national_admin'): Repository {
     async upload(application,type,file){validateFile(file);const a=find(application.id);if(!canUploadEvidence(a,actor,state.claims,state.deficiencies,type,state.obligations))throw new Error('Application is locked for this evidence type.');state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id});log(a,'document_reserved',a.status,'Demo metadata only; bytes never leave this browser.');persist();},
     async download(){throw new Error('Seeded demo documents are synthetic references. No document bytes are stored.');},
     async markRead(id){const n=state.notifications.find(n=>n.id===id);if(n)n.read_at=iso();persist();},
-    async advanceClock(days){const report=planClockAdvance(days,{now:Date.now(),applications:state.applications,obligations:state.obligations,documents:state.documents});
+    async advanceClock(days){const report=planClockAdvance(days,{now:Date.now(),applications:state.applications,obligations:state.obligations,documents:state.documents,holidays:workspaceHolidays()});
       const affected=new Map<string,ClockConsequence[]>();
       for(const row of [...report.reminders,...report.overdue,...report.escalations,...report.expiries]){
         if(!row.application_id)continue;
