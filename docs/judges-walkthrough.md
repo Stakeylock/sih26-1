@@ -2,16 +2,32 @@
 
 Use only the labelled synthetic workspace. The browser role preview is for demonstration; the signed-in workspace uses real backend grants.
 
-1. **Show the evidence first.** Open the default South-region case. Review its nine claims, expired original certificate and separate replacement. Show that a clean file, a validity review and an accepted claim are different facts.
-2. **Show a human correction loop.** Raise or inspect a claim deficiency, switch to its institution, attach the permitted replacement type, record its validity review, resolve it and recheck as the assigned officer. Other missing evidence still blocks progression.
-3. **Explain a comparison.** In Case analysis, capture the current case. Add a five-day scrutiny delay and an explicit holiday. Compare the pinned baseline with the hypothetical target, inspect each attention factor and save the scenario. The live workflow is unchanged.
-4. **Open the evidence map.** Select the certificate in the accessible table, inspect its actual claim relationship and enable optional 3D. Switch between captured present, hypothetical horizon and a supported recorded event. Unknown historical fields stay unknown.
-5. **Show actual replay.** Choose a recorded checkpoint; inspect the claim/evidence state that was stored at that event. Do not describe the scenario horizon as historical replay.
-6. **Show resource planning.** As the South coordinator, open Verification visits and choose the inspection-ready programme case. Select a genuinely available synthetic expert, record the reason, reserve and confirm. Overlapping bookings and declared conflicts are blocked by the backend. Findings require the confirmed window to end.
-7. **Separate recommendations from decisions.** In Case operations, assign an independent reviewer through a live grant. Record a recommendation with case evidence. A required review gates a decision; it does not decide the case itself.
-8. **Show source review.** In Policy notices, copy a published workflow to a draft, edit stage targets/calendar, supply provenance, save, review and publish. Existing cases remain pinned. Preview compatible cases and explicitly adopt a revision. Source notices retain their own reviewed deadline history.
-9. **Show continuing obligations.** Record explicit coverage and a human condition in the decision form. The resulting obligation keeps its own deadline and evidence requirements after the application closes.
-10. **Show an honest delivery.** Queue a source-bound in-app update and process it in the isolated demo. In connected local testing, use the loopback SMTP sink. Inspect queue, claim and outcome history; SMTP accepted is not delivered. Changed sources supersede old generations.
-11. **Finish with proof.** Verify the audit chain, demonstrate tamper on a temporary copy, export a scoped register and show the readiness checks. Keep scanner, recovery and disabled-runtime gates visible.
+## Main story: one application, about six minutes
+
+Anchor everything to the default South-region case (the expired certificate). Every other capability stays one deep link away but is not part of the spoken arc.
+
+1. **Open with the problem.** From the Overview priority queue, open the default South-region case. It has nine claims, an approaching SLA deadline, and an expired original certificate beside a separate replacement. State the demo hedge once: synthetic workspace, no real institutional data.
+2. **Fix the evidence.** Raise or inspect the claim deficiency, switch to its institution, upload the permitted replacement type, record its validity review, resolve the deficiency and recheck as the assigned officer. Show that a clean file, a validity review, and an accepted claim are three different facts. The remaining missing claims still block progression.
+3. **Show the authority boundary.** The institution cannot accept its own claim - the action is absent, not disabled by message. The document pre-check is advisory only and labels itself so. The authorized reviewer records the finding; nothing in the record fabricates the reviewer.
+4. **Follow the route.** Once the prerequisites are complete, the next stage and responsible role follow the pinned workflow version. As coordinator, schedule the verification visit and reserve a genuinely available expert - conflicts and overlaps are blocked by the backend while you stay in the flow.
+5. **Decide, then keep watching.** Record a conditional approval: the decision receipt shows the condition, and the resulting obligation keeps its own deadline and evidence requirements after the application closes. In the demo lab, advance the synthetic clock to preview example follow-up windows derived from entered dates. A demo-only audit note records the rehearsal; it does not assign reviewers, change a case decision, or dispatch notices.
+6. **Finish with proof.** Verify the audit chain, demonstrate tamper on a temporary copy, export a scoped register, and show the delivery/outcome history. Keep the scanner, recovery, and disabled-runtime gates visible on screen.
+
+## Reserve for questions
+
+Each item is a one-question answer with its route, not part of the spoken arc.
+
+- **How do policy changes stay safe?** Copy a published workflow to a draft, edit targets and calendar, supply reviewed provenance, publish v2, then explicitly adopt it for one selected case. Existing cases stay pinned. Route: Policy notices.
+- **Can you compare plans without touching the live record?** In Case analysis, capture the current case, add a five-day scrutiny delay and an explicit holiday, and compare the pinned baseline with the hypothetical target. The live workflow is unchanged; scenarios are saved and reloadable. Route: Case analysis.
+- **Was that what the record said at the time?** Choose a recorded checkpoint and inspect the claim/evidence state stored at that event. The scenario horizon is a plan; recorded replay is history. Route: Case -> History.
+- **Is the relationship view usable without WebGL?** The evidence map opens as an accessible table by default; optional 3D is one toggle and never required. Route: Case analysis -> evidence map.
+- **What stops double-booking an expert?** In Verification visits, reserve the same expert twice; the backend blocks the overlap and honours declared conflicts. Route: Visits.
+- **Who reviewed it independently?** In Case operations, allocate an independent reviewer through a live grant and record a recommendation. A required review gates the decision; it never decides it. Route: Case operations.
+- **What happens to a delivery that failed?** Queue a source-bound in-app update, process it in the isolated demo, and show superseded generations when the source changes. In connected local testing, the loopback SMTP sink keeps "accepted" distinct from "delivered". Route: Case operations -> delivery.
+- **What is this guided story / prototype?** The demo lab owns the armed walkthrough and the read-only relationship prototype; both are entry points for judges who want to explore after the pitch. Route: Demo lab (top-bar disclosure).
+
+- **How is this different from the dual clocks and deadline time machines other pitches showed?** One recorded clock feeds everything: the consequence report, the deadline cells, the compliance chips and the planner all read the same working-day clock built from the case's own dates and responsibility attribution, and every demo-calendar advance writes a SYSTEM row to each affected case's audit trail - the simulation is itself auditable. Route: Demo lab -> Demo calendar -> Audit logs.
+
+## Standing honesty rules (unchanged)
 
 The strongest distinction is the connection between recorded evidence, reproducible assumptions, human authority and server-enforced transitions. Avoid presenting a heuristic as an approval probability, a supplied hash as a signature, or a synthetic panel as a verified professional certification.

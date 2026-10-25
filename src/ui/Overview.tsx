@@ -2,6 +2,8 @@ import {neutralCopy} from '../domain/presentation';
 import {ArrowRight,BarChart3,Building2,ClipboardClock,Clock3,FileStack,Plus,ShieldCheck,TrendingUp} from 'lucide-react';
 import { actionLabels, allowedActions, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace } from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
+import { workspaceHolidays } from '../domain/calendar';
+const HOLIDAYS = workspaceHolidays();
 // Station label for a status. Same facts as statusLabels, phrased as the work in progress at the station.
 const operationalStatus: { [key in Status]: string } = {
   draft: 'Draft in progress', submitted: 'Awaiting reviewer assignment', under_scrutiny: 'Officer reviewing',
@@ -11,17 +13,17 @@ const operationalStatus: { [key in Status]: string } = {
 };
 import {Badge,Due,Empty} from './common';
 
-function priorityReason(app:Application){const days=workingDaysUntil(app.sla_due_at);if(days!==null&&days<0)return `Overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return 'Due today';if(days!==null)return `Due in ${days} day${days===1?'':'s'}`;return 'No demo SLA recorded';}
+function priorityReason(app:Application){const days=workingDaysUntil(app.sla_due_at,undefined,HOLIDAYS);if(days!==null&&days<0)return `Overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return 'Due today';if(days!==null)return `Due in ${days} day${days===1?'':'s'}`;return 'No demo SLA recorded';}
 function nextAction(app:Application,identity:Identity){const action=allowedActions(app,identity)[0];return action?`Your next action: ${actionLabels[action].toLowerCase()}`:'Next authority: '+nextAuthorityLabel(app.status);}
 function nextAuthorityLabel(status:Status){if(status==='deficiency_raised')return 'Institution';const byStage:{[key in Status]:string}={draft:'Institution',submitted:'Scrutiny officer',under_scrutiny:'Assigned scrutiny officer',deficiency_raised:'Institution',resubmitted:'Scrutiny officer',evc_pending:'EVC coordinator',evc_scheduled:'Assigned EVC coordinator',pending_decision:'Regional officer',approved:'Record closed',rejected:'Record closed'};return byStage[status];}
 function holdDays(app:Application){const updated=Date.parse(app.updated_at);return Number.isFinite(updated)?Math.max(0,Math.floor((Date.now()-updated)/86400000)):0;}
 
 export function Overview({data,identity,open,navigate}:{data:Workspace;identity:Identity;open:(id:string)=>void;navigate:(page:string)=>void}){
   const active=data.applications.filter(a=>!['draft','approved','rejected'].includes(a.status));
-  const atRisk=active.filter(a=>(workingDaysUntil(a.sla_due_at)??99)<=3);
+  const atRisk=active.filter(a=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??99)<=3);
   const canCreate=identity.roles.some(r=>r.role==='institution');
-  const onTime=active.filter(a=>(workingDaysUntil(a.sla_due_at)??99)>=0).length;
-  const priority=active.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at)??9999)-(workingDaysUntil(b.sla_due_at)??9999)).slice(0,3);
+  const onTime=active.filter(a=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??99)>=0).length;
+  const priority=active.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??9999)-(workingDaysUntil(b.sla_due_at,undefined,HOLIDAYS)??9999)).slice(0,3);
 
   const sla=active.length?`${Math.round(onTime/active.length*100)}%`:'—';
 

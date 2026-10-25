@@ -15,6 +15,9 @@ import { canonicalAuditPayload, sha256Hex, verifyAuditChain } from '../domain/in
 import { allowedActions, missingInputs } from '../domain/model';
 import { titleSchema, validateFile } from '../domain/validation';
 import {captureReviewSnapshot} from '../domain/review';
+import {planClockAdvance} from '../domain/consequences';
+import {workspaceHolidays} from '../domain/calendar';
+import type {ClockConsequence} from '../domain/consequences';
 import {buildReviewBasis,reviewBasisCurrent,canUploadEvidence,currentClaimEvidence,demoRatioRule,evaluateDemoRatio} from '../domain/evidence';
 const templates = templatesJson as Template[];
 const requirements = requirementsJson as Requirement[];
@@ -96,18 +99,18 @@ export function seed(): Workspace {
   const visits: import('../domain/model').Visit[] = [
     { id: 'demo-visit-1', application_id: 'demo-app-7', coordinator_id: 'demo-evc', scheduled_for: iso(3), completed_at: null, report: null, recommendation: null, committee: committeeDemo },
     { id: 'demo-visit-2', application_id: 'demo-app-2', coordinator_id: 'demo-evc', scheduled_for: iso(6), completed_at: null, report: null, recommendation: null, committee: committeeDemo },
-    { id: 'demo-visit-0', application_id: 'demo-app-5', coordinator_id: 'demo-evc', scheduled_for: iso(-4), completed_at: iso(-4), report: 'Instructional spaces, faculty cadre ratio, and computing laboratories verified against APH norms. Approved intake of 120 recommended.', recommendation: 'recommend', committee: committeeDemo },
+    { id: 'demo-visit-0', application_id: 'demo-app-5', coordinator_id: 'demo-evc', scheduled_for: iso(-4), completed_at: iso(-4), report: 'Synthetic historical visit fixture for demonstrating how a recorded panel report appears.', recommendation: 'recommend', committee: committeeDemo },
   ];
   const obligations: import('../domain/model').Obligation[] = [
-    { id: 'demo-obligation-1', application_id: 'demo-app-0', institution_id: 'demo-inst-0', title: 'Land Lease Deed 30-Year Validity (APH Clause 1.4)', due_date: iso(30).slice(0, 10), status: 'open', deadline_source: 'aph_statutory_lease', region: 'South', escalation_level: 't_minus_30', statutory_norm: 'APH 2024-27 Clause 1.4: Registered lease must be valid for at least 30 years.', lease_years_remaining: 31, required_evidence: ['Land Document'] },
-    { id: 'demo-obligation-2', application_id: 'demo-app-1', institution_id: 'demo-inst-1', title: 'Fire Safety Certificate Annual Renewal & Escalation', due_date: iso(-8).slice(0, 10), status: 'open', deadline_source: 'fire_safety_noc', region: 'West', escalation_level: 'escalated_ro', statutory_norm: 'APH Safety Norms: Annual renewal mandatory. T+7 escalation to Regional Officer.', required_evidence: ['Fire Safety Certificate'] },
-    { id: 'demo-obligation-3', application_id: 'demo-app-5', institution_id: 'demo-inst-5', title: 'Post-Approval Faculty Undertaking Compliance (Cadre Ratio 1:2:6)', due_date: iso(45).slice(0, 10), status: 'open', deadline_source: 'undertaking_cadre', region: 'North', escalation_level: 'normal', statutory_norm: 'APH Chapter 2: Recruitment of sanctioned faculty cadre within 90 days.', required_evidence: ['Faculty List'] },
+    { id: 'demo-obligation-1', application_id: 'demo-app-0', institution_id: 'demo-inst-0', title: 'Synthetic land-document follow-up', due_date: iso(30).slice(0, 10), status: 'open', deadline_source: 'demo_scenario', region: 'South', escalation_level: 'normal', required_evidence: ['Land Document'] },
+    { id: 'demo-obligation-2', application_id: 'demo-app-1', institution_id: 'demo-inst-1', title: 'Synthetic safety-document follow-up', due_date: iso(-8).slice(0, 10), status: 'open', deadline_source: 'demo_scenario', region: 'West', escalation_level: 'normal', required_evidence: ['Fire Safety Certificate'] },
+    { id: 'demo-obligation-3', application_id: 'demo-app-5', institution_id: 'demo-inst-5', title: 'Synthetic post-approval faculty condition', due_date: iso(45).slice(0, 10), status: 'open', deadline_source: 'demo_scenario', region: 'North', escalation_level: 'normal', required_evidence: ['Faculty List'] },
   ];
   const notifications: import('../domain/model').Notification[] = [
     { id: 'demo-notification-1', title: 'Scrutiny deficiency cure window closing', body: 'DEMO-2026-1002 (Meridian College) has an open deficiency on Land Document approaching SLA.', read_at: null, created_at: iso(), application_id: 'demo-app-1', target_stage: 'case/demo-app-1' },
-    { id: 'demo-notification-2', title: 'Fire Safety Certificate expired · Escalated to RO', body: 'DEMO-2026-1001 (Cedar Technical Institute) fire safety certificate expired. Linked to APH safety claim.', read_at: null, created_at: iso(-1), application_id: 'demo-app-0', target_stage: 'case/demo-app-0' },
+    { id: 'demo-notification-2', title: 'Synthetic fire-safety review is pending', body: 'DEMO-2026-1001 carries a sample fire-safety validity issue; the assigned reviewer can inspect its correction record.', read_at: null, created_at: iso(-1), application_id: 'demo-app-0', target_stage: 'case/demo-app-0' },
     { id: 'demo-notification-3', title: 'Synthetic visit panel recorded', body: 'DEMO-2026-1008 contains a legacy synthetic panel. Use resource planning to record availability, declared conflicts and confirmation.', read_at: null, created_at: iso(-2), application_id: 'demo-app-7', target_stage: 'case/demo-app-7' },
-    { id: 'demo-notification-4', title: 'Workflow Version 1.0 published under APH 2024-27', body: 'Active dossiers retain their original immutable snapshot. Rerouting is strictly prohibited.', read_at: iso(-3), created_at: iso(-3), application_id: null, target_stage: 'workflows' },
+    { id: 'demo-notification-4', title: 'Sample workflow revision published', body: 'Existing sample cases retain their captured route until a compatible policy revision is explicitly reviewed and adopted.', read_at: iso(-3), created_at: iso(-3), application_id: null, target_stage: 'workflows' },
   ];
   const workspace:Workspace={applications,institutions,templates,documents,events,checklist:[],visits,obligations,notifications,requirements,claims,claim_evidence:claimEvidence,deficiencies,integrity_signals:signals,access_assignments:accessAssignments,agents};
   seedGovernance(workspace);
@@ -255,6 +258,16 @@ export function createDemoRepository(role:Role='national_admin'): Repository {
     async upload(application,type,file){validateFile(file);const a=find(application.id);if(!canUploadEvidence(a,actor,state.claims,state.deficiencies,type,state.obligations))throw new Error('Application is locked for this evidence type.');state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id});log(a,'document_reserved',a.status,'Demo metadata only; bytes never leave this browser.');persist();},
     async download(){throw new Error('Seeded demo documents are synthetic references. No document bytes are stored.');},
     async markRead(id){const n=state.notifications.find(n=>n.id===id);if(n)n.read_at=iso();persist();},
+    async advanceClock(days){const report=planClockAdvance(days,{now:Date.now(),applications:state.applications,obligations:state.obligations,documents:state.documents,holidays:workspaceHolidays()});
+      const affected=new Map<string,ClockConsequence[]>();
+      for(const row of [...report.reminders,...report.overdue,...report.escalations,...report.expiries]){
+        if(!row.application_id)continue;
+        const list=affected.get(row.application_id)??[];
+        list.push(row);affected.set(row.application_id,list);
+      }
+      for(const [applicationId,rows] of affected){const anchor=state.applications.find(item=>item.id===applicationId&&visible(item));if(!anchor)continue;
+        state.events.unshift({id:Math.max(0,...state.events.map(event=>event.id))+1,application_id:anchor.id,actor_id:null,actor_role:'system',action:'demo_calendar_advanced',from_status:null,to_status:null,reason:'Simulated demo calendar advanced by '+report.days+' days; derived consequence of recorded deadlines and validity dates. No notices were dispatched and no review decision was recorded.',created_at:iso(),payload:{demo:true,coverage:'derived_horizon',days:report.days,horizon_end:new Date(Date.now()+report.days*86400000).toISOString().slice(0,10),consequences:structuredClone(rows)}});}
+      persist();return report;},
     async fulfil(id,reason){if(!['national_admin','regional_officer'].includes(role))throw new Error('Decision role required.');const o=state.obligations.find(o=>o.id===id);if(o){if((o.required_evidence??[]).length)throw new Error('Select reviewed evidence with the versioned compliance command.');o.status='fulfilled';log(find(o.application_id),'obligation_fulfilled',null,reason);}persist();},
     async advisory(application,documents){const safe={id:application.id,ref_no:application.ref_no,is_demo:true,status:application.status,version:application.version,form_data:Object.fromEntries(Object.entries(application.form_data).map(([key,value])=>[key,value.trim()?'provided':''])),template_snapshot:{required_fields:application.template_snapshot.required_fields,required_documents:application.template_snapshot.required_documents}};const response=await fetch('/api/advisories/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({application:safe,documents:documents.map(d=>({doc_type:d.doc_type,scan_status:d.scan_status}))})});if(!response.ok)throw new Error('Start the local advisory service to run the document pre-check.');return response.json() as Promise<Advisory>;},
   };

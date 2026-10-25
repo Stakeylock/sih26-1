@@ -19,7 +19,7 @@ test('motion pauses, resumes and stops after the evidence review without changin
 });
 test('manual steps use keyboard navigation and keep playback paused',async({page})=>{
   const figure=page.getByRole('figure',{name:'Illustrative evidence review'});await page.getByRole('tab',{name:'Correction',exact:true}).click();await expect(figure).toHaveAttribute('data-step','correction');await expect(figure).toHaveAttribute('data-playing','false');
-  await page.keyboard.press('ArrowRight');await expect(page.getByRole('tab',{name:'Recorded',exact:true})).toBeFocused();await expect(figure).toHaveAttribute('data-step','recorded');await page.keyboard.press('Home');await expect(page.getByRole('tab',{name:'Evidence',exact:true})).toBeFocused();await expect(figure).toHaveAttribute('data-step','evidence');
+  await page.keyboard.press('ArrowRight');await expect(page.getByRole('tab',{name:'Recorded',exact:true})).toBeFocused();await expect(figure).toHaveAttribute('data-step','recorded');await page.keyboard.press('Home');await expect(page.getByRole('tab',{name:'Evidence',exact:true})).toBeFocused();
 });
 test('the illustration pauses while it is outside the viewport',async({page})=>{
   await page.setViewportSize({width:1450,height:500});await page.clock.install();const figure=page.getByRole('figure',{name:'Illustrative evidence review'});await figure.scrollIntoViewIfNeeded();await page.getByRole('button',{name:'Replay illustration'}).click();await expect(figure).toHaveAttribute('data-playing','true');
@@ -48,4 +48,26 @@ test('landing tokens are measured and assets remain local',async({page})=>{
   });
   expect(measurements.heading.fontSize).toBe('72px');expect(measurements.primary.height).toBe(48);expect(measurements.primary.radius).toBe('8px');expect(measurements.illustration.radius).toBe('15px');expect(measurements.externalAssets).toEqual([]);writeFileSync('docs/landing-measured-styles.json',JSON.stringify(measurements,null,2)+'\n');
   await page.getByRole('tab',{name:'Recorded',exact:true}).click();await page.screenshot({path:'../../work/flowpilot-landing-preview.png',fullPage:true,animations:'disabled'});
+});
+test('station entry boots the workspace under the chosen role',async({page})=>{
+  await page.getByRole('button',{name:/Submit the record, answer corrections/}).click();
+  const roleSelect=page.locator('select[aria-label="Demo role"]');
+  await expect(roleSelect).toBeVisible();
+  await expect(roleSelect).toHaveValue('institution');
+});
+test('module chips deep-link into their workspace surface',async({page})=>{
+  await page.getByRole('button',{name:'Audit logs',exact:true}).click();
+  await expect(page).toHaveURL(/#audit/);
+  await expect(page.locator('header.topbar')).toBeVisible();
+  await page.goto('/#visits');
+  await expect(page.locator('header.topbar')).toBeVisible();
+});
+test('the landing dataset line states only what the demo seed contains',async({page})=>{
+  await expect(page.getByRole('note')).toContainText('12 synthetic dossiers');
+  await expect(page.getByRole('note')).toContainText('39 recorded events');
+});
+test('the landing headline follows the stored Hindi preference',async({page})=>{
+  await page.evaluate(()=>localStorage.setItem('workspace-display-v1',JSON.stringify({scale:1,contrast:false,locale:'hi-IN'})));
+  await page.reload();
+  await expect(page.locator('h1')).toContainText('फ़ाइल आगे बढ़ती है.');
 });

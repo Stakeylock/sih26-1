@@ -1,5 +1,6 @@
 import type { Deficiency } from './integrity';
 import type {AuditEvent} from './model';
+import {demoNow} from './virtualClock';
 import {recordedSnapshot} from './review';
 const DAY=86400000, IST=19800000;
 
@@ -31,7 +32,7 @@ export function workingDaysBetween(from: Date | string | number, to: Date | stri
 }
 
 /** Working days until a deadline; negative when overdue. Returns null when there is no deadline. */
-export function workingDaysUntil(due: string | null | undefined, now = Date.now(), holidays: readonly string[] = []): number | null {
+export function workingDaysUntil(due: string | null | undefined, now = demoNow(), holidays: readonly string[] = []): number | null {
   if (!due) return null;
   return workingDaysBetween(now, due, holidays);
 }
@@ -68,7 +69,7 @@ function elapsedWeekdays(from:number,to:number,holidays:readonly string[]){
   }
   return total;
 }
-export function computeDualClock(input:{startAt:string|null|undefined;closedAt?:string|null;events?:readonly AuditEvent[];historyComplete?:boolean;deficiencies?:readonly Pick<Deficiency,'raised_at'|'resolved_at'|'status'>[];holidays?:readonly string[]},now=Date.now()):DualClock{
+export function computeDualClock(input:{startAt:string|null|undefined;closedAt?:string|null;events?:readonly AuditEvent[];historyComplete?:boolean;deficiencies?:readonly Pick<Deficiency,'raised_at'|'resolved_at'|'status'>[];holidays?:readonly string[]},now=demoNow()):DualClock{
   const start=Date.parse(input.startAt??'');const end=Math.min(now,input.closedAt?Date.parse(input.closedAt):now);
   const empty={officerDays:0,institutionDays:0,paused:false,totalWorkingDays:0,complete:false,coverageStart:null};
   if(!Number.isFinite(start)||!Number.isFinite(end)||end<start)return empty;

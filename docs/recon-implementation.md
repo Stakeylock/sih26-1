@@ -2,6 +2,8 @@
 
 The local app now combines evidence review with reproducible scenario planning, an optional 3D dependency map, resource reservations, reviewed workflow publication and operational delivery tracking. All records and outcomes used for validation are synthetic.
 
+The branch subsequently picked up accessibility, demo-clock, guided-review and relationship-view updates from its shared remote. Both builds are rechecked after merging them. The automated counts below belong to the earlier tested revision; the automated suites were not rerun after that merge.
+
 ## Open locally
 
 | Service | Address |
@@ -38,6 +40,7 @@ The local app now combines evidence review with reproducible scenario planning, 
 | Operational readiness | Current database/private-bucket configuration and worker activity checks; unverified release gates shown explicitly | SQL and UI checks |
 | Operational exports | Six scoped CSV registers plus scenario timeline CSV and checksummed evidence JSON; no private object paths | CSV injection tests, source checksums and live API inspection |
 | Reading controls | Device-local text sizing, higher contrast and regional date/time formatting; English interface retained | Mobile overflow, persistence, keyboard and automated accessibility checks |
+| Guided relationship view | Adds a demo-lab walkthrough from an application claim through evidence and review. Clock advances calculate sample reminders and expiry follow-ups, recorded as demo-only audit notes. | Included in the incoming shared branch; not rechecked after the merge |
 | Presentation | Existing design language, neutral product wording, lazy analysis/3D/views and retained landing motion/reduced-motion controls | Desktop/mobile browser suite and both builds |
 
 Workflow publication manages supported routes and calendars. Requirement examples remain a separate preview; changing the requirement registry needs a reviewed migration. An appeal-review recommendation does not reopen or overturn a rejected case. No fixed lease duration, mandatory panel composition, automatic penalty or unverified legal rule was imported from competitor claims.
@@ -67,7 +70,7 @@ The supplied long report also mixes in an unprovided project and some of this ap
 - Demo and connected builds pass. The main application dependency audit has zero findings. The optional graphics chunk is loaded only when enabled.
 - Local database migrations were applied through the checksum-checked launcher. Public authenticated RPCs retain invoker facades over guarded private functions.
 
-The integration runner now creates fresh fixtures before validation; it no longer relies on a previously closed test case. Test-only scan completion is explicitly labelled as a known PNG fixture, never as a validated antivirus engine.
+The integration runner creates fresh fixtures instead of relying on a previously closed test case. Test-only scan completion is explicitly a known PNG fixture, never a validated antivirus engine.
 
 ## Repeat the checks
 
