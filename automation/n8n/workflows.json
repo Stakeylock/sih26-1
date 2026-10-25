@@ -1,7 +1,7 @@
 [
   {
     "id": "flowpilotAdvisoryWebhook",
-    "name": "FlowPilot · sanitized advisory follow-ups",
+    "name": "Clauseway · sanitized advisory follow-ups",
     "active": false,
     "settings": {
       "executionOrder": "v1",
@@ -30,7 +30,7 @@
         "credentials": {
           "httpHeaderAuth": {
             "id": "flowpilotAutomationHeader",
-            "name": "FlowPilot automation header"
+            "name": "Clauseway automation header"
           }
         }
       },
@@ -91,7 +91,7 @@
         "credentials": {
           "httpHeaderAuth": {
             "id": "flowpilotAutomationHeader",
-            "name": "FlowPilot automation header"
+            "name": "Clauseway automation header"
           }
         }
       },
@@ -175,7 +175,7 @@
   },
   {
     "id": "flowpilotDemoReminders",
-    "name": "FlowPilot · due demo reminder queue",
+    "name": "Clauseway · due demo reminder queue",
     "active": false,
     "settings": {
       "executionOrder": "v1",
@@ -226,7 +226,7 @@
         "credentials": {
           "httpHeaderAuth": {
             "id": "flowpilotAutomationHeader",
-            "name": "FlowPilot automation header"
+            "name": "Clauseway automation header"
           }
         }
       },
@@ -268,7 +268,7 @@
         "credentials": {
           "httpHeaderAuth": {
             "id": "flowpilotAutomationHeader",
-            "name": "FlowPilot automation header"
+            "name": "Clauseway automation header"
           }
         }
       }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build one complete vertical slice that turns FlowPilot from a workflow demo into a defensible approval record. The slice is built around `DEMO-2026-1001` (`demo-app-0`, Extension of Approval — Self Disclosure) and adds three foundations:
+Build one complete vertical slice that turns Clauseway from a workflow demo into a defensible approval record. The slice is built around `DEMO-2026-1001` (`demo-app-0`, Extension of Approval — Self Disclosure) and adds three foundations:
 
 1. A claim ledger that replaces free-text review with explicit claims, evidence links, verification, and deficiencies.
 2. An evidence passport that exposes hash, expiry, duplicate use, and scan provenance.

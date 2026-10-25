@@ -29,6 +29,6 @@ export function Welcome({onEnter,onStory,theme,toggleTheme}:{onEnter:()=>void;on
         </div>
       </section>
     </main>
-    <footer className="landing-footer"><span>FlowPilot <span aria-hidden="true">/</span> Evidence review, with a record.</span><span><ShieldCheck size={14} aria-hidden="true"/>Independent prototype. No real approval authority.</span></footer>
+    <footer className="landing-footer"><span>Clauseway <span aria-hidden="true">/</span> Evidence review, with a record.</span><span><ShieldCheck size={14} aria-hidden="true"/>Independent prototype. No real approval authority.</span></footer>
   </div>;
 }

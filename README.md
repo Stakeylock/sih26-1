@@ -1,4 +1,4 @@
-# FlowPilot SIH26262 · local continuation
+# Clauseway SIH26262 · local continuation
 
 A locally editable React/TypeScript application continuing the existing Lovable database and Figma design. All accounts, evidence and decisions in this workspace are synthetic. This is not an Institutional Review service and is not approved for real regulatory work.
 
@@ -12,7 +12,7 @@ The app now includes source-pinned scenarios, actual-history exploration, option
 - Authenticated local workspace: http://127.0.0.1:5173/#overview
 - Local advisory backend: http://127.0.0.1:8787/api/automation/health
 - Local Supabase Auth, Data API, and private Storage: http://127.0.0.1:55321
-- With Docker Desktop running, run `Start-FlowPilot.ps1` or `npm run local:start`. The launcher starts an isolated FlowPilot stack, applies checked migrations, provisions synthetic accounts, and starts both frontends and the API. Install dependencies first with `npm ci` if needed.
+- With Docker Desktop running, run `Start-FlowPilot.ps1` or `npm run local:start`. The launcher starts an isolated Clauseway stack, applies checked migrations, provisions synthetic accounts, and starts both frontends and the API. Install dependencies first with `npm ci` if needed.
 - The connected app now uses the ignored `.env.connected.local`, generated from the local stack. The existing hosted `.env.local` is preserved and is not used by this local connected mode.
 - The connected app requires explicitly provisioned accounts. Integration accounts have randomly generated passwords in the ignored `.env.integration.local` file. No credentials are included in this README, source archive, or reports. The connected UI has no role selector.
 - In the isolated demo, use **Preview as** to explore the five roles. **Ctrl/Cmd+K** opens workspace search. Its seed documents are synthetic references without downloadable bytes; newly selected files add metadata only.
@@ -63,9 +63,9 @@ Read `docs/VALIDATION.md` and the JSON evidence files. The release gate intentio
 
 ## Design references
 
-The original Figma frames define the navy sidebar, teal actions, warm-white canvas, Inter typography, overview, case workspace and application wizard. Awwwards' Attio entry informed quick navigation and the structured register; its mobile guidelines informed visible actions and responsive behavior. Keyboard search, focus rings, clear validation and reduced-motion support are implemented in FlowPilot's own components.
+The original Figma frames define the navy sidebar, teal actions, warm-white canvas, Inter typography, overview, case workspace and application wizard. Awwwards' Attio entry informed quick navigation and the structured register; its mobile guidelines informed visible actions and responsive behavior. Keyboard search, focus rings, clear validation and reduced-motion support are implemented in Clauseway's own components.
 
-The user-supplied `per-simmons/clone-app-pat-pro-public` repository is a reconstruction skill, not an app. Its computed-style comparison script was used against FlowPilot's measured tokens: 8 assertions passed. We adapted that method to the existing app rather than claiming a pixel-for-pixel clone of an Awwwards site. Figma's static design contained no image/SVG assets requiring export.
+The user-supplied `per-simmons/clone-app-pat-pro-public` repository is a reconstruction skill, not an app. Its computed-style comparison script was used against Clauseway's measured tokens: 8 assertions passed. We adapted that method to the existing app rather than claiming a pixel-for-pixel clone of an Awwwards site. Figma's static design contained no image/SVG assets requiring export.
 
 - Figma: https://www.figma.com/design/0YuF68RLR5zwXZm9RzvR5q
 - Awwwards Attio: https://www.awwwards.com/sites/attio

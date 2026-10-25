@@ -1,10 +1,10 @@
-# FlowPilot — Dispatch Office design contract
+# Clauseway — Dispatch Office design contract
 
 Status: implementation in progress
 
 ## Product stance
 
-FlowPilot is a routing system for consequential institutional records. It should not look like a generic admin dashboard or a Public-service imitation. The product identity comes from a consistent grammar for cases, movement, responsibility, and decisions:
+Clauseway is a routing system for consequential institutional records. It should not look like a generic admin dashboard or a Public-service imitation. The product identity comes from a consistent grammar for cases, movement, responsibility, and decisions:
 
 > **Every application is a dossier. Every handoff has an owner. Every decision leaves a receipt.**
 

@@ -10,7 +10,7 @@ Latest local run: **23 October 2026**. See [LOCAL_RUN.md](LOCAL_RUN.md) for the 
 
 The record below is retained as historical evidence from 22 October 2026 and does not describe the current local stack.
 
-Environment: local Work mode, connected only to the exact FlowPilot Lovable demo database. Synthetic identities and fixtures only.
+Environment: local Work mode, connected only to the exact Clauseway Lovable demo database. Synthetic identities and fixtures only.
 
 | Check | Evidence / result |
 |---|---|

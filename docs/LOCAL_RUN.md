@@ -1,4 +1,4 @@
-# FlowPilot local stack · 23 October 2026
+# Clauseway local stack · 23 October 2026
 
 **25 October 2026:** Docker has been recovered and the current local stack is running. The six new feature migrations and the preceding governance/correction changes have been applied locally. Fresh Auth/Storage/workflow, claim-remediation and recon-capability integration tests now pass. See [current implementation and validation](recon-implementation.md). Earlier Docker-unavailable notes below are historical.
 

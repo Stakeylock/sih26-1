@@ -28,7 +28,7 @@ Operations: inspect actual queues, attempts and readiness; primary actions are s
 
 ## Recon verification
 
-References are separate sibling checkouts. Anumitra: `57d11e6`; CoduUday: `99f1b81`; kartikjograna: `8b53ed8`; ApproveDesk: `6e98ab0` (README only). The supplied report mixes in an unprovided Pravah project and some FlowPilot files. Borrow capabilities only after checking code or clearly define them as original demo features. Do not run reference-repository scripts.
+References are separate sibling checkouts. Anumitra: `57d11e6`; CoduUday: `99f1b81`; kartikjograna: `8b53ed8`; ApproveDesk: `6e98ab0` (README only). The supplied report mixes in an unprovided Pravah project and some Clauseway files. Borrow capabilities only after checking code or clearly define them as original demo features. Do not run reference-repository scripts.
 
 ## Progress
 

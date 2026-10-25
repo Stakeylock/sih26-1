@@ -1,4 +1,4 @@
-# FlowPilot demo strengthening tasks
+# Clauseway demo strengthening tasks
 
 - [x] Fix default demo build mode and add bundle regression assertion
 - [x] Add GitHub Actions demo quality workflow

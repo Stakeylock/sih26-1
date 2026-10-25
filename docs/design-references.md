@@ -1,4 +1,4 @@
-# FlowPilot design reference research
+# Clauseway design reference research
 
 **Date:** October 23, 2026
 **Phase:** Research gate only; no application code was changed.
@@ -53,7 +53,7 @@ I used direct web fetching plus the app's built-in browser for visual checks. I 
 
 **Do not borrow:** the long editorial article format, poster-collage density, decorative historical styling, or a literal Swiss flag palette.
 
-**FlowPilot mapping:**
+**Clauseway mapping:**
 
 - Overview: priority queue first, route register second, metrics last.
 - Case workspace: record-jacket header, numbered route, evidence index, decision receipt.
@@ -69,7 +69,7 @@ I used direct web fetching plus the app's built-in browser for visual checks. I 
 
 **Do not borrow:** a free-form workflow editor, drag-to-rearrange behavior, zoom controls, or a generic node-editor skin for the current immutable route registry.
 
-**FlowPilot mapping:**
+**Clauseway mapping:**
 
 - Approval routes: station cards connected by an explicit route line.
 - Station detail: role, waiting cases, oldest case, target duration, evidence requirements, and allowed transitions.
@@ -81,11 +81,11 @@ I used direct web fetching plus the app's built-in browser for visual checks. I 
 2. `sidebar-07` keeps navigation collapsible and pairs the content area with a compact breadcrumb/header treatment.
 3. The blocks expose practical controls—named buttons, checkboxes, inputs, comboboxes, row menus, pagination, and table operations—alongside copyable source and install commands.
 
-**Borrow:** use accessible primitives for dialogs, tables, tabs, comboboxes, menus, breadcrumbs, and sidebar behavior. Use the block composition as a control inventory, not as FlowPilot's identity.
+**Borrow:** use accessible primitives for dialogs, tables, tabs, comboboxes, menus, breadcrumbs, and sidebar behavior. Use the block composition as a control inventory, not as Clauseway's identity.
 
 **Do not borrow:** the interchangeable KPI-card grid, dark/pastel dashboard treatment, generic “Documents” information architecture, or stock rounded-card composition.
 
-**FlowPilot mapping:**
+**Clauseway mapping:**
 
 - Overview: preserve the existing navigation shell but make the dispatch register the hero.
 - Case workspace: use dialog, tabs, table, and badge primitives for review controls.
@@ -97,7 +97,7 @@ The official shadcn MCP server was started locally with a temporary, research-on
 
 Registry searched: `@shadcn` → `https://ui.shadcn.com/r/styles/new-york-v4/{name}.json`.
 
-Useful results for FlowPilot:
+Useful results for Clauseway:
 
 - `@shadcn/dialog` — one UI file; depends on `cn` and `radix-ui`.
 - `@shadcn/tabs` — one UI file; depends on `cn` and `radix-ui`.
@@ -113,7 +113,7 @@ The MCP-returned combined add command was:
 npx shadcn@latest add @shadcn/dialog @shadcn/tabs @shadcn/sidebar @shadcn/badge
 ```
 
-That command was **not run**. The primitives are suitable references, but FlowPilot should not install or copy them until the two compositions above are approved.
+That command was **not run**. The primitives are suitable references, but Clauseway should not install or copy them until the two compositions above are approved.
 
 ## Proposed composition A — operations overview
 
