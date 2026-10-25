@@ -32,10 +32,10 @@ These timings include database connection-pool wait on the shared local machine.
 ## Validation and operator evidence
 
 - Demo and connected builds passed.
-- 271 unit/SQL tests, 77 demo browser tests and two connected browser tests passed.
+- 275 unit/SQL tests, 77 demo browser tests and two connected browser tests passed.
 - Supabase local security/performance advisors: no warning/error findings.
 - Root application dependency audit: zero reported vulnerabilities.
-- ClamAV and the worker container are running and healthy on loopback.
+- ClamAV and the worker container were built and verified healthy during the recorded local integration run.
 - `docs/scale-results.json`: latest sustained database workload with provenance.
 - `docs/scale results` and `docs/scale results`: equivalent short probes before/after the policy optimization.
 - `docs/reliability-integration-results.json`: actual upload, quarantine, scan and worker-restart results.
