@@ -1,6 +1,6 @@
 import {neutralCopy} from '../domain/presentation';
 import {useState} from 'react';
-import {FastForward,Play,RefreshCw,RotateCcw,TriangleAlert} from 'lucide-react';
+import {FastForward,FileStack,Play,RefreshCw,RotateCcw,TriangleAlert} from 'lucide-react';
 import {ViewHeader} from './common';
 import {guideSteps} from './demoGuide';
 import type {Role,Workspace} from '../domain/model';
@@ -13,7 +13,7 @@ const rehearsalStages=[
   {stage:'escalated_hq',label:'T+15 headquarters escalation',badge:'T+15 days',recipient:'Member secretary and committee',summary:'A simulated level-two escalation moves the overdue undertaking to headquarters review.'}
 ];
 
-export function DemoLab({data,onStartTour,onOpenPrototype,onSwitch}:{data:Workspace;onStartTour:()=>void;onOpenPrototype:()=>void;onSwitch:(role:Role,route:string)=>void}){
+export function DemoLab({data,onStartTour,onOpenPrototype,onOpenFlow,onSwitch}:{data:Workspace;onStartTour:()=>void;onOpenPrototype:()=>void;onOpenFlow:()=>void;onSwitch:(role:Role,route:string)=>void}){
   const [rehearsalStep,setRehearsalStep]=useState<number|null>(null);
   const reset=()=>{void import('../data/demo').then(module=>module.resetDemo());};
   const steps=guideSteps(data);
@@ -34,6 +34,11 @@ export function DemoLab({data,onStartTour,onOpenPrototype,onSwitch}:{data:Worksp
         <h2>Prototype worklist</h2>
         <p>Open the earlier attention-first worklist for comparison. Its actions leave the prototype and open the real case record.</p>
         <button className="button outline" type="button" onClick={onOpenPrototype}><TriangleAlert size={14}/>Open prototype worklist</button>
+      </section>
+      <section className="support-surface demo-lab-card">
+        <h2>Relationship prototype</h2>
+        <p>Read one synthetic case as claim → evidence → correction → review threads. Same record as the dossier; nothing here records or changes state.</p>
+        <button className="button outline" type="button" onClick={onOpenFlow}><FileStack size={14}/>Open relationship prototype</button>
       </section>
     </div>
     <section className="support-surface demo-lab-guide">
