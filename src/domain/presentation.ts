@@ -1,5 +1,5 @@
 /** Neutral display wording for legacy demo labels. Never rewrite persisted audit digests or source bytes. */
-export function neutralCopy(value:string|null|undefined){return (value??'').replace(/\b\u0041ICTE\b/gi,'Institutional Review').replace(/\b\u0047overnment\b/gi,'Public');}
+export function neutralCopy(value:string|null|undefined){return (value??'').replace(/\bClauseway\b/gi,'Clauseway').replace(/\b\u0041ICTE\b/gi,'Institutional Review').replace(/\b\u0047overnment\b/gi,'Public');}
 export function neutralDemoLabels<T>(value:T):T{
  if(typeof value==='string')return neutralCopy(value) as T;
  if(Array.isArray(value))return value.map(neutralDemoLabels) as T;
