@@ -86,7 +86,7 @@ export default function App(){
   const prototypeFlowApplication=prototypeFlowId?data?.applications.find(a=>a.id===prototypeFlowId):null;
   const prototypeApplication=prototypeCaseId?data?.applications.find(a=>a.id===prototypeCaseId):null;
   const welcome=!route||route==='welcome';const tourOverlay=tourOpen?<GuidedStory step={tourStep} onNext={nextTourStep} onExit={closeTour}/>:null;
-  if(welcome)return <><Welcome onEnter={()=>navigate('overview')} onStory={startTour} theme={theme} toggleTheme={toggleTheme}/>{tourOverlay}</>;
+  if(welcome)return <><Welcome onEnter={()=>navigate('overview')} onStory={startTour} onOpen={route=>navigate(route)} onEnterAs={roleKey=>{setRole(roleKey);navigate('overview');}} theme={theme} toggleTheme={toggleTheme}/>{tourOverlay}</>;
   if(loading)return <><Startup page={page} lang={uiLangNow}/>{tourOverlay}</>;
   if(!identity||!repo)return <Login repo={repo} error={error} setError={setError} signedIn={reload}/>;
   const initials=identity.name.split(' ').map(n=>n[0]).slice(0,2).join('');
@@ -128,7 +128,7 @@ export default function App(){
         {page==='trust'&&<TrustCenter data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
         {page==='audit'&&<Audit data={data} repo={repo} run={run} busy={busy} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)}/>}
         {page==='settings'&&<Settings identity={identity} repo={repo}/>}
-        {page==='demo-lab'&&(repo.mode==='demo'?<DemoLab data={data} onStartTour={startTour} onOpenPrototype={()=>navigate('prototype')} onOpenFlow={()=>navigate('prototype/flow/demo-app-0')} onSwitch={(nextRole,nextRoute)=>{setRole(nextRole);navigate(nextRoute);}}/>:<div className="empty"><h2>Demo lab unavailable</h2><p>Simulation controls are only available in demo mode.</p><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>)}
+        {page==='demo-lab'&&(repo.mode==='demo'?<DemoLab data={data} repo={repo} onStartTour={startTour} onOpenPrototype={()=>navigate('prototype')} onOpenFlow={()=>navigate('prototype/flow/demo-app-0')} onSwitch={(nextRole,nextRoute)=>{setRole(nextRole);navigate(nextRoute);}} onRefresh={()=>{void reload();setNotice('Demo calendar advanced; derived deadlines were recorded as SYSTEM notes.');}}/>:<div className="empty"><h2>Demo lab unavailable</h2><p>Simulation controls are only available in demo mode.</p><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>)}
         {!titles[page]&&<div className="empty"><h2>Page unavailable</h2><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>}
       </>):<div className="empty"><h2>Workspace could not be loaded</h2><button className="button outline" onClick={()=>void reload()}>Try again</button></div>}
       </div>
