@@ -563,3 +563,17 @@ test('audit verifies green, replays tamper red on a copy, resets, and the receip
   await expect(page.locator('.receipt-verification')).toContainText(/events checked/);
   expect(errors).toEqual([]);
 });
+
+test('demo lab guide arms live steps and switches roles into the work surface',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await openDemoLab(page);
+  const guide=page.locator('.demo-lab-guide');
+  await expect(guide).toContainText('6 of 6 armed');
+  await expect(guide).toContainText('DEMO-2026-1001 carries an open correction awaiting the institution.');
+  await expect(guide).toContainText('DEMO-2026-1004 waits at final decision with the human authority recorded.');
+  await guide.getByLabel('Open as Regional officer').click();
+  await expect(page).toHaveURL(/#case\/demo-app-3/);
+  await expect(guide).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
