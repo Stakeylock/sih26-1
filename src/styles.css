@@ -1065,7 +1065,7 @@ tr[data-selected="true"] .due{color:#57697c}
 /* ===== Post-redesign composition fixes ===== */
 /* The legacy palette block reserves sidebar space; the shell is top-nav now. */
 .main-shell{margin-left:0}
-.topbar{flex-wrap:nowrap;overflow:hidden}
+.topbar{flex-wrap:nowrap;overflow:visible}
 .topnav{flex-wrap:nowrap;white-space:nowrap}
 .topnav .nav-item{flex-shrink:0}
 .topbar-actions{flex-shrink:0}
@@ -1425,3 +1425,25 @@ demo-lab-link{margin-top:10px;gap:5px;font-size:calc(11px * var(--text-scale,1))
 .main-shell,.content,.page-body,.dossier-review-main{min-width:0;max-width:100%}
 .table-scroll{width:100%;min-width:0}
 @media(max-width:700px){.command-trigger>span,.demo-disclosure-title{display:block;position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}}
+:root[data-contrast="high"]{--ink:#0c1114;--muted:#36434b;--border:#9fb0bc;--rule:#93a1ab;--line:#8b99a5}
+:root[data-contrast="high"] body{color:#0c1114}
+:root[data-contrast="high"] .muted,:root[data-contrast="high"] .quiet-label,:root[data-contrast="high"] .breadcrumb,:root[data-contrast="high"] .breadcrumb strong,:root[data-contrast="high"] .eyebrow,:root[data-contrast="high"] .empty,:root[data-contrast="high"] .workspace-caption{color:#313c44}
+:root[data-contrast="high"] .mono,:root[data-contrast="high"] td,:root[data-contrast="high"] th,:root[data-contrast="high"] .due,:root[data-contrast="high"] td>small,:root[data-contrast="high"] .document small,:root[data-contrast="high"] .document-tag,:root[data-contrast="high"] .checklist-row small,:root[data-contrast="high"] .timeline p{color:#212c34}
+:root[data-contrast="high"] .icon-button,:root[data-contrast="high"] .demo-role,:root[data-contrast="high"] .demo-role select,:root[data-contrast="high"] footer{color:#26313a}
+:root[data-contrast="high"] input,:root[data-contrast="high"] textarea,:root[data-contrast="high"] select{border-color:#7d8f9d}
+:root[data-contrast="high"] .panel,:root[data-contrast="high"] .metric,:root[data-contrast="high"] .wizard-steps{border-color:#8b99a5}
+:root[data-contrast="high"] .sidebar .nav-item,:root[data-contrast="high"] .sidebar .nav-section{color:#e4ecf2}
+:root[data-contrast="high"] .mainnav .workspace-caption{color:#dfe7ee}
+:root[data-contrast="high"] :focus-visible{outline:3px solid #0b5d4a;outline-offset:3px}
+.a11y-pop{position:relative}
+.a11y-pop>summary{list-style:none;cursor:pointer}
+.a11y-pop>summary::-webkit-details-marker{display:none}
+.a11y-pop[open]>summary{background:#e3ebf0;color:#1d2b36}
+.a11y-panel{position:absolute;right:0;top:calc(100% + 9px);z-index:80;width:290px;background:var(--paper,#fff);border:1px solid var(--rule,#cfd6dc);border-radius:10px;padding:15px 15px 13px;box-shadow:0 10px 28px #10203626;display:flex;flex-direction:column;gap:12px}
+.a11y-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.a11y-row>strong{font-size:calc(11px * var(--text-scale,1));color:var(--ink,#182126);font-weight:600}
+.a11y-segment{display:inline-flex;border:1px solid var(--rule,#cfd6dc);border-radius:7px;overflow:hidden}
+.a11y-segment button{border:0;border-radius:0;background:transparent;color:var(--muted,#586670);padding:6px 10px;font-size:calc(10px * var(--text-scale,1));font-weight:600;font-variant-numeric:tabular-nums}
+.a11y-segment button+button{border-left:1px solid var(--rule,#cfd6dc)}
+.a11y-segment button[aria-pressed="true"]{background:var(--route,#0c8272);color:#fff}
+.a11y-panel>small{color:var(--muted,#586670);font-size:calc(9px * var(--text-scale,1));line-height:1.6}
