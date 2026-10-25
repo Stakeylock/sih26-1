@@ -137,14 +137,20 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
   const persist=()=>localStorage.setItem(STORAGE,JSON.stringify({format:11,workspace:state}));
   const visible=(a:Application)=>a.owner_id===actor.id || (a.status!=='draft' && actor.roles.some(r=>r.role==='national_admin'||(r.role!=='institution'&&r.region===a.region)));
   const find=(id:string)=>{const a=state.applications.find(x=>x.id===id);if(!a||!visible(a))throw new Error('Demo application is unavailable.');return a;};
-  async function log(a:Application,action:string,old:Status|null,reason:string|null=null,detail:Record<string,unknown>={},options:{actor_id?:string|null;actor_role?:string|null}={}):Promise<void>{
+  async function prepareChainEvent(a:Application,action:string,old:Status|null,reason:string|null=null,detail:Record<string,unknown>={},options:{actor_id?:string|null;actor_role?:string|null}={}):Promise<AuditEvent>{
     const prior=heads.get(a.id)??{sequence:0,hash:''};
     const sequence=Number.isInteger(prior.sequence)?prior.sequence+1:1;
     const id=Math.max(0,...state.events.map(event=>event.id))+1;
     const base:AuditEvent={id,application_id:a.id,actor_id:options.actor_id??actor.id,actor_role:options.actor_role??role,action,from_status:old,to_status:a.status,reason,created_at:iso(),payload:structuredClone({...detail,demo:true,review_snapshot:captureReviewSnapshot(state,a)}),sequence,prev_hash:prior.hash,event_hash:''};
-    const chained=await chainAuditEvent(base,prior);
-    state.events.unshift(chained);
-    heads.set(a.id,{sequence,hash:chained.event_hash as string});
+    return chainAuditEvent(base,prior);
+  }
+  function appendChainEvent(event:AuditEvent):void{
+    state.events.unshift(event);
+    heads.set(event.application_id,{sequence:event.sequence as number,hash:event.event_hash as string});
+  }
+  async function log(a:Application,action:string,old:Status|null,reason:string|null=null,detail:Record<string,unknown>={},options:{actor_id?:string|null;actor_role?:string|null}={}):Promise<void>{
+    const chained=await prepareChainEvent(a,action,old,reason,detail,options);
+    appendChainEvent(chained);
   }
   async function reviewMutation(application:Application,requestId:string,action:string,input:unknown,operation:()=>void|Promise<void>){
     const body=JSON.stringify({application:application.id,version:application.version,action,input});
@@ -194,7 +200,11 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
       }
       if(action==='raise_deficiency'&&caseClaims.length){const c=caseClaims.find(c=>c.id===payload.claim_id);if(!c)throw new Error('Claim does not belong to this application.');await (this as any).raiseClaimDeficiency(a,c,reason,String(payload.remedy??reason),String(payload.due_at??iso(30)));}
       const target:Record<string,Status>={submit:'submitted',resubmit:'resubmitted',start_scrutiny:'under_scrutiny',raise_deficiency:'deficiency_raised',pass_scrutiny:payload.evc?'evc_pending':'pending_decision',schedule_evc:'evc_scheduled',submit_evc_report:'pending_decision',approve:'approved',reject:'rejected',request_shc:'pending_decision'};
-      a.status=target[action];a.version++;a.updated_at=iso();if(action==='start_scrutiny')a.assigned_officer=actor.id;if(action==='pass_scrutiny')a.evc_required=Boolean(payload.evc);if(action==='request_shc'){a.form_data.shc_appeal_active='true';a.form_data.shc_grounds=reason.trim();a.sla_due_at=iso(10);}else if(['approve','reject'].includes(action)){a.decision_reason=reason;a.decision_evidence=String(payload.evidence);a.sla_due_at=null;}else {const calendar=a.template_snapshot.calendar,stage=['evc_pending','evc_scheduled'].includes(a.status)?'evc':a.status==='pending_decision'?'decision':'scrutiny';a.sla_due_at=calendar?addCalendarDays(iso(),a.template_snapshot.stages.find(item=>item.key===stage)?.sla_days??7,calendar):iso(15);}        if(action!=='raise_deficiency')closeApplicationDeadlines(state,a);const actionId=Math.max(0,...state.events.map(event=>event.id))+1;await log(a,action,old,reason,payload);if(scopedDecision)recordApproval(state,a,actor,scopedDecision,actionId);receipts.set(input.requestId,body);persist();
+      const actionEvent=await prepareChainEvent(a,action,old,reason,payload);
+      a.status=target[action];a.version++;a.updated_at=iso();if(action==='start_scrutiny')a.assigned_officer=actor.id;if(action==='pass_scrutiny')a.evc_required=Boolean(payload.evc);if(action==='request_shc'){a.form_data.shc_appeal_active='true';a.form_data.shc_grounds=reason.trim();a.sla_due_at=iso(10);}else if(['approve','reject'].includes(action)){a.decision_reason=reason;a.decision_evidence=String(payload.evidence);a.sla_due_at=null;}else {const calendar=a.template_snapshot.calendar,stage=['evc_pending','evc_scheduled'].includes(a.status)?'evc':a.status==='pending_decision'?'decision':'scrutiny';a.sla_due_at=calendar?addCalendarDays(iso(),a.template_snapshot.stages.find(item=>item.key===stage)?.sla_days??7,calendar):iso(15);}        if(action!=='raise_deficiency')closeApplicationDeadlines(state,a);
+      appendChainEvent(actionEvent);
+      if(scopedDecision)recordApproval(state,a,actor,scopedDecision,actionEvent.id);
+      receipts.set(input.requestId,body);persist();
     },
     async checklist(application,item,passed,note){const a=find(application.id);if(a.status!=='under_scrutiny'||role!=='scrutiny_officer'||a.assigned_officer!==actor.id)throw new Error('Assigned scrutiny officer required.');        state.checklist=state.checklist.filter(c=>!(c.application_id===a.id&&c.item===item));state.checklist.push({id:crypto.randomUUID(),application_id:a.id,item,passed,note});a.version++;await log(a,'checklist',a.status,note);persist();},
     async verifyClaim(application,claim,result,note,requestId=crypto.randomUUID()){
@@ -283,7 +293,7 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
         await log(anchor,'demo_calendar_advanced',null,'Simulated demo calendar advanced by '+report.days+' days; derived consequence of recorded deadlines and validity dates. No notices were dispatched and no review decision was recorded.',{demo:true,coverage:'derived_horizon',days:report.days,horizon_end:new Date(Date.now()+report.days*86400000).toISOString().slice(0,10),consequences:structuredClone(rows)},{actor_id:null,actor_role:'system'});
       }
       persist();return report;},
-    async fulfil(id,reason){if(!['national_admin','regional_officer'].includes(role))throw new Error('Decision role required.');const o=state.obligations.find(o=>o.id===id);if(o){if((o.required_evidence??[]).length)throw new Error('Select reviewed evidence with the versioned compliance command.');o.status='fulfilled';log(find(o.application_id),'obligation_fulfilled',null,reason);}persist();},
+    async fulfil(id,reason){if(!['national_admin','regional_officer'].includes(role))throw new Error('Decision role required.');const o=state.obligations.find(o=>o.id===id);if(o){if((o.required_evidence??[]).length)throw new Error('Select reviewed evidence with the versioned compliance command.');o.status='fulfilled';await log(find(o.application_id),'obligation_fulfilled',null,reason);}persist();},
     async advisory(application,documents){const safe={id:application.id,ref_no:application.ref_no,is_demo:true,status:application.status,version:application.version,form_data:Object.fromEntries(Object.entries(application.form_data).map(([key,value])=>[key,value.trim()?'provided':''])),template_snapshot:{required_fields:application.template_snapshot.required_fields,required_documents:application.template_snapshot.required_documents}};const response=await fetch('/api/advisories/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({application:safe,documents:documents.map(d=>({doc_type:d.doc_type,scan_status:d.scan_status}))})});if(!response.ok)throw new Error('Start the local advisory service to run the document pre-check.');return response.json() as Promise<Advisory>;},
   };
 }
