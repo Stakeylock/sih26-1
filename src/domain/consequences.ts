@@ -11,9 +11,9 @@ type Tier = typeof TIERS[number];
 const ESCALATION_LADDER: readonly Tier[] = ['escalated_ro', 'escalated_hq'];
 const RANK: Record<string, number> = {watch: 0, normal: 0, t_minus_30: 1, t_minus_0: 2, escalated_ro: 3, escalated_hq: 4};
 const TIER_TEXT: Partial<Record<Tier, string>> = {
-  t_minus_0: 'escalation tier T-0 reached (deadline day)',
-  escalated_ro: 'escalation tier T+7 reached (regional review)',
-  escalated_hq: 'escalation tier T+15 reached (headquarters review)',
+  t_minus_0: 'Example review window reached on the recorded deadline date',
+  escalated_ro: 'Example follow-up window reached seven days after expiry',
+  escalated_hq: 'Example follow-up window reached fifteen days after expiry',
 };
 
 export interface ClockConsequence {

@@ -1,4 +1,4 @@
-# FlowPilot demo strengthening plan
+# Clauseway demo strengthening plan
 
 ## Goal
 

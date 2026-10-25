@@ -20,7 +20,7 @@ export function Receipt({app,data,repo,run,busy,back,openCase}:{app:Application;
   return <div className="receipt-page">
     <header className="receipt-page-head"><button className="text-button" onClick={back}><ArrowLeft size={15}/>Back</button><span>DECISION RECEIPT / SYNTHETIC RECORD</span><button className="button outline" onClick={()=>window.print()}><Printer size={15}/>Print</button></header>
     <article className="receipt-paper">
-      <div className="receipt-paper-top"><div><span className="receipt-kicker">FLOWPILOT / Institutional Review APPROVAL OPERATIONS</span><h1>Decision receipt</h1><p className="mono">{receiptId}</p></div><div className={`receipt-seal ${approved?'approved':'rejected'}`}>{approved?<CheckCircle2 size={30}/>:<XCircle size={30}/>}<strong>{approved?'Approved':'Rejected'}</strong><span>Human decision</span></div></div>
+      <div className="receipt-paper-top"><div><span className="receipt-kicker">CLAUSEWAY / Institutional Review APPROVAL OPERATIONS</span><h1>Decision receipt</h1><p className="mono">{receiptId}</p></div><div className={`receipt-seal ${approved?'approved':'rejected'}`}>{approved?<CheckCircle2 size={30}/>:<XCircle size={30}/>}<strong>{approved?'Approved':'Rejected'}</strong><span>Human decision</span></div></div>
       <div className="receipt-rule"/>
       <dl className="receipt-grid">
         <div><dt>Case reference</dt><dd className="mono">{app.ref_no}</dd></div>

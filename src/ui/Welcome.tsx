@@ -66,6 +66,6 @@ export function Welcome({onEnter,onStory,onOpen,onEnterAs,theme,toggleTheme}:{on
         <p className="landing-dataset" role="note">{t('Synthetic dataset','सिंथेटिक डेटासेट')}: {datasetLine}. {t('Checked by unit, SQL, and end-to-end tests.','यूनिट, SQL, और एंड-टू-एंड परीक्षणों से जाँचा गया.')}</p>
       </section>
     </main>
-    <footer className="landing-footer"><span>FlowPilot <span aria-hidden="true">/</span> {t('Evidence review, with a record.','साक्ष्य समीक्षा, रिकॉर्ड के साथ.')}</span><span><ShieldCheck size={14} aria-hidden="true"/>{t('Independent prototype. No real approval authority.','स्वतंत्र प्रोटोटाइप. कोई वास्तविक अनुमोदन अधिकारी नहीं.')}</span></footer>
+    <footer className="landing-footer"><span>Clauseway <span aria-hidden="true">/</span> {t('Evidence review, with a record.','साक्ष्य समीक्षा, रिकॉर्ड के साथ.')}</span><span><ShieldCheck size={14} aria-hidden="true"/>{t('Independent prototype. No real approval authority.','स्वतंत्र प्रोटोटाइप. कोई वास्तविक अनुमोदन अधिकारी नहीं.')}</span></footer>
   </div>;
 }
