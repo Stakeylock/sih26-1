@@ -6,7 +6,7 @@ export function seedPlanning(state:Workspace){
  state.inspection_experts=['Academic review','Facilities review','Operational coordination'].map((discipline,index)=>({id:'demo-expert-'+index,name:`Demo expert ${String.fromCharCode(65+index)}`,organisation:'Example review institute '+(index+1),discipline,region:'South',affiliated_institution_id:null,active:true,version:1,created_by:'demo-national',created_at:at}));
  state.expert_availability=state.inspection_experts.map(expert=>({id:'demo-availability-'+expert.id,expert_id:expert.id,starts_at:starts,ends_at:ends,note:'Synthetic coordinator-recorded availability for the example planner.',recorded_by:'demo-national',created_at:at}));state.expert_conflicts=[];state.expert_reservations=[];
 }
-export function demoPlanning(o:{state:()=>Workspace;actor:Identity;find:(id:string)=>Application;persist:()=>void;log:(app:Application,action:string,old:Application['status']|null,note?:string|null,detail?:Record<string,unknown>)=>void;mutate:(app:Application,id:string,action:string,input:unknown,operation:()=>void|Promise<void>)=>Promise<void>}):Pick<Repository,'inspectionCommand'> {
+export function demoPlanning(o:{state:()=>Workspace;actor:Identity;find:(id:string)=>Application;persist:()=>void;log:(app:Application,action:string,old:Application['status']|null,note?:string|null,detail?:Record<string,unknown>)=>Promise<void>;mutate:(app:Application,id:string,action:string,input:unknown,operation:()=>void|Promise<void>)=>Promise<void>}):Pick<Repository,'inspectionCommand'> {
  const receipts=new Map<string,{input:string;result:Record<string,unknown>}>();
  const has=(name:string,region?:string)=>o.actor.roles.some(role=>role.role===name&&(name==='national_admin'||!region||role.region===region));
  const manages=(region:string)=>has('national_admin')||has('regional_officer',region)||has('evc_coordinator',region);
@@ -45,7 +45,7 @@ export function demoPlanning(o:{state:()=>Workspace;actor:Identity;find:(id:stri
      Object.assign(row,{scheduled_for:plan.starts_at,ends_at:plan.ends_at,visit_mode:plan.mode,planning_state:'tentative',resource_planned:true,panel_snapshot:panel,planning_note:reason,version:(previous?.version??0)+1,report_due_at:new Date(Date.parse(plan.ends_at)+21*86400000).toISOString()});
      if(!previous)state.visits.push(row);state.expert_reservations??=[];for(const reservation of state.expert_reservations)if(reservation.visit_id===row.id)reservation.active=false;
      for(const member of experts){const reservation:ExpertReservation={id:'demo-reservation-'+crypto.randomUUID(),expert_id:member.id,visit_id:row.id,application_id:app.id,starts_at:plan.starts_at,ends_at:plan.ends_at,active:true};state.expert_reservations.push(reservation);}
-     const old=app.status;app.status='evc_scheduled';o.log(app,'inspection_planned',old,reason,{visit_id:row.id,mode:plan.mode,panel});result={visit_id:row.id};
+      const old=app.status;app.status='evc_scheduled';await o.log(app,'inspection_planned',old,reason,{visit_id:row.id,mode:plan.mode,panel});result={visit_id:row.id};
     }else{
      if(!visit||visit.completed_at||visit.planning_state==='cancelled'||app.status!=='evc_scheduled')throw new Error('An active scheduled visit is required.');
      if(kind==='confirm'){if(!visit.resource_planned||visit.planning_state!=='tentative')throw new Error('Resource-planned tentative visit required.');for(const reservation of state.expert_reservations?.filter(item=>item.visit_id===visit.id&&item.active)??[]){const member=state.inspection_experts!.find(item=>item.id===reservation.expert_id)!;const check=expertReadiness(member,app.institution_id,reservation.starts_at,reservation.ends_at,state.expert_availability??[],state.expert_conflicts??[],state.expert_reservations??[],visit.id);if(!check.eligible)throw new Error('Panel eligibility changed.');}visit.planning_state='confirmed';}
@@ -56,8 +56,8 @@ export function demoPlanning(o:{state:()=>Workspace;actor:Identity;find:(id:stri
      }else if(kind==='cancel'){visit.planning_state='cancelled';app.status='evc_pending';}
      else if(kind==='reassign'){const target=String(payload.coordinator_id??''),grant=state.access_assignments.find(item=>item.user_id===target&&item.role==='evc_coordinator'&&item.region===app.region&&item.active&&!item.revoked_at&&(!item.expires_at||Date.parse(item.expires_at)>Date.now()));if(!grant)throw new Error('Active coordinator in the case region required.');visit.coordinator_id=target;}
      else throw new Error('Unsupported inspection command.');
-     visit.version=(visit.version??0)+1;if(['report','cancel'].includes(kind))for(const reservation of state.expert_reservations??[])if(reservation.visit_id===visit.id)reservation.active=false;
-     o.log(app,'inspection_'+kind,null,reason,{visit_id:visit.id,recommendation:visit.recommendation});
+    visit.version=(visit.version??0)+1;if(['report','cancel'].includes(kind))for(const reservation of state.expert_reservations??[])if(reservation.visit_id===visit.id)reservation.active=false;
+    await o.log(app,'inspection_'+kind,null,reason,{visit_id:visit.id,recommendation:visit.recommendation});
     }
    });
   }else throw new Error('Inspection resource unavailable.');
