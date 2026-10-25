@@ -13,7 +13,6 @@ const CaseWorkspace=lazy(()=>import('./ui/CaseWorkspace').then(module=>({default
 const Alerts=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Alerts})));
 const Audit=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Audit})));
 const Compliance=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Compliance})));
-const Reports=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Reports})));
 const Settings=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Settings})));
 const Visits=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Visits})));
 const Workflows=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Workflows})));
@@ -39,7 +38,7 @@ const sections:Section[]=[
   {id:'workbench',label:'Workbench',hi:'कार्यक्षेत्र',home:'overview',items:['overview','analysis']},
   {id:'approvals',label:'Approvals',hi:'अनुमोदन',home:'applications',items:['applications','workflows','visits']},
   {id:'compliance',label:'Compliance',hi:'अनुपालन',home:'compliance',items:['compliance']},
-  {id:'oversight',label:'Oversight',hi:'नियंत्रण',home:'reports',items:['operations','reports','alerts','notices','trust','audit']},
+  {id:'oversight',label:'Oversight',hi:'नियंत्रण',home:'operations',items:['operations','reports','alerts','notices','trust','audit']},
 ];
 const destinations=navigation;
 const destinationById=Object.fromEntries(destinations.map(item=>[item.id,item]));
@@ -124,7 +123,7 @@ export default function App(){
         {page==='notices'&&<PolicyNotices data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
       {page==='compliance'&&<Compliance data={data} identity={identity} repo={repo} run={run} busy={busy} navigate={navigate}/>}
         {page==='alerts'&&<Alerts data={data} repo={repo} run={run} busy={busy} navigate={navigate}/>}
-        {page==='reports'&&<Reports data={data}/>}
+        {page==='reports'&&<Overview data={data} identity={identity} open={open} navigate={navigate}/>}
         {page==='trust'&&<TrustCenter data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
         {page==='audit'&&<Audit data={data} repo={repo} run={run} busy={busy} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)}/>}
         {page==='settings'&&<Settings identity={identity} repo={repo}/>}
