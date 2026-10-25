@@ -1,7 +1,10 @@
 # Scalability and reliability audit
 
-**Reviewed:** 2026-10-25  
-**Scope:** Current Clauseway source, Supabase migrations, local worker scripts, and repository tests. This is a code audit, not a production load test or deployment certification.
+**Reviewed:** 2026-10-25
+
+**Validation:** Demo build passed; 260 unit/SQL tests and 77 browser E2E tests passed after the merge. This is not a production load test or deployment certification.
+
+**Scope:** Current Clauseway source, Supabase migrations, local worker scripts, and repository tests.
 
 ## Summary
 
