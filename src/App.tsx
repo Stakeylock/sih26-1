@@ -25,6 +25,7 @@ import {Receipt} from './ui/Receipt';
 import {TrustCenter} from './ui/TrustCenter';
 import {PrototypeOverview} from './ui/PrototypeOverview';
 import {PrototypeDossier} from './ui/PrototypeDossier';
+import {PrototypeFlow} from './ui/PrototypeFlow';
 import {DemoLab} from './ui/DemoLab';
 import {ThemeToggle,useTheme} from './ui/theme';
 import './ui/prototype.css';
@@ -75,8 +76,10 @@ export default function App(){
   const run:Run=async(operation,message)=>{if(locked.current)return false;locked.current=true;setBusy(true);setError('');try{await operation();if(repo){const workspace=await repo.workspace();setData(workspace);}setNotice(message);return true;}catch(e){setError(e instanceof Error?e.message:'The operation failed. Please reload and try again.');return false;}finally{locked.current=false;setBusy(false);}};
   const page=route.split('/')[0];const caseId=decodeURIComponent(route.split('/')[1]??'');const application=data?.applications.find(a=>a.id===caseId);
   const activeSection=sectionOf(page);const showContextPills=Boolean(activeSection&&activeSection.items.includes(page));
-  const prototypePage=route==='prototype'||route.startsWith('prototype/case');
+  const prototypePage=route==='prototype'||route.startsWith('prototype/case')||route.startsWith('prototype/flow');
   const prototypeCaseId=route.startsWith('prototype/case/')?decodeURIComponent(route.slice('prototype/case/'.length)):'';
+  const prototypeFlowId=route.startsWith('prototype/flow/')?decodeURIComponent(route.slice('prototype/flow/'.length)):'';
+  const prototypeFlowApplication=prototypeFlowId?data?.applications.find(a=>a.id===prototypeFlowId):null;
   const prototypeApplication=prototypeCaseId?data?.applications.find(a=>a.id===prototypeCaseId):null;
   const welcome=!route||route==='welcome';const tourOverlay=tourOpen?<GuidedStory step={tourStep} onNext={nextTourStep} onExit={closeTour}/>:null;
   if(welcome)return <><Welcome onEnter={()=>navigate('overview')} onStory={startTour} theme={theme} toggleTheme={toggleTheme}/>{tourOverlay}</>;
@@ -104,7 +107,7 @@ export default function App(){
     <Suspense fallback={<p className="workspace-loading" role="status">Loading workspace view…</p>}><main id="main-content" className="content" tabIndex={-1}>
       {error&&<div className="error-banner" role="alert"><TriangleAlert size={18}/><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={()=>setError('')}><X size={16}/></button></div>}
       <div className="page-body" key={route}>
-      {data?(prototypePage?(<div className="prototype-shell">{prototypePage&&prototypeApplication?<PrototypeDossier app={prototypeApplication} data={data} identity={identity} repo={repo} busy={busy} back={()=>navigate('prototype')} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)} openCase={(id)=>navigate(`case/${encodeURIComponent(id)}`)}/>:<PrototypeOverview data={{applications:data.applications,institutions:Object.fromEntries(data.institutions.map(i=>[i.id,{name:i.name}])),documents:data.documents,claims:data.claims,deficiencies:data.deficiencies}} identity={identity} open={(id)=>id==='new'?navigate('new'):navigate(`prototype/case/${encodeURIComponent(id)}`)}/>}</div>):<>
+      {data?(prototypePage?(<div className="prototype-shell">{prototypeFlowApplication?<PrototypeFlow app={prototypeFlowApplication} data={data} openCase={(id)=>navigate(`prototype/case/${encodeURIComponent(id)}`)}/>:prototypePage&&prototypeApplication?<PrototypeDossier app={prototypeApplication} data={data} identity={identity} repo={repo} busy={busy} back={()=>navigate('prototype')} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)} openCase={(id)=>navigate(`case/${encodeURIComponent(id)}`)}/>:<PrototypeOverview data={{applications:data.applications,institutions:Object.fromEntries(data.institutions.map(i=>[i.id,{name:i.name}])),documents:data.documents,claims:data.claims,deficiencies:data.deficiencies}} identity={identity} open={(id)=>id==='new'?navigate('new'):navigate(`prototype/case/${encodeURIComponent(id)}`)}/>}</div>):<>
         {page==='analysis'&&<Suspense fallback={<p role="status">Loading case analysis…</p>}><CaseAnalysis key={identity.id} data={data} identity={identity} repo={repo} run={run} busy={busy} navigate={navigate}/></Suspense>}
         {page==='overview'&&<Overview data={data} identity={identity} open={open} navigate={navigate}/>}
         {page==='applications'&&<Applications data={data} query={query} setQuery={setQuery} open={open} create={()=>navigate('new')} identity={identity}/>}
@@ -121,7 +124,7 @@ export default function App(){
         {page==='trust'&&<TrustCenter data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
         {page==='audit'&&<Audit data={data} repo={repo} run={run} busy={busy} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)}/>}
         {page==='settings'&&<Settings identity={identity} repo={repo}/>}
-        {page==='demo-lab'&&(repo.mode==='demo'?<DemoLab data={data} onStartTour={startTour} onOpenPrototype={()=>navigate('prototype')} onSwitch={(nextRole,nextRoute)=>{setRole(nextRole);navigate(nextRoute);}}/>:<div className="empty"><h2>Demo lab unavailable</h2><p>Simulation controls are only available in demo mode.</p><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>)}
+        {page==='demo-lab'&&(repo.mode==='demo'?<DemoLab data={data} onStartTour={startTour} onOpenPrototype={()=>navigate('prototype')} onOpenFlow={()=>navigate('prototype/flow/demo-app-0')} onSwitch={(nextRole,nextRoute)=>{setRole(nextRole);navigate(nextRoute);}}/>:<div className="empty"><h2>Demo lab unavailable</h2><p>Simulation controls are only available in demo mode.</p><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>)}
         {!titles[page]&&<div className="empty"><h2>Page unavailable</h2><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>}
       </>):<div className="empty"><h2>Workspace could not be loaded</h2><button className="button outline" onClick={()=>void reload()}>Try again</button></div>}
       </div>

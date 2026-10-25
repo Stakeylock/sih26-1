@@ -577,3 +577,27 @@ test('demo lab guide arms live steps and switches roles into the work surface',a
   expect(errors).toEqual([]);
 });
 
+
+test('relationship prototype threads the claim evidence correction review chain',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  await openDemoLab(page);
+  await page.getByRole('button',{name:'Open relationship prototype',exact:true}).click();
+  const shell=page.locator('.prototype-flow-shell');
+  await expect(shell).toBeVisible();
+  await expect(shell).toContainText('9 claims · 6 recorded as verified · 1 with an open correction');
+  await expect(shell.locator('.prototype-flow-thread')).toHaveCount(9);
+  const deficient=shell.locator('.prototype-flow-thread.deficient');
+  await expect(deficient).toHaveCount(1);
+  await expect(deficient).toContainText('The Fire Safety Certificate expired before the scrutiny date.');
+  await expect(deficient).toContainText('Valid replacement available · not linked yet');
+  await expect(shell.locator('.prototype-flow-thread.unverified')).toHaveCount(2);
+  await expect(shell).toContainText('No human review recorded yet.');
+  await expect(shell).toContainText('Scrutiny officer reviewed this claim');
+  await shell.getByRole('button',{name:'Open full dossier'}).first().click();
+  await expect(page).toHaveURL(/#prototype\/case\/demo-app-0/);
+  await expect(page.locator('#prototype-dossier-title')).toBeVisible();
+  await page.goBack();
+  await expect(shell).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
