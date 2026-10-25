@@ -106,7 +106,7 @@ describe('demo claim actions', () => {
   });
 
   it('verifies a claim with current clean evidence and audits the action', async () => {
-    const repo = createDemoRepository('scrutiny_officer');
+    const repo = await createDemoRepository('scrutiny_officer');
     const before = await repo.workspace();
     const app = before.applications.find(item => item.id === 'demo-app-0')!;
     const claim = before.claims.find(item => item.id === 'demo-claim-3')!;
@@ -118,7 +118,7 @@ describe('demo claim actions', () => {
   });
 
   it('rejects verification when no current clean evidence is linked', async () => {
-    const repo = createDemoRepository('scrutiny_officer');
+    const repo = await createDemoRepository('scrutiny_officer');
     const data = await repo.workspace();
     const app = data.applications.find(item => item.id === 'demo-app-0')!;
     const claim = data.claims.find(item => item.id === 'demo-claim-6')!;
@@ -126,7 +126,7 @@ describe('demo claim actions', () => {
   });
 
   it('rejects verification against the expired fire certificate', async () => {
-    const repo = createDemoRepository('scrutiny_officer');
+    const repo = await createDemoRepository('scrutiny_officer');
     const data = await repo.workspace();
     const app = data.applications.find(item => item.id === 'demo-app-0')!;
     const claim = data.claims.find(item => item.id === 'demo-claim-7')!;
@@ -134,14 +134,14 @@ describe('demo claim actions', () => {
   });
 
   it('blocks accepting scrutiny while claims or deficiencies remain unresolved', async () => {
-    const repo = createDemoRepository('scrutiny_officer');
+    const repo = await createDemoRepository('scrutiny_officer');
     const data = await repo.workspace();
     const app = data.applications.find(item => item.id === 'demo-app-0')!;
     await expect(repo.transition({ application: app, action: 'pass_scrutiny', reason: 'All evidence appears satisfactory.', payload: {}, requestId: 'gate-1' })).rejects.toThrow('Resolve all claims and open deficiencies before accepting scrutiny.');
   });
 
   it('raises one claim deficiency and blocks a duplicate', async () => {
-    const repo = createDemoRepository('scrutiny_officer');
+    const repo = await createDemoRepository('scrutiny_officer');
     const data = await repo.workspace();
     const app = data.applications.find(item => item.id === 'demo-app-0')!;
     const claim = data.claims.find(item => item.id === 'demo-claim-3')!;
@@ -153,7 +153,7 @@ describe('demo claim actions', () => {
   });
 
   it('lets the institution link replacement evidence and resolve, then scrutiny verifies', async () => {
-    const institution = createDemoRepository('institution');
+    const institution = await createDemoRepository('institution');
     const before = await institution.workspace();
     const app = before.applications.find(item => item.id === 'demo-app-0')!;
     const claim = before.claims.find(item => item.id === 'demo-claim-7')!;
@@ -166,7 +166,7 @@ describe('demo claim actions', () => {
     expect(resolved.claims.find(item => item.id === 'demo-claim-7')!.status).toBe('unverified');
     expect(resolved.claim_evidence.some(link => link.claim_id === 'demo-claim-7' && link.document_id === valid.id)).toBe(true);
 
-    const scrutiny = createDemoRepository('scrutiny_officer');
+    const scrutiny = await createDemoRepository('scrutiny_officer');
     const officerView = await scrutiny.workspace();
     const officerApp = officerView.applications.find(item => item.id === 'demo-app-0')!;
     const officerClaim = officerView.claims.find(item => item.id === 'demo-claim-7')!;
@@ -175,15 +175,15 @@ describe('demo claim actions', () => {
   });
 
   it('rejects a response, then accepts the second response and retains both snapshots',async()=>{
-    let institution=createDemoRepository('institution');let view=await institution.workspace();
+    let institution=await createDemoRepository('institution');let view=await institution.workspace();
     const appId='demo-app-0',defId='demo-def-0';const replacement=view.documents.find(item=>item.id==='demo-doc-demo-app-0-5')!;
     await institution.resolveClaimDeficiency(view.applications.find(item=>item.id===appId)!,view.deficiencies.find(item=>item.id===defId)!,replacement,'First synthetic replacement response.');
-    const scrutiny=createDemoRepository('scrutiny_officer');view=await scrutiny.workspace();
+    const scrutiny=await createDemoRepository('scrutiny_officer');view=await scrutiny.workspace();
     await expect(scrutiny.recheckClaimDeficiency(view.applications.find(item=>item.id===appId)!,view.deficiencies.find(item=>item.id===defId)!,'accepted','Short')).rejects.toThrow('re-check note');
     await scrutiny.recheckClaimDeficiency(view.applications.find(item=>item.id===appId)!,view.deficiencies.find(item=>item.id===defId)!,'reopened','Please clarify the synthetic certificate number.');
-    institution=createDemoRepository('institution');view=await institution.workspace();
+    institution=await createDemoRepository('institution');view=await institution.workspace();
     await institution.resolveClaimDeficiency(view.applications.find(item=>item.id===appId)!,view.deficiencies.find(item=>item.id===defId)!,replacement,'Second synthetic response with clarification.');
-    const reviewer=createDemoRepository('scrutiny_officer');view=await reviewer.workspace();
+    const reviewer=await createDemoRepository('scrutiny_officer');view=await reviewer.workspace();
     const response=view.deficiencies.find(item=>item.id===defId)!;
     expect(response.response_revision).toBe(2);expect(response.rechecked_at).toBeNull();
     await reviewer.recheckClaimDeficiency(view.applications.find(item=>item.id===appId)!,response,'accepted','The corrected response is now accepted.');

@@ -7,7 +7,7 @@ import type {Role} from '../domain/model';
 import {makeT,roleLabelsHi,useUiLang} from './i18n';
 import './landing.css';
 const LandingJourney=lazy(()=>import('./LandingJourney').then(module=>({default:module.LandingJourney})));
-const dataset=seed();
+const dataset=await seed();
 const datasetLine=`${dataset.applications.length} synthetic dossiers · ${dataset.institutions.length} institutions · ${dataset.claims.length} claims · ${dataset.documents.length} evidence documents · ${dataset.events.length} recorded events`;
 const stations:{role:Role;en:string;hi:string;blurb:string}[]=[
   {role:'institution',en:'Institution',hi:roleLabelsHi.institution,blurb:'Submit the record, answer corrections, keep evidence current.'},
