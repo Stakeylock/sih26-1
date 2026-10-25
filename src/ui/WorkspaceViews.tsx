@@ -1,18 +1,16 @@
 import {neutralCopy} from '../domain/presentation';
 import {DisplayControls} from './DisplayPreferences';
-import {OperationalExports} from './OperationalExports';
 import {InspectionPlanner} from './InspectionPlanner';
 import {documentEligible} from '../domain/approvals';
 import {useState} from 'react';
-import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,Download,ExternalLink,FileCheck2,GitBranch,Info,LockKeyhole,Printer,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
+import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,ExternalLink,FileCheck2,GitBranch,Info,LockKeyhole,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
 import type {AuditVerification} from '../domain/integrity';
-import {missingInputs,regions,roleLabels,routeStage,routeStages,statusLabels,typeLabels,type AppType,type Application,type Identity,type Repository,type TemplateDefinition,type Workspace} from '../domain/model';
+import {missingInputs,roleLabels,statusLabels,typeLabels,type AppType,type Application,type Identity,type Repository,type TemplateDefinition,type Workspace} from '../domain/model';
 import {Badge,Empty,Panel,ViewHeader} from './common';
 import type {Run} from './Applications';
 import { workingDaysUntil } from '../domain/clock';
 import { workspaceHolidays } from '../domain/calendar';
 import {complianceTierLabel} from '../domain/consequences';
-import { csv } from '../domain/intelligence';
 const HOLIDAYS = workspaceHolidays();
 function stageKeyFor(app:Application,stages:TemplateDefinition['stages']){
   if(['approved','rejected'].includes(app.status))return 'outcome';
@@ -106,106 +104,6 @@ export function Alerts({data,repo,run,busy,navigate}:{data:Workspace;repo:Reposi
     <div className="alert-toolbar"><button className="button outline" onClick={()=>navigate('overview')}>Open priority queue <ArrowRight size={15}/></button></div>
     <section className="alert-board"><div className="alert-column"><div className="support-surface-heading"><div><div><h2>Escalation queue</h2><p>Notifications that require case review or administrative intervention.</p></div></div><span className="dispatch-count">{String(escalations.length).padStart(2,'0')}</span></div>{escalations.length?escalations.map(n=>notification(n,'escalation')):<Empty title="No escalations">No current notification is classified as an intervention signal.</Empty>}</div><div className="alert-column notice-column"><div className="support-surface-heading"><div><div><h2>Information desk</h2><p>Context and reference updates from published routes.</p></div></div><span className="quiet-label"><Info size={14}/>Reference updates</span></div>{notices.length?notices.map(n=>notification(n,'notice')):<Empty title="No notices">Reference updates will appear here.</Empty>}</div></section>
     <div className="support-footnote"><ShieldCheck size={14}/>Alerts link to case references, pinned route versions and recorded deadlines.</div>
-  </>;
-}
-function exportRosterCsv(applications: Workspace['applications'], data: Workspace) {
-  const headers = ['Reference No','Title','Region','Category','Stage','Status','Dual-Clock Responsibility','SLA Due Date','Remaining Days','Open Deficiencies'];
-  const rows = applications.map(app => {
-    const remaining = workingDaysUntil(app.sla_due_at,undefined,HOLIDAYS);
-    const defCount = data.deficiencies.filter(d => d.application_id === app.id && d.status === 'open').length;
-    const isInstDelay = app.status === 'deficiency_raised';
-    const responsibility = isInstDelay ? 'Institution Return' : 'Council Processing';
-    const daysLabel = remaining === null ? 'None' : remaining < 0 ? `${Math.abs(remaining)}d overdue` : `${remaining}d remaining`;
-    return [
-      app.ref_no,
-      app.title,
-      app.region,
-      typeLabels[app.app_type] || app.app_type,
-      routeStage(app.status).label,
-      app.status,
-      responsibility,
-      app.sla_due_at ? app.sla_due_at.slice(0, 10) : 'N/A',
-      daysLabel,
-      defCount
-    ];
-  });
-  const body = csv([headers, ...rows]);
-  const blob = new Blob([body], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `case-pendency-roster-${new Date().toISOString().slice(0, 10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-export function Reports({data}:{data:Workspace}){
-  const [scope,setScope]=useState<'active'|'closed'|'all'>('active');
-  const active=data.applications.filter(a=>!['approved','rejected'].includes(a.status));
-  const closed=data.applications.filter(a=>['approved','rejected'].includes(a.status));
-  const scoped=scope==='active'?active:scope==='closed'?closed:data.applications;
-  const overdue=scoped.filter(a=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??99)<0).length;
-  const approved=closed.filter(a=>a.status==='approved').length;
-  const rejected=closed.filter(a=>a.status==='rejected').length;
-  const typeRows=Object.entries(typeLabels).map(([key,label])=>({label,count:scoped.filter(a=>a.app_type===key).length}));
-  const routeRows=routeStages.filter(stage=>scope!=='closed'&&(scope==='all'||stage.key!=='outcome'));
-  const scopes=[{key:'active' as const,label:'Active work',count:active.length},{key:'closed' as const,label:'Closed cases',count:closed.length},{key:'all' as const,label:'All applications',count:data.applications.length}];
-  const scopeLabel=scopes.find(item=>item.key===scope)?.label??'Active work';
-  return <>
-    <ViewHeader title="Operations report" summary={scope==='closed'?'Approved and rejected outcomes within the visible scope.':scope==='all'?'Every visible case across the route, including closed outcomes.':'Where active work is waiting within the visible scope.'} count={String(scoped.length).padStart(2,'0')} label={scope==='active'?'active cases':scope==='closed'?'closed cases':'visible applications'}/>
-    <div className="report-scope" role="group" aria-label="Report scope">{scopes.map(item=><button key={item.key} className={scope===item.key?'active':''} aria-pressed={scope===item.key} onClick={()=>setScope(item.key)}>{neutralCopy(item.label)}<strong>{String(item.count).padStart(2,'0')}</strong></button>)}</div>
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'10px',margin:'10px 0 16px'}}>
-      <p className="report-scope-note" style={{margin:0}}>Showing {scopeLabel.toLowerCase()} · {scoped.length} of {data.applications.length} visible applications.</p>
-      <div style={{display:'flex',gap:'8px'}}>
-        <button className="button small outline" onClick={()=>exportRosterCsv(scoped,data)}><Download size={13}/>Export case roster (CSV)</button>
-        <button className="button small secondary" onClick={()=>window.print()}><Printer size={13}/>Print executive brief</button>
-      </div>
-    </div>
-    <OperationalExports data={data}/><section className="report-board">
-      <div className="report-question"><div className="support-surface-heading"><div><div><h2>{scope==='closed'?'Closed outcomes':scope==='all'?'All visible applications':'Where are cases waiting?'}</h2><p>{scope==='closed'?'Approved and rejected outcomes, with waiting-stage counts excluded.':scope==='all'?'Every visible case across the route, including outcomes.':'Current handoffs calculated from active cases visible to this role.'}</p></div></div>{scope!=='closed'&&<span className="quiet-label"><TimerReset size={14}/>{overdue} overdue</span>}</div>
-        {scope==='closed'?<div className="report-outcome-list"><div><span>Approved</span><strong>{String(approved).padStart(2,'0')}</strong><small>{closed.length?Math.round(approved/closed.length*100):0}% of closed cases</small></div><div><span>Rejected</span><strong>{String(rejected).padStart(2,'0')}</strong><small>{closed.length?Math.round(rejected/closed.length*100):0}% of closed cases</small></div></div>:<div className="report-route-list">{routeRows.map((stage,index)=>{const count=scoped.filter(a=>routeStage(a.status).key===stage.key).length;const share=scoped.length?Math.round(count/scoped.length*100):0;return <div className="report-route-row" key={stage.key}><span className="report-route-index">{String(index+1).padStart(2,'0')}</span><div><div className="spread"><strong>{neutralCopy(stage.label)}</strong><span className="mono">{count} {count===1?'case':'cases'}</span></div><div className="report-bar"><span style={{width:`${share}%`}}/></div></div></div>;})}</div>}
-      </div>
-      <div className="report-question report-types"><div className="support-surface-heading"><div><div><h2>{scope==='closed'?'Closed by application type':'Visible by application type'}</h2><p>Counts include only cases this account may read.</p></div></div></div><div className="report-type-list">{typeRows.map(row=><div className="report-type-row" key={neutralCopy(row.label)}><span>{neutralCopy(row.label)}</span><strong>{String(row.count).padStart(2,'0')}</strong></div>)}</div><div className="support-footnote"><Info size={14}/>Application distribution across the configured synthetic workflow routes.</div></div>
-    </section>
-    <section className="report-board" style={{marginTop:'20px'}}>
-      <div className="report-question" style={{gridColumn:'1 / -1'}}>
-        <div className="support-surface-heading"><div><div><h2>Active cases by region</h2><p>All {active.length} active dossiers, independent of the scope selected above.</p></div></div><span className="quiet-label"><ShieldCheck size={14}/>6 configured demonstration regions</span>{scope!=='active'&&<span className="document-tag pending">Always-active section</span>}</div>
-        <div className="table-wrap" style={{marginTop:'12px'}}>
-          <table>
-            <thead>
-              <tr>
-                <th>Institutional Review Region</th>
-                <th>Active Dossiers</th>
-                <th>Under Scrutiny</th>
-                <th>EVC Inspection Queue</th>
-                <th>Overdue Escalations</th>
-                <th>SLA Compliance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {regions.map(r=>{
-                const regApps=data.applications.filter(a=>a.region===r&&!['approved','rejected'].includes(a.status));
-                const scrutinyCount=regApps.filter(a=>['submitted','resubmitted','under_scrutiny','deficiency_raised'].includes(a.status)).length;
-                const evcCount=regApps.filter(a=>['evc_pending','evc_scheduled'].includes(a.status)).length;
-                const regOverdue=regApps.filter(a=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??99)<0).length;
-                const onTime=regApps.filter(a=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??99)>=0).length;
-                const rate=regApps.length?Math.round((onTime/regApps.length)*100):null;
-                return <tr key={r}>
-                  <td><strong>{r} Region</strong></td>
-                  <td><span className="mono">{regApps.length}</span></td>
-                  <td>{scrutinyCount}</td>
-                  <td>{evcCount}</td>
-                  <td><span className={regOverdue?'document-tag pending':'document-tag clean'}>{regOverdue} overdue</span></td>
-                  <td><strong>{rate===null?'N/A':`${rate}%`}</strong></td>
-                </tr>;
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="support-footnote" style={{marginTop:'12px'}}><Info size={14}/>Regional totals are calculated from active dossiers in the visible scope.</div>
-      </div>
-    </section>
   </>;
 }
 export function Audit({data,openReceipt,repo,run,busy}:{data:Workspace;openReceipt?:(id:string)=>void;repo:Repository;run:Run;busy:boolean}){
