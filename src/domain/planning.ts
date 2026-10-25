@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import type {Application,Identity} from '../domain/model';
 export interface InspectionExpert{id:string;name:string;organisation:string;discipline:string;region:string;affiliated_institution_id:string|null;active:boolean;version:number;created_by:string;created_at:string}
 export interface ExpertAvailability{id:string;expert_id:string;starts_at:string;ends_at:string;note:string;recorded_by:string;created_at:string}
 export interface ExpertConflict{id:string;expert_id:string;institution_id:string;reason:string;active:boolean;recorded_by:string;created_at:string}
@@ -18,5 +19,12 @@ export function expertReadiness(expert:InspectionExpert,institutionId:string,sta
  if(conflicts.some(item=>item.expert_id===expert.id&&item.institution_id===institutionId&&item.active))reasons.push('An active declared conflict exists.');
  if(!availability.some(item=>item.expert_id===expert.id&&Date.parse(item.starts_at)<=Date.parse(starts)&&Date.parse(item.ends_at)>=Date.parse(ends)))reasons.push('No recorded availability covers the full window.');
  if(reservations.some(item=>item.expert_id===expert.id&&item.active&&item.visit_id!==visitId&&overlaps(starts,ends,item.starts_at,item.ends_at)))reasons.push('Another visit reserves an overlapping window.');
- return {eligible:reasons.length===0,reasons};
+  return {eligible:reasons.length===0,reasons};
+}
+export function regionBlocker(identity:Identity,app:Application):string|null{
+  if(identity.roles.some(role=>role.role==='national_admin'))return null;
+  const scoped=identity.roles.filter(role=>['regional_officer','evc_coordinator','scrutiny_officer'].includes(role.role));
+  if(scoped.some(role=>role.region===app.region))return null;
+  const actorRegions=[...new Set(scoped.map(role=>role.region).filter((region):region is string=>region!==null))];
+  return `You cannot act on this case — it belongs to the ${app.region} region, but your grant covers ${actorRegions.length?actorRegions.join(' · '):'no region'}.`;
 }

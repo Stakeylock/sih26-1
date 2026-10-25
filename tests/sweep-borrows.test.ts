@@ -2,9 +2,10 @@ import {describe, expect, it} from 'vitest';
 import {syntheticWorkingCalendar, workspaceHolidays} from '../src/domain/calendar';
 import {calendarSchema} from '../src/domain/intelligence';
 import {ageingBuckets} from '../src/domain/ageing';
-import {activeConflictsFor} from '../src/domain/planning';
+import {activeConflictsFor,regionBlocker} from '../src/domain/planning';
 import {isWorkingDay, workingDaysBetween} from '../src/domain/clock';
 import type {ExpertConflict} from '../src/domain/planning';
+import type {Application,Identity} from '../src/domain/model';
 
 const calendar = syntheticWorkingCalendar();
 
@@ -83,5 +84,36 @@ describe('activeConflictsFor', () => {
     expect(rows[0].expert_id).toBe('e1');
     expect(activeConflictsFor(conflicts, null)).toEqual([]);
     expect(activeConflictsFor(undefined, 'inst-1')).toEqual([]);
+  });
+});
+
+describe('regionBlocker', () => {
+  const south:Identity={id:'reg-south',name:'Regional South',email:'south@demo.invalid',roles:[{role:'regional_officer',region:'South'}]};
+  const north:Identity={id:'reg-north',name:'Regional North',email:'north@demo.invalid',roles:[{role:'evc_coordinator',region:'North'}]};
+  const national:Identity={id:'nat',name:'National Admin',email:'nat@demo.invalid',roles:[{role:'national_admin',region:null}]};
+  const noRegion:Identity={id:'scrut',name:'Scrutiny No Region',email:'scrut@demo.invalid',roles:[{role:'scrutiny_officer',region:null}]};
+  const southApp:Application={id:'app-1',region:'South',owner_id:'other'};
+  const northApp:Application={id:'app-2',region:'North',owner_id:'other'};
+  const eastApp:Application={id:'app-3',region:'East',owner_id:'other'};
+
+  it('returns null for national admin regardless of case region',()=>{
+    expect(regionBlocker(national,southApp)).toBeNull();
+    expect(regionBlocker(national,northApp)).toBeNull();
+  });
+  it('returns null when the actor holds a matching region grant',()=>{
+    expect(regionBlocker(south,southApp)).toBeNull();
+    expect(regionBlocker(north,northApp)).toBeNull();
+  });
+  it('reports the mismatch when the actor holds no matching region grant',()=>{
+    const blocker=regionBlocker(south,northApp);
+    expect(blocker).not.toBeNull();
+    expect(blocker).toContain('North');
+    expect(blocker).toContain('South');
+  });
+  it('reports no region when the actor holds no region-scoped grant',()=>{
+    const blocker=regionBlocker(noRegion,eastApp);
+    expect(blocker).not.toBeNull();
+    expect(blocker).toContain('East');
+    expect(blocker).toContain('no region');
   });
 });
