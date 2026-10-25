@@ -19,22 +19,18 @@ function submittedWorkingDaysAgo(workingDays: number, now: number, holidays: rea
 
 
 describe('syntheticWorkingCalendar', () => {
-  it('is a schema-valid weekdays calendar excluding fixed national holidays across the demo decade', () => {
+  it('is a schema-valid weekday calendar with no preloaded holiday assumptions', () => {
     const parsed = calendarSchema.parse(calendar);
-    expect(parsed.id).toBe('demo-fixed-national');
+    expect(parsed.id).toBe('demo-weekdays');
     expect(parsed.basis).toBe('weekdays');
     expect(parsed.timezone).toBe('Asia/Kolkata');
-    expect(calendar.holidays).toContain('2026-01-26');
-    expect(calendar.holidays).toContain('2026-08-15');
-    expect(calendar.holidays).toContain('2026-10-02');
-    expect(calendar.holidays).toContain('2036-01-26');
-    expect(new Set(calendar.holidays).size).toBe(calendar.holidays.length);
+    expect(calendar.holidays).toEqual([]);
     expect(calendar.source.startsWith('demo://calendar/')).toBe(true);
     expect(calendar.label.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('feeds the same dates through workspaceHolidays', () => {
-    expect([...workspaceHolidays()]).toEqual([...calendar.holidays]);
+  it('does not invent workspace holiday exclusions', () => {
+    expect([...workspaceHolidays()]).toEqual([]);
   });
 });
 

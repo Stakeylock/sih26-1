@@ -31,7 +31,22 @@ export function reviewGuide(snapshot:AnalysisSnapshot,topic:'blockers'|'evidence
  return {title,answer,citations,actions,draft,disclaimer:'Deterministic case guidance from this snapshot. No external model, legal-source verification, document-authenticity claim or automatic workflow action.'};
 }
 export function searchCaseFacts(snapshot:AnalysisSnapshot,query:string){
- const terms=query.toLowerCase().split(/\s+/).filter(word=>word.length>1).slice(0,12);
+ const ignored=new Set(['about','after','are','does','for','from','have','how','is','it','me','of','on','our','please','show','tell','that','the','this','to','was','what','when','where','which','who','why','with']);
+ const terms=query.normalize('NFKC').toLowerCase().split(/[^\p{L}\p{N}_-]+/u).filter(word=>word.length>1&&!ignored.has(word)).slice(0,12);
  const documents:GuideCitation[]=[...snapshot.facts.claims.map(c=>({id:c.id,kind:'claim',label:c.clause_snapshot,excerpt:c.statement_snapshot+' '+c.status})),...snapshot.facts.deficiencies.map(d=>({id:d.id,kind:'correction',label:d.clause,excerpt:d.observation+' '+d.remedy})),...snapshot.facts.documents.map(d=>({id:d.id,kind:'document',label:d.file_name,excerpt:d.doc_type+' '+(d.issuer??'')+' '+(d.validity_mode??'unknown')})),...snapshot.facts.obligations.map(o=>({id:o.id,kind:'obligation',label:o.title,excerpt:o.status+' '+o.due_date}))];
  return terms.length?documents.map(item=>({item,score:terms.filter(term=>(item.label+' '+item.excerpt).toLowerCase().includes(term)).length})).filter(item=>item.score>0).sort((a,b)=>b.score-a.score||a.item.id.localeCompare(b.item.id)).map(item=>item.item):[];
+}
+export function answerCaseQuestion(snapshot:AnalysisSnapshot,question:string):ReviewGuide{
+ const q=question.normalize('NFKC').toLowerCase();
+ const requestedDraft=/\b(draft|write|prepare)\b/.test(q);
+ let topic:Parameters<typeof reviewGuide>[1]|undefined;
+ if(/\b(deadline|due date|notice|sla|overdue|obligation)\b/.test(q))topic='deadline';
+ else if(/\b(evidence|document|file|certificate|validity|scan|expiry)\b/.test(q))topic='evidence';
+ else if(/\b(scope|course|intake|seat|coverage|programme|program)\b/.test(q))topic='scope';
+ else if(/\b(block|blocked|blocker|attention|issue|problem|why)\b/.test(q))topic='blockers';
+ else if(requestedDraft)topic='draft';
+ else if(/\b(next|review|fix|correct|remedy|missing|incomplete|checklist|todo)\b/.test(q))topic='next';
+ if(topic){const response=reviewGuide(snapshot,topic);return topic==='draft'&&!requestedDraft?{...response,draft:undefined}:response;}
+ const citations=searchCaseFacts(snapshot,question);
+ return {title:citations.length?'Matching captured records':'No matching case record',answer:citations.length?`I found ${citations.length} case record${citations.length===1?'':'s'} matching your terms. These are source matches, not a generated conclusion.`:'I could not find a matching fact in this captured case. Try asking about blockers, evidence, deadlines, scope, or next steps.',citations,actions:[],disclaimer:'Deterministic search of the selected case snapshot. No external model, legal-source verification, document-authenticity claim or automatic workflow action.'};
 }

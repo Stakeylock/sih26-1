@@ -9,11 +9,11 @@ import type {ClockReport} from '../domain/consequences';
 import type {Repository,Role,Workspace} from '../domain/model';
 
 const rehearsalStages=[
-  {stage:'t_minus_90',label:'T-90 advance notice',badge:'90d ahead',recipient:'Institution registrar',summary:'A simulated 90-day advance notice asks the institution to execute and register a renewed 30-year lease deed.'},
-  {stage:'t_minus_30',label:'T-30 urgent notice',badge:'30d ahead',recipient:'Institution and regional bureau',summary:'The simulated document is flagged as expiring soon on the institution and regional views.'},
-  {stage:'t_0',label:'T-0 expiry breached',badge:'Deadline day',recipient:'Regional officer',summary:'The simulated document expires and the institution enters a 15-day curing window.'},
-  {stage:'escalated_ro',label:'T+7 regional escalation',badge:'T+7 days',recipient:'Regional officer',summary:'A simulated level-one escalation assigns the overdue undertaking to the regional officer for inquiry.'},
-  {stage:'escalated_hq',label:'T+15 headquarters escalation',badge:'T+15 days',recipient:'Member secretary and committee',summary:'A simulated level-two escalation moves the overdue undertaking to headquarters review.'}
+  {stage:'t_minus_90',label:'Example window before expiry',badge:'90 days before',recipient:'Case owner and reviewer',summary:'This sample window is counted back from a recorded expiry date. It does not set a notice deadline or evidence rule.'},
+  {stage:'t_minus_30',label:'Example follow-up window',badge:'30 days before',recipient:'Case owner and reviewer',summary:'Review the entered expiry date and its linked evidence. This example performs no automatic case action.'},
+  {stage:'t_0',label:'Recorded expiry date',badge:'Recorded date',recipient:'Case owner and assigned reviewer',summary:'This synthetic case reaches its entered document expiry date; a person reviews any evidence.'},
+  {stage:'escalated_ro',label:'Example follow-up A',badge:'7 days after',recipient:'Assigned reviewer',summary:'A sample follow-up window based on this synthetic case’s recorded expiry.'},
+  {stage:'escalated_hq',label:'Example follow-up B',badge:'15 days after',recipient:'Assigned reviewer',summary:'A second sample follow-up window based on this synthetic case’s recorded expiry.'}
 ];
 
 const kindLabels={reminder:'Reminder',overdue:'Overdue',escalation:'Escalation',expiry:'Validity lapse'} as const;

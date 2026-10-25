@@ -99,7 +99,7 @@ export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,
         <div style={{marginTop:'10px',padding:'8px 12px',background:'var(--warning-soft)',border:'1px solid var(--warning-border)',borderRadius:'6px',fontSize:'11px',color:'var(--warning-text)',display:'flex',alignItems:'center',gap:'8px'}}>
           <CircleAlert size={15} style={{flexShrink:0}}/>
           <span>
-            <strong>Replacement uploaded · review required.</strong> A current {replacementDoc?.doc_type} ({replacementDoc?.file_name}) is attached but not yet linked to the deficient claim. The deficiency stays open under APH Clause 1.8 until the assigned scrutiny officer reviews and links it.
+            <strong>Replacement uploaded · review required.</strong> A current {replacementDoc?.doc_type} ({replacementDoc?.file_name}) is attached but not yet linked to the deficient claim. The correction stays open until the assigned reviewer resolves it and records a re-check.
           </span>
         </div>
       )}

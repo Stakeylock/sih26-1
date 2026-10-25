@@ -78,13 +78,13 @@ describe('planClockAdvance', () => {
     for (const row of plan.overdue) expect(row.detail).toMatch(/overdue by 1 working day/);
   });
 
-  it('walks the escalation ladder forward only, T+7 then T+15', () => {
+  it('walks the example follow-up windows forward and keeps the recorded dates', () => {
     const plan = planClockAdvance(40, baseInput({
       obligations: [makeObligation('obl-1', 'Undertaking', '2026-01-12T12:00:00Z', 'normal')],
     }));
     expect(plan.escalations.map(row => [row.detail, row.on])).toEqual([
-      ['escalation tier T+7 reached (regional review)', '2026-01-21'],
-      ['escalation tier T+15 reached (headquarters review)', '2026-02-02'],
+      ['Example follow-up window reached seven days after expiry', '2026-01-21'],
+      ['Example follow-up window reached fifteen days after expiry', '2026-02-02'],
     ]);
     const early = planClockAdvance(5, baseInput({obligations: [makeObligation('obl-1', 'Undertaking', '2026-01-12T12:00:00Z', 'normal')]}));
     expect(early.escalations).toEqual([]);
