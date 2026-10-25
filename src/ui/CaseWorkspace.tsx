@@ -6,6 +6,7 @@ import {useEffect,useState,type FormEvent,type KeyboardEvent as ReactKeyboardEve
 import {ArrowLeft,ArrowRight,Check,CheckCircle2,CircleAlert,Clock3,Download,FileCheck2,FileText,LockKeyhole,Printer,ShieldCheck,Upload} from 'lucide-react';
 import type {AuditVerification} from '../domain/integrity';
 import {computeDualClock} from '../domain/clock';
+import {workspaceHolidays} from '../domain/calendar';
 import {evidenceNorms} from '../domain/norms';
 import {expiryState} from '../domain/expiry';
 import {actionLabels,allowedActions,missingInputs,nextAuthority,roleLabels,routeStage,typeLabels,type Action,type Advisory,type Application,type Identity,type Repository,type Status,type Workspace} from '../domain/model';
@@ -42,7 +43,7 @@ export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,
   const evidenceTypes=[...new Set([...requiredDocuments,...claims.flatMap(claim=>claim.evidence_types_snapshot),...documents.map(doc=>doc.doc_type),...data.obligations.filter(item=>item.application_id===app.id&&item.status!=='fulfilled').flatMap(item=>item.required_evidence??[])])];
   const evidenceNormsByType=new Map(evidenceNorms(claims,data.requirements).map(norm=>[norm.docType,norm]));
   const selectedClaims=selectedDoc?claims.filter(claim=>data.claim_evidence.some(link=>link.document_id===selectedDoc.id&&link.claim_id===claim.id)):[];const selectedSignals=selectedDoc?data.integrity_signals.filter(signal=>signal.document_id===selectedDoc.id):[];
-  const dualClock=computeDualClock({startAt:app.submitted_at,events:history?.events??[],historyComplete:history?.complete??false,closedAt:['approved','rejected'].includes(app.status)?decisionEvent?.created_at??app.updated_at:null});
+  const dualClock=computeDualClock({startAt:app.submitted_at,events:history?.events??[],historyComplete:history?.complete??false,closedAt:['approved','rejected'].includes(app.status)?decisionEvent?.created_at??app.updated_at:null,holidays:workspaceHolidays()});
   const claimRoute=claims.length>0;const verifiedClaims=claims.filter(claim=>reviewBasisCurrent(app,claim,claimEvidence,documents)).length;const openClaimDeficiencies=claimDeficiencies.filter(item=>['open','escalated'].includes(item.status)).length;const claimsReady=claimRoute&&verifiedClaims===claims.length&&openClaimDeficiencies===0;const acceptBlocked=claimRoute&&!claimsReady;
   const closed=['approved','rejected'].includes(app.status);
   const lastDeficiency=data.events.find(e=>e.application_id===app.id&&e.action==='raise_deficiency');

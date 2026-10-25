@@ -61,10 +61,10 @@ export function complianceTierLabel(remaining: number | null): 'Overdue' | 'Due 
   return null;
 }
 
-function signedRemaining(due: string, at: number, dueDay: number, atDay: number): number {
-  if (dueDay > atDay) return workingDaysBetween(at, due);
+function signedRemaining(due: string, at: number, dueDay: number, atDay: number, holidays: readonly string[]): number {
+  if (dueDay > atDay) return workingDaysBetween(at, due, holidays);
   if (dueDay === atDay) return 0;
-  return -workingDaysBetween(due, at);
+  return -workingDaysBetween(due, at, holidays);
 }
 
 function detailFor(remaining: number): string {
@@ -74,15 +74,15 @@ function detailFor(remaining: number): string {
     : `overdue by ${count} working day${count === 1 ? '' : 's'}`;
 }
 
-function planManagedDeskline(target: {id: string; title: string; due: string; applicationId: string}, baseDay: number, span: number, refs: Map<string, string | null>, seen: Set<string>, reminders: ClockConsequence[], overdue: ClockConsequence[]): void {
+function planManagedDeskline(target: {id: string; title: string; due: string; applicationId: string}, baseDay: number, span: number, refs: Map<string, string | null>, seen: Set<string>, reminders: ClockConsequence[], overdue: ClockConsequence[], holidays: readonly string[]): void {
   const dueDay = dayIndex(Date.parse(target.due));
   if (!Number.isFinite(dueDay) || dueDay <= baseDay) return;
-  const baseRemaining = workingDaysBetween(baseDay * DAY - IST, target.due);
+  const baseRemaining = workingDaysBetween(baseDay * DAY - IST, target.due, holidays);
   const ref = refs.get(target.applicationId) ?? null;
   for (let step = 1; step <= span; step++) {
     const at = baseDay * DAY - IST + step * DAY;
     const on = stamp(at);
-    const remaining = signedRemaining(target.due, at, dueDay, dayIndex(at));
+    const remaining = signedRemaining(target.due, at, dueDay, dayIndex(at), holidays);
     if (REMINDER_LADDER.includes(remaining) && baseRemaining > 7 && !seen.has(`reminder:${target.id}:${remaining}`)) {
       seen.add(`reminder:${target.id}:${remaining}`);
       reminders.push({kind: 'reminder', target: target.id, application_id: target.applicationId, ref, title: target.title, on, detail: detailFor(remaining)});
@@ -99,7 +99,9 @@ export function planClockAdvance(days: number, input: {
   applications: readonly Application[];
   obligations: readonly Obligation[];
   documents: readonly DocumentRecord[];
+  holidays?: readonly string[];
 }): ClockReport {
+  const holidays = input.holidays ?? [];
   const span = Math.max(0, Math.min(OFFSET_CAP, Math.floor(days)));
   if (span === 0) return {days: 0, base: stamp(input.now), reminders: [], overdue: [], escalations: [], expiries: []};
   const baseDay = dayIndex(input.now);
@@ -112,20 +114,20 @@ export function planClockAdvance(days: number, input: {
 
   for (const app of input.applications) {
     if (['approved', 'rejected'].includes(app.status) || !app.sla_due_at) continue;
-    planManagedDeskline({id: app.id, title: 'SLA deadline', due: app.sla_due_at, applicationId: app.id}, baseDay, span, refs, seen, reminders, overdue);
+    planManagedDeskline({id: app.id, title: 'SLA deadline', due: app.sla_due_at, applicationId: app.id}, baseDay, span, refs, seen, reminders, overdue, holidays);
   }
 
   for (const obligation of input.obligations) {
     if (obligation.status === 'fulfilled') continue;
     const dueDay = dayIndex(Date.parse(obligation.due_date));
     if (!Number.isFinite(dueDay)) continue;
-    const baseRemaining = dueDay > baseDay ? workingDaysBetween(baseDay * DAY - IST, obligation.due_date) : -workingDaysBetween(obligation.due_date, baseDay * DAY - IST);
+    const baseRemaining = dueDay > baseDay ? workingDaysBetween(baseDay * DAY - IST, obligation.due_date, holidays) : -workingDaysBetween(obligation.due_date, baseDay * DAY - IST, holidays);
     let maxRank = RANK[baseTier(obligation.escalation_level, baseRemaining)];
     const ref = refs.get(obligation.application_id) ?? null;
     const baseOverdue = baseRemaining !== null && baseRemaining < 0;
     for (let step = 1; step <= span; step++) {
       const at = baseDay * DAY - IST + step * DAY;
-      const remaining = signedRemaining(obligation.due_date, at, dueDay, dayIndex(at));
+      const remaining = signedRemaining(obligation.due_date, at, dueDay, dayIndex(at), holidays);
       const tier = tierFor(remaining);
       if (tier === null || tier === 'watch') continue;
       if (REMINDER_LADDER.includes(remaining) && baseRemaining > 7 && !seen.has(`reminder:${obligation.id}:${remaining}`)) {

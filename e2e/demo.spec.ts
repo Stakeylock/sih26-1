@@ -333,6 +333,7 @@ test('demo lab gathers simulation controls outside working navigation',async({pa
   await expect(page.getByRole('button',{name:'Start guided story',exact:true})).toBeVisible();
   await page.getByRole('button',{name:/T-90 advance notice/}).click();
   await expect(page.getByRole('status')).toContainText('Institution registrar');
+  await expect(page.getByText(/Workspace snapshot .+ \d+ applications in scope/)).toBeVisible();
   await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Applications requiring attention',exact:true})).toBeVisible();
 });

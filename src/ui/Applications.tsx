@@ -3,6 +3,7 @@ import {useState} from 'react';
 import {ArrowLeft,ArrowRight,Check,Plus,Search} from 'lucide-react';
 import {nextAuthority,regions,routeStage,statusLabels,typeLabels,type AppType,type Application,type Identity,type Repository,type Workspace} from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
+import { workspaceHolidays } from '../domain/calendar';
 import {ApplicationRow} from './Overview';
 import {Badge,Due,Empty,Panel,ViewHeader} from './common';
 export type Run=(operation:()=>Promise<void>,message:string)=>Promise<boolean>;
@@ -12,7 +13,7 @@ export function Applications({data,query,setQuery,open,create,identity}:{data:Wo
   const isActive=(a:Application)=>!['draft','approved','rejected'].includes(a.status);
   const scopeCounts={active:data.applications.filter(isActive).length,closed:data.applications.filter(a=>['approved','rejected'].includes(a.status)).length,all:data.applications.length};
   // Operational order: overdue first (most overdue on top), then nearest upcoming deadline; no-date records sort last.
-  const days=(a:Application)=>{const value=workingDaysUntil(a.sla_due_at);return value===null?9999:value;};
+  const days=(a:Application)=>{const value=workingDaysUntil(a.sla_due_at,undefined,workspaceHolidays());return value===null?9999:value;};
   const sorted=[...data.applications].filter(a=>scope==='all'||(scope==='active'?isActive(a):['approved','rejected'].includes(a.status))).sort((a,b)=>days(a)-days(b));
   const list=sorted.filter(a=>(status==='all'||a.status===status)&&(region==='all'||a.region===region)&&`${a.ref_no} ${neutralCopy(a.title)} ${data.institutions.find(i=>i.id===a.institution_id)?.name}`.toLowerCase().includes(query.toLowerCase()));
   return <><ViewHeader title="Applications" summary="Visible dossiers by scope — overdue and nearest deadline first." count={String(data.applications.length).padStart(2,'0')} label="visible applications"/><Panel title="Application register" subtitle={`${list.length} of ${data.applications.length} visible applications`} action={identity.roles.some(r=>r.role==='institution')?<button className="button" onClick={create}><Plus size={16}/>New application</button>:undefined}>
@@ -55,3 +56,4 @@ export function NewApplication({data,identity,repo,run,open,back,busy}:{data:Wor
     </Panel>
   </>;
 }
+
