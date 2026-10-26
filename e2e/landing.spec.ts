@@ -35,7 +35,8 @@ for(const width of [390,768,1450])test(`landing layout and contrast are accessib
   for(const theme of ['light','dark']){
     if(theme==='dark')await page.getByRole('button',{name:'Switch to dark theme'}).click();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
-     await expect(page.getByRole('button',{name:'Open proof case',exact:true})).toBeVisible();
+    expect(await page.locator('.landing-copy h1').evaluate(element=>element.scrollWidth<=element.clientWidth+1)).toBe(true);
+    await expect(page.getByRole('button',{name:'Open proof case',exact:true})).toBeVisible();
     const result=await new AxeBuilder({page}).analyze();expect(result.violations).toEqual([]);
     await page.screenshot({path:`../test-results/clauseway-landing-${width}-${theme}.png`,fullPage:true});
   }
@@ -46,7 +47,7 @@ test('landing tokens are measured and assets remain local',async({page})=>{
     const read=(selector:string)=>{const element=document.querySelector(selector)!;const style=getComputedStyle(element);const rect=element.getBoundingClientRect();return {font:style.fontFamily,fontSize:style.fontSize,lineHeight:style.lineHeight,height:Math.round(rect.height),radius:style.borderRadius,color:style.color,background:style.backgroundColor};};
     return {heading:read('.landing-copy h1'),primary:read('.landing-primary'),illustration:read('.landing-journey'),indicator:read('.journey-tab-indicator'),externalAssets:performance.getEntriesByType('resource').map(entry=>entry.name).filter(url=>url.startsWith('http')&&new URL(url).origin!==location.origin)};
   });
-  expect(measurements.heading.fontSize).toBe('72px');expect(measurements.primary.height).toBe(48);expect(measurements.primary.radius).toBe('8px');expect(measurements.illustration.radius).toBe('15px');expect(measurements.externalAssets).toEqual([]);writeFileSync('docs/landing measurements',JSON.stringify(measurements,null,2)+'\n');
+  expect(measurements.heading.fontSize).toBe('60px');expect(measurements.primary.height).toBe(48);expect(measurements.primary.radius).toBe('8px');expect(measurements.illustration.radius).toBe('15px');expect(measurements.externalAssets).toEqual([]);writeFileSync('docs/landing measurements',JSON.stringify(measurements,null,2)+'\n');
   await page.getByRole('tab',{name:'Recorded',exact:true}).click();await page.screenshot({path:'../test-results/clauseway-landing-preview.png',fullPage:true,animations:'disabled'});
 });
 test('station entry boots the workspace under the chosen role',async({page})=>{
@@ -61,6 +62,19 @@ test('module chips deep-link into their workspace surface',async({page})=>{
   await expect(page.locator('header.topbar')).toBeVisible();
   await page.goto('/#visits');
   await expect(page.locator('header.topbar')).toBeVisible();
+});
+test('landing gives the evidence map a featured entry point',async({page})=>{
+  const map=page.getByRole('button',{name:'Evidence map',exact:true});
+  await expect(map).toHaveClass(/landing-module-feature/);
+  await map.click();
+  await expect(page).toHaveURL(/#analysis/);
+  await expect(page.getByRole('button',{name:'Hide 3D evidence map'})).toBeVisible();
+});
+test('landing exposes the judge proof route',async({page})=>{
+  await expect(page.getByRole('button',{name:'Run the judge proof',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Run the judge proof',exact:true}).click();
+  await expect(page).toHaveURL(/#demo-lab/);
+  await expect(page.getByRole('heading',{name:'Judge proof route',exact:true})).toBeVisible();
 });
 test('the landing dataset line states only what the demo seed contains',async({page})=>{
   await expect(page.getByRole('note')).toContainText('12 synthetic dossiers');

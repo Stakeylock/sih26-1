@@ -118,7 +118,7 @@ export function PrototypeDossier({
           <span className="mono">{app.ref_no}</span>
           <Badge status={app.status as Status} />
           <span className="document-tag">{app.is_demo ? 'Synthetic record' : 'Connected record'}</span>
-          <Due app={app} />
+          <Due app={app} data={data} />
         </div>
         <h1 className="prototype-institution" id="prototype-dossier-title">
           {institution}

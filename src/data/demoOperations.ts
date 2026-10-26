@@ -25,7 +25,7 @@ export function demoOperations(o:{state:()=>Workspace;actor:Identity;find:(id:st
    else if(kind==='outbox_cancel'||kind==='outbox_retry'){if(!delivery||!['pending','retry_wait','exhausted','ambiguous'].includes(delivery.status))throw new Error('Retryable or pending delivery required.');if(kind==='outbox_retry'&&delivery.status==='ambiguous')throw new Error('Reconcile ambiguous acceptance before considering a new send.');delivery.status=kind==='outbox_cancel'?'cancelled':delivery.source_hash!==await source(app)?'superseded':'pending';delivery.last_error=reason;}
    else throw new Error('Unsupported operational command.');
    state.delivery_attempts??=[];for(const row of state.delivery_outbox??[]){if(priorDeliveries.get(row.id)!==row.status)state.delivery_attempts.push({id:'demo-attempt-'+crypto.randomUUID(),outbox_id:row.id,attempt:row.attempts,state:row.status,detail:row.last_error??(row.status==='in_app_delivered'?'Synthetic in-app notification committed.':'Source-bound intent state recorded.'),happened_at:new Date().toISOString()});}
-   o.log(app,'operations_'+kind,app.status,reason,{review_id:review?.id,delivery_id:delivery?.id});o.persist();receipts.set(key,{body,result});return result;
+   await o.log(app,'operations_'+kind,app.status,reason,{review_id:review?.id,delivery_id:delivery?.id,assigned_to:kind==='assign_case'||kind==='review_assign'?String(payload.reviewer_id):null});o.persist();receipts.set(key,{body,result});return result;
   }
  };
 }

@@ -117,7 +117,7 @@ export default function App(){
       <div className="page-body" key={route}>
       {data?(prototypePage?(<div className="prototype-shell">{prototypeFlowApplication?<PrototypeFlow app={prototypeFlowApplication} data={data} openCase={(id)=>navigate(`prototype/case/${encodeURIComponent(id)}`)}/>:prototypePage&&prototypeApplication?<PrototypeDossier app={prototypeApplication} data={data} identity={identity} repo={repo} busy={busy} back={()=>navigate('prototype')} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)} openCase={(id)=>navigate(`case/${encodeURIComponent(id)}`)}/>:<PrototypeOverview data={{applications:data.applications,institutions:Object.fromEntries(data.institutions.map(i=>[i.id,{name:i.name}])),documents:data.documents,claims:data.claims,deficiencies:data.deficiencies}} identity={identity} open={(id)=>id==='new'?navigate('new'):navigate(`prototype/case/${encodeURIComponent(id)}`)}/>}</div>):<>
         {page==='analysis'&&<Suspense fallback={<p role="status">Loading case analysis…</p>}><CaseAnalysis key={identity.id} data={data} identity={identity} repo={repo} run={run} busy={busy} navigate={navigate}/></Suspense>}
-        {page==='overview'&&<Overview data={data} identity={identity} open={open} navigate={navigate}/>}
+        {page==='overview'&&<Overview data={data} identity={identity} repo={repo} open={open} navigate={navigate}/>}
         {page==='applications'&&<Applications data={data} query={query} setQuery={setQuery} open={open} create={()=>navigate('new')} identity={identity} repo={repo}/>}
         {page==='new'&&identity.roles.some(r=>r.role==='institution')&&<NewApplication data={data} identity={identity} repo={repo} run={run} open={open} back={()=>navigate('applications')} busy={busy}/>}
         {page==='case'&&(repo.caseBundle&&detailReady!==caseId?<p role="status">{error?'Case unavailable.':'Loading authorised case…'}</p>:application?<CaseWorkspace key={caseId} app={application} data={data} identity={identity} repo={repo} run={run} busy={busy} back={()=>navigate('applications')} openPlanner={()=>navigate('visits/'+encodeURIComponent(application!.id))} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)} openCase={(id)=>open(id)}/>:<div className="empty"><h2>Application unavailable</h2><p>This case may be outside your permitted scope.</p><button className="button outline" onClick={()=>navigate('applications')}>Back to applications</button></div>)}
@@ -128,7 +128,7 @@ export default function App(){
         {page==='notices'&&<PolicyNotices data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
       {page==='compliance'&&<Compliance data={data} identity={identity} repo={repo} run={run} busy={busy} navigate={navigate}/>}
         {page==='alerts'&&<Alerts data={data} repo={repo} run={run} busy={busy} navigate={navigate}/>}
-        {page==='reports'&&<Overview data={data} identity={identity} open={open} navigate={navigate}/>}
+        {page==='reports'&&<Overview data={data} identity={identity} repo={repo} open={open} navigate={navigate}/>}
         {page==='trust'&&<TrustCenter data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
         {page==='audit'&&<Audit data={data} repo={repo} run={run} busy={busy} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)}/>}
         {page==='settings'&&<Settings identity={identity} repo={repo}/>}

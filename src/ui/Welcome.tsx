@@ -1,17 +1,30 @@
-import {ArrowRight,Bell,FileCheck2,Fingerprint,FolderTree,History,LayoutDashboard,Play,Ruler,ShieldCheck,Stethoscope} from 'lucide-react';
+import {ArrowRight,Bell,FileCheck2,Fingerprint,FolderTree,GitBranch,History,LayoutDashboard,Play,RefreshCw,Ruler,ShieldCheck,ShieldX,Stethoscope} from 'lucide-react';
 import {Brand} from './common';
-import {lazy,Suspense} from 'react';
+import {lazy,Suspense,useState} from 'react';
 import {ThemeToggle,type Theme} from './theme';
-import {seed} from '../data/demo';
+import {buildAuditChain,seed} from '../data/demo';
+import {verifyAuditChain} from '../domain/integrity';
 import type {Role} from '../domain/model';
 import {makeT,roleLabelsHi,useUiLang} from './i18n';
 import './landing.css';
+import './integrity.css';
 const LandingJourney=lazy(()=>import('./LandingJourney').then(module=>({default:module.LandingJourney})));
 const dataset=await seed();
 const datasetLine=`${dataset.applications.length} synthetic dossiers · ${dataset.institutions.length} institutions · ${dataset.claims.length} claims · ${dataset.documents.length} evidence documents · ${dataset.events.length} recorded events`;
 const proofApplication=dataset.applications.find(application=>application.id==='demo-app-0')??dataset.applications[0];
 const proofInstitution=dataset.institutions.find(institution=>institution.id===proofApplication?.institution_id);
 const proofCase=proofApplication?{refNo:proofApplication.ref_no,institution:proofInstitution?.name??'Synthetic institution',title:proofApplication.title,status:proofApplication.status,claims:dataset.claims.filter(claim=>claim.application_id===proofApplication.id).length,documents:dataset.documents.filter(document=>document.application_id===proofApplication.id).length}:null;
+type LandingCheck={intact:number;total:number;events:number;broken:{ref:string;at:number|null}|null};
+async function checkLandingChains():Promise<LandingCheck>{
+  const chained=await buildAuditChain(dataset.events);
+  const groups=new Map<string,typeof chained>();
+  for(const event of chained)groups.set(event.application_id,[...(groups.get(event.application_id)??[]),event]);
+  const refs=new Map(dataset.applications.map(app=>[app.id,app.ref_no]));
+  const results=await Promise.all([...groups].map(async([id,events])=>({ref:refs.get(id)??id,result:await verifyAuditChain(events)})));
+  const broken=results.find(item=>!item.result.intact);
+  return {intact:results.filter(item=>item.result.intact).length,total:results.length,events:results.reduce((sum,item)=>sum+item.result.checked,0),broken:broken?{ref:broken.ref,at:broken.result.broken_at}:null};
+}
+const initialLandingCheck=await checkLandingChains().catch(()=>null);
 const stations:{role:Role;en:string;hi:string;blurb:string}[]=[
   {role:'institution',en:'Institution',hi:roleLabelsHi.institution,blurb:'Submit the record, answer corrections, keep evidence current.'},
   {role:'scrutiny_officer',en:'Scrutiny officer',hi:roleLabelsHi.scrutiny_officer,blurb:'Review claims against their evidence, one case at a time.'},
@@ -19,18 +32,26 @@ const stations:{role:Role;en:string;hi:string;blurb:string}[]=[
   {role:'regional_officer',en:'Regional officer',hi:roleLabelsHi.regional_officer,blurb:'Decide with a recorded basis and a receipt.'},
   {role:'national_admin',en:'National administrator',hi:roleLabelsHi.national_admin,blurb:'Watch every station and inspect the audit trail.'},
 ];
-const modules:{route:string;label:string;icon:typeof LayoutDashboard}[]=[
-  {route:'overview',label:'Priority queue',icon:LayoutDashboard},
-  {route:'case/demo-app-0',label:'Dossier & claims',icon:FolderTree},
-  {route:'visits',label:'Verification visits',icon:Stethoscope},
+ const modules:{route:string;label:string;icon:typeof LayoutDashboard;feature?:boolean}[]=[
+   {route:'overview',label:'Priority queue',icon:LayoutDashboard},
+   {route:'case/demo-app-0',label:'Dossier & claims',icon:FolderTree},
+   {route:'analysis',label:'Evidence map',icon:GitBranch,feature:true},
+   {route:'visits',label:'Verification visits',icon:Stethoscope},
   {route:'receipt/demo-app-5',label:'Decision receipt',icon:FileCheck2},
   {route:'compliance',label:'Obligation register',icon:Ruler},
   {route:'audit',label:'Audit logs',icon:History},
   {route:'trust',label:'Trust Center',icon:Fingerprint},
   {route:'alerts',label:'Alerts',icon:Bell},
+  {route:'demo-lab',label:'Judge proof route',icon:ShieldCheck},
 ];
 export function Welcome({onEnter,onProofCase,onStory,onOpen,onEnterAs,theme,toggleTheme}:{onEnter:()=>void;onProofCase:()=>void;onStory:()=>void;onOpen:(route:string)=>void;onEnterAs:(role:Role)=>void;theme:Theme;toggleTheme:()=>void}){
   const t=makeT(useUiLang());
+  const [chain,setChain]=useState<LandingCheck|null>(initialLandingCheck);
+  const [checking,setChecking]=useState(false);
+  const [checkedAt,setCheckedAt]=useState(()=>new Date());
+  const reverify=()=>{setChecking(true);void checkLandingChains().then(result=>{setChain(result);setCheckedAt(new Date());}).catch(()=>setChain(null)).finally(()=>setChecking(false));};
+  const chainTitle=checking?t('Recomputing chains…','श्रृंखलाएँ पुनः गणना…'):!chain?t('Chain verification unavailable in this browser','इस ब्राउज़र में श्रृंखला सत्यापन उपलब्ध नहीं'):chain.broken?`${chain.intact} ${t('of','में से')} ${chain.total} ${t('chains intact','श्रृंखलाएँ अक्षुण्ण')} · ${chain.total-chain.intact} ${t('failed','विफल')}`:`${chain.intact} ${t('of','में से')} ${chain.total} ${t('demo chains verified in this browser','डेमो श्रृंखलाएँ इस ब्राउज़र में सत्यापित')}`;
+  const chainDetail=checking?t('Running the same SHA-256 verifier as the audit register…','ऑडिट रजिस्टर वाला ही SHA-256 सत्यापनकर्ता चल रहा है…'):!chain?t('The verifier needs Web Crypto and a secure context.','सत्यापनकर्ता के लिए Web Crypto और सुरक्षित संदर्भ आवश्यक है।'):chain.broken?`${chain.broken.ref} ${t('breaks at event','ईवेंट पर टूटती है')} ${chain.broken.at??'?'}`:`${chain.events} ${t('hash links recomputed','हैश लिंक पुनः गणना')} · ${checkedAt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
   return <div className="landing-page">
     <a className="landing-skip" href="#landing-content" onClick={event=>{event.preventDefault();document.getElementById('landing-content')?.focus();}}>{t('Skip to content','सामग्री पर जाएँ')}</a>
     <header className="landing-header"><Brand/><div className="landing-header-actions"><span className="landing-demo-label"><span/>{t('Synthetic demo','सिंथेटिक डेमो')}</span><ThemeToggle theme={theme} toggleTheme={toggleTheme} className="landing-theme"/><button className="landing-entry" type="button" onClick={onEnter}>{t('Enter workspace','कार्यक्षेत्र में प्रवेश')} <ArrowRight size={15} aria-hidden="true"/></button></div></header>
@@ -41,9 +62,14 @@ export function Welcome({onEnter,onProofCase,onStory,onOpen,onEnterAs,theme,togg
            <h1 id="landing-title"><span>{t('Evidence changes.','साक्ष्य बदलता है.')}</span><span>{t('Accountability remains.','जवाबदेही बनी रहती है.')}</span></h1>
            <p className="landing-intro">Clauseway keeps evidence versions, human authority, decision rationale, and continuing obligations together in one verifiable record.</p>
           <p className="landing-tagline">{t('Policy into process.','नीति से प्रक्रिया तक।')}</p>
-           <div className="landing-actions"><button type="button" className="landing-primary" onClick={onProofCase}>{t('Open proof case','प्रमाण केस खोलें')} <ArrowRight size={17} aria-hidden="true"/></button><button type="button" className="landing-tour" onClick={onStory}><Play size={15} aria-hidden="true"/>{t('Watch the guided path','निर्देशित मार्ग देखें')}</button></div>
+            <div className="landing-actions"><button type="button" className="landing-primary" onClick={onProofCase}>{t('Open proof case','प्रमाण केस खोलें')} <ArrowRight size={17} aria-hidden="true"/></button><button type="button" className="landing-tour" onClick={onStory}><Play size={15} aria-hidden="true"/>{t('Watch the guided path','निर्देशित मार्ग देखें')}</button><button type="button" className="landing-judge-cta" onClick={()=>onOpen('demo-lab')}><ShieldCheck size={15} aria-hidden="true"/><span>{t('Run the judge proof','जज प्रमाण मार्ग चलाएँ')}</span><ArrowRight size={14} aria-hidden="true"/></button></div>
           <p className="landing-disclosure">{t('SIH26262 prototype. Synthetic cases only.','SIH26262 प्रोटोटाइप. केवल सिंथेटिक केस.')}<br/>{t('No real institutional data or approval decisions.','कोई वास्तविक संस्थागत डेटा या अनुमोदन निर्णय नहीं.')}</p>
-           <ul className="landing-proof" aria-label={t('What the proof case shows','प्रमाण केस क्या दिखाता है')}><li><FileCheck2 size={16} aria-hidden="true"/>{t('Original evidence retained','मूल साक्ष्य सुरक्षित')}</li><li><ShieldCheck size={16} aria-hidden="true"/>{t('Authority before action','क्रिया से पहले अधिकार')}</li><li><History size={16} aria-hidden="true"/>{t('Hash-linked record','हैश से जुड़ा रिकॉर्ड')}</li></ul>
+            <ol className="landing-judge-route" aria-label={t('Judge proof route','जज प्रमाण मार्ग')}><li><span>01</span><strong>{t('Evidence','साक्ष्य')}</strong><small>{t('Original retained','मूल सुरक्षित')}</small></li><li><span>02</span><strong>{t('Authority','अधिकार')}</strong><small>{t('Human review first','पहले मानव समीक्षा')}</small></li><li><span>03</span><strong>{t('Integrity','अखंडता')}</strong><small>{t('Hash-linked record','हैश रिकॉर्ड')}</small></li><li><span>04</span><strong>{t('Obligation','दायित्व')}</strong><small>{t('Stays visible after approval','अनुमोदन के बाद भी')}</small></li></ol>
+           <div className={`landing-integrity ${chain?chain.broken?'broken':'ok':'idle'}`}>
+             {chain&&!chain.broken?<ShieldCheck size={17} aria-hidden="true"/>:<ShieldX size={17} aria-hidden="true"/>}
+             <div role="status" aria-live="polite"><strong>{chainTitle}</strong><small>{chainDetail}</small></div>
+             <button type="button" className={checking?'is-busy':''} onClick={reverify} disabled={checking} aria-label={t('Re-check audit chains','ऑडिट श्रृंखलाएँ पुनः जाँचें')}><RefreshCw size={13} aria-hidden="true"/></button>
+           </div>
          </div><Suspense fallback={<div className="landing-journey-loading" role="status">{t('Loading proof case…','प्रमाण केस लोड हो रहा है…')}</div>}><LandingJourney proof={proofCase}/></Suspense>
       </section>
       <section className="landing-continuity" aria-labelledby="landing-continuity-title">
@@ -64,7 +90,7 @@ export function Welcome({onEnter,onProofCase,onStory,onOpen,onEnterAs,theme,togg
           </button>)}
         </div>
         <div className="landing-module-grid" aria-label={t('Workspace surfaces','कार्यक्षेत्र सतहें')}>
-          {modules.map(module=><button type="button" key={module.route} className="landing-module" onClick={()=>onOpen(module.route)}><module.icon size={15} aria-hidden="true"/>{t(module.label,module.label)}</button>)}
+           {modules.map(module=><button type="button" key={module.route} className={`landing-module${module.feature?' landing-module-feature':''}`} onClick={()=>onOpen(module.route)}><module.icon size={15} aria-hidden="true"/>{t(module.label,module.label)}{module.feature&&<span className="landing-module-signal" aria-hidden="true"/>}</button>)}
         </div>
         <p className="landing-dataset" role="note">{t('Synthetic dataset','सिंथेटिक डेटासेट')}: {datasetLine}. {t('Checked by unit, SQL, and end-to-end tests.','यूनिट, SQL, और एंड-टू-एंड परीक्षणों से जाँचा गया.')}</p>
       </section>

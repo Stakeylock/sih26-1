@@ -42,6 +42,12 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
   const steps=guideSteps(data);
   const counters=[['Reminders',clockReport?.reminders.length??null],['Overdue marks',clockReport?.overdue.length??null],['Escalations',clockReport?.escalations.length??null],['Validity lapses',clockReport?.expiries.length??null]] as const;
   const rows=clockReport?[...clockReport.overdue,...clockReport.escalations,...clockReport.expiries,...clockReport.reminders]:[];
+  const proofRoute=[
+    {id:'correction',label:'Evidence correction',detail:'Original response and re-check stay linked.'},
+    {id:'human-review',label:'Human authority',detail:'A role-gated reviewer records the finding.'},
+    {id:'obligation',label:'Continuing obligation',detail:'A post-decision condition remains visible.'},
+    {id:'audit',label:'Audit integrity',detail:'Recorded events can be verified and replay-tested.'},
+  ].map(item=>{const armed=item.id==='human-review'?steps.some(step=>(step.id==='scrutiny'||step.id==='decision')&&step.armed):steps.find(step=>step.id===item.id)?.armed??false;return {...item,armed};});
   return <>
     <ViewHeader title="Demo lab" summary="Simulation controls for the synthetic workspace. Nothing here changes a real record."/>
     <section className="support-surface demo-lab-clock">
@@ -91,7 +97,10 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
       </section>
     </div>
     <section className="support-surface demo-lab-guide">
-      <div className="support-surface-heading"><div><h2>Guided walkthrough</h2><p>Six steps, each armed from the live synthetic records. A step switches the preview role and opens the exact work surface; unmet steps explain what is missing instead of inventing work.</p></div><span className="quiet-label">{steps.filter(step=>step.armed).length} of {steps.length} armed</span></div>
+      <div className="support-surface-heading"><div><h2>Judge proof route</h2><p>Four proof questions show what this prototype can demonstrate. Each item is derived from the live synthetic records; the guided steps below open the exact role and work surface.</p></div><span className="quiet-label">{steps.filter(step=>step.armed).length} of {steps.length} guided steps armed</span></div>
+      <div className="demo-proof-route" aria-label="Judge proof route">
+        {proofRoute.map((item,index)=><div key={item.id} className={`demo-proof-route-item ${item.armed?'armed':'unmet'}`}><span className="demo-proof-route-index">{String(index+1).padStart(2,'0')}</span><div><strong>{item.label}</strong><small>{item.armed?item.detail:'This proof step is not armed in the current workspace.'}</small></div><span className="demo-proof-route-state">{item.armed?'Ready':'Not armed'}</span></div>)}
+      </div>
       <ol className="demo-lab-guide-steps">
         {steps.map((step,index)=><li key={step.id} className={step.armed?'armed':'unmet'}>
           <span className="demo-lab-guide-index"><strong>{String(index+1).padStart(2,'0')}</strong></span>

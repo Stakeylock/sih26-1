@@ -329,9 +329,12 @@ test('demo lab gathers simulation controls outside working navigation',async({pa
   await openDemoLab(page);
   await expect(page.getByRole('heading',{level:1,name:'Demo lab',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Needs attention',exact:true})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Reset synthetic workspace',exact:true})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Start guided story',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:/90 days before/}).click();
+   await expect(page.getByRole('button',{name:'Reset synthetic workspace',exact:true})).toBeVisible();
+   await expect(page.getByRole('button',{name:'Start guided story',exact:true})).toBeVisible();
+   await expect(page.getByRole('heading',{name:'Judge proof route',exact:true})).toBeVisible();
+   await expect(page.locator('.demo-proof-route-item')).toHaveCount(4);
+   await expect(page.locator('.demo-proof-route-item.armed')).not.toHaveCount(0);
+   await page.getByRole('button',{name:/90 days before/}).click();
   await expect(page.getByRole('status')).toContainText('Example window before expiry');
   await expect(page.getByRole('status')).toContainText('does not set a notice deadline or evidence rule');
   await expect(page.getByText(/Workspace snapshot .+ \d+ applications in scope/)).toBeVisible();
@@ -369,6 +372,8 @@ test('supporting desks keep task-specific composition',async({page})=>{
   await expect(page.getByRole('heading',{level:1,name:'Escalation desk',exact:true})).toBeVisible();
   const escalationCount=await page.locator('.alert-row.escalation').count(),informationCount=await page.locator('.alert-row.notice').count();
   await expect(page.locator('.support-header p')).toHaveText(new RegExp(`^${escalationCount} escalation${escalationCount===1?'':'s'} require${escalationCount===1?'s':''} review · ${informationCount} informational update${informationCount===1?'':'s'}\\.$`));
+  const actionableAlert=page.locator('.alert-grammar').filter({hasText:'Owner'}).first();
+  await expect(actionableAlert).toContainText('Next step');
   await expect(page.getByRole('button',{name:/Open case|Review case/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Mark read',exact:true}).first()).toBeVisible();
   await openDesk(page,'Audit logs');
@@ -559,7 +564,7 @@ test('demo lab guide arms live steps and switches roles into the work surface',a
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await openDemoLab(page);
   const guide=page.locator('.demo-lab-guide');
-  await expect(guide).toContainText('6 of 6 armed');
+  await expect(guide).toContainText('6 of 6 guided steps armed');
   await expect(guide).toContainText('DEMO-2026-1001 carries an open correction awaiting the institution.');
   await expect(guide).toContainText('DEMO-2026-1004 waits at final decision with the human authority recorded.');
   await guide.getByLabel('Open as Regional officer').click();
