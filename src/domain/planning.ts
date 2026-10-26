@@ -18,8 +18,23 @@ export function expertReadiness(expert:InspectionExpert,institutionId:string,sta
  if(expert.affiliated_institution_id===institutionId)reasons.push('Affiliation with this institution requires a different panel member.');
  if(conflicts.some(item=>item.expert_id===expert.id&&item.institution_id===institutionId&&item.active))reasons.push('An active declared conflict exists.');
  if(!availability.some(item=>item.expert_id===expert.id&&Date.parse(item.starts_at)<=Date.parse(starts)&&Date.parse(item.ends_at)>=Date.parse(ends)))reasons.push('No recorded availability covers the full window.');
- if(reservations.some(item=>item.expert_id===expert.id&&item.active&&item.visit_id!==visitId&&overlaps(starts,ends,item.starts_at,item.ends_at)))reasons.push('Another visit reserves an overlapping window.');
-  return {eligible:reasons.length===0,reasons};
+  if(reservations.some(item=>item.expert_id===expert.id&&item.active&&item.visit_id!==visitId&&overlaps(starts,ends,item.starts_at,item.ends_at)))reasons.push('Another visit reserves an overlapping window.');
+   return {eligible:reasons.length===0,reasons};
+}
+export interface PanelSuggestion{expert:InspectionExpert;reasons:string[]}
+export interface PanelRecommendation{recommended:PanelSuggestion[];excluded:{expert:InspectionExpert;reasons:string[]}[]}
+export function recommendPanel(experts:InspectionExpert[],institutionId:string,starts:string,ends:string,availability:ExpertAvailability[],conflicts:ExpertConflict[],reservations:ExpertReservation[],visitId?:string|null,limit=3):PanelRecommendation{
+  const limitSafe=Math.max(1,Math.min(10,limit));
+  const evaluated=experts.map(expert=>({expert,readiness:expertReadiness(expert,institutionId,starts,ends,availability,conflicts,reservations,visitId)}));
+  const excluded=evaluated.filter(item=>!item.readiness.eligible).map(item=>({expert:item.expert,reasons:item.readiness.reasons}));
+  const eligible=evaluated.filter(item=>item.readiness.eligible).map(item=>item.expert).sort((left,right)=>left.discipline.localeCompare(right.discipline)||left.name.localeCompare(right.name)||left.id.localeCompare(right.id));
+  const reasons=['Recorded availability covers the full requested window.','No active conflict, institutional affiliation or overlapping reservation is recorded.'];
+  const recommended:PanelSuggestion[]=[];
+  const seen=new Set<string>();
+  const add=(expert:InspectionExpert)=>{if(recommended.length>=limitSafe||seen.has(expert.id)||seen.has('discipline:'+expert.discipline))return;seen.add(expert.id);seen.add('discipline:'+expert.discipline);recommended.push({expert,reasons});};
+  for(const expert of eligible)add(expert);
+  for(const expert of eligible){if(recommended.length>=limitSafe)break;if(seen.has(expert.id))continue;seen.add(expert.id);recommended.push({expert,reasons});}
+  return {recommended,excluded};
 }
 export function regionBlocker(identity:Identity,app:Application):string|null{
   if(identity.roles.some(role=>role.role==='national_admin'))return null;

@@ -1,15 +1,39 @@
 import {neutralCopy} from '../domain/presentation';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Check, Clock3, FileText, X } from 'lucide-react';
+import { Check, ChevronDown, Clock3, FileText, X } from 'lucide-react';
 import { routeStageIndex, routeStages, statusLabels, type Application, type AuditEvent, type Status } from '../domain/model';
 import { workingDaysUntil } from '../domain/clock';
 import { workspaceHolidays } from '../domain/calendar';
+import { explainDeadline, type DeadlineContext } from '../domain/deadline';
+import './explain.css';
 export function Brand({onClick}:{onClick?:()=>void}={}){
   const content=<><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4.5h8.5L19 9v10.5H6z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M14.5 4.5V9H19" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M9 13h7M9 16h4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg></span>Clauseway<span className="brand-period">.</span></>;
   return onClick?<button className="brand brand-button" type="button" aria-label="Clauseway home" onClick={onClick}>{content}</button>:<div className="brand">{content}</div>;
 }
 export function Badge({status}:{status:Status}) {return <span className={`badge ${status}`} role="status" aria-label={`Status: ${statusLabels[status]}`}>{statusLabels[status]}</span>;}
-export function Due({app}:{app:Application}){const days=workingDaysUntil(app.sla_due_at,undefined,workspaceHolidays());const text=days===null?'No active deadline':days<0?`${-days}d overdue`:days===0?'Due today':`${days}d remaining`;const aria=days===null?'No active deadline':days<0?`Deadline: ${-days} working days overdue`:days===0?'Deadline: due today':`Deadline: ${days} working days remaining`;return <span className={days!==null&&days<=3?'due urgent':'due'} aria-label={aria}><Clock3 size={13} aria-hidden="true"/>{text}</span>;}
+const stamp=(value:string)=>{const parsed=new Date(value);return Number.isFinite(parsed.getTime())?parsed.toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'}):'Not recorded';};
+export function Due({app,data}:{app:Application;data?:DeadlineContext}){
+  const days=workingDaysUntil(app.sla_due_at,undefined,workspaceHolidays());
+  const text=days===null?'No active deadline':days<0?`${-days}d overdue`:days===0?'Due today':`${days}d remaining`;
+  const aria=days===null?'No active deadline':days<0?`Deadline: ${-days} working days overdue`:days===0?'Deadline: due today':`Deadline: ${days} working days remaining`;
+  const derivation=explainDeadline(app,data);
+  const remaining=days===null?null:days<0?`${-days} working day${-days===1?'':'s'} overdue`:days===0?'0 working days remaining (due today)':`${days} working day${days===1?'':'s'} remaining`;
+  const source=derivation.source;
+  return <details className="due-explain">
+    <summary className={days!==null&&days<=3?'due urgent':'due'} aria-label={`${aria}. Open how this target was derived.`}><Clock3 size={13} aria-hidden="true"/>{text}<ChevronDown size={11} aria-hidden="true" className="due-explain-caret"/></summary>
+    <div className="due-explain-panel">
+      <strong>Deadline derivation</strong>
+      <dl>
+        <div><dt>Recorded target</dt><dd>{derivation.target?stamp(derivation.target):'No active target'}</dd></div>
+        <div><dt>Working-day count</dt><dd>{remaining??'No active deadline'}</dd></div>
+        <div><dt>Calendar rule</dt><dd>Saturday and Sunday are excluded; {derivation.holidayDates?`${derivation.holidayDates} declared holiday date${derivation.holidayDates===1?' is':'s are'} also excluded`:'this workspace declares no holiday dates'}.</dd></div>
+        <div><dt>Source</dt><dd>{source.kind==='notice'?`Adopted notice ${source.code} (${source.title}); the adoption ${source.oldDueAt?`moved the recorded target from ${stamp(source.oldDueAt)} to`:'set the recorded target to'} ${stamp(source.newDueAt)} under the ${source.calendarBasis==='weekdays'?'working-day':'calendar-day'} rule, source version ${source.sourceVersion}, adopted ${stamp(source.adoptedAt)}.`:source.kind==='none'?'No active target is recorded.':'Recorded target on the case workflow; no adopted deadline notice applies.'}</dd></div>
+        {derivation.pause&&<div><dt>Paused correction</dt><dd>{derivation.pause.remainingWorkingDays} working day{derivation.pause.remainingWorkingDays===1?'':'s'} held{derivation.pause.pausedAt?` from ${stamp(derivation.pause.pausedAt)}`:''}.{derivation.pause.reason?` ${derivation.pause.reason}`:''}</dd></div>}
+      </dl>
+      <p>Recalculated in this browser from the recorded target. Opening this explanation changes nothing.</p>
+    </div>
+  </details>;
+}
 export function Empty({title,children}:{title:string;children?:ReactNode}){return <div className="empty"><FileText size={29}/><h3>{title}</h3><div>{children}</div></div>;}
 export function Panel({title,subtitle,action,children,className=''}:{title:string;subtitle?:string;action?:ReactNode;children:ReactNode;className?:string}){return <section className={`panel ${className}`}><div className="panel-heading"><div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div>{action}</div>{children}</section>;}
 export function SectionLink({target,route,children,className,onMissingTarget}:{target:string;route:string;children:ReactNode;className?:string;onMissingTarget?:(target:string)=>void}){

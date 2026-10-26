@@ -8,7 +8,7 @@ import type {DependencyNode,DependencyEdge} from '../domain/intelligence';
 import {evidenceLayout} from './evidenceLayout';
 
 const colors:Record<DependencyNode['kind'],number>={application:0xc5b4e3,claim:0x59b87b,document:0x92bfd5,deficiency:0xe2a441,visit:0x6f9ed1,obligation:0xd78087,approval:0xb5cc83,review:0x9d78c3};
-const background=0x030712;
+const background=0x101822;
 type SceneProps={nodes:DependencyNode[];edges:DependencyEdge[];selected:string|null;onSelect:(id:string)=>void};
 
 export default function EvidenceScene({nodes,edges,selected,onSelect}:SceneProps){
@@ -29,9 +29,9 @@ export default function EvidenceScene({nodes,edges,selected,onSelect}:SceneProps
    renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
    renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.75));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.3;
    renderer.domElement.setAttribute('aria-hidden','true');element.append(renderer.domElement);scene.background=new THREE.Color(background);
-   scene.add(new THREE.HemisphereLight(0xcbdcf7,0x26253d,2));
-   const light=new THREE.DirectionalLight(0xfff2df,3.2);light.position.set(-8,14,18);scene.add(light);
-   const rim=new THREE.DirectionalLight(0x819edb,2);rim.position.set(10,-4,-10);scene.add(rim);
+    scene.add(new THREE.HemisphereLight(0xd8f0eb,0x263b3e,2));
+    const light=new THREE.DirectionalLight(0xfff2df,3.2);light.position.set(-8,14,18);scene.add(light);
+    const rim=new THREE.DirectionalLight(0x76d6bd,2);rim.position.set(10,-4,-10);scene.add(rim);
    controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=false;controls.enablePan=true;controls.minDistance=3;controls.maxDistance=250;controls.zoomSpeed=.8;
    labelRenderer=new CSS2DRenderer();labelRenderer.domElement.className='evidence-label-layer';labelRenderer.domElement.setAttribute('aria-hidden','true');element.append(labelRenderer.domElement);
    const facet=new THREE.IcosahedronGeometry(1,0),core=new THREE.DodecahedronGeometry(1,0),correction=new THREE.OctahedronGeometry(1,0);disposable.push(facet,core,correction);
@@ -47,9 +47,9 @@ export default function EvidenceScene({nodes,edges,selected,onSelect}:SceneProps
    const edgePoints:number[]=[];
    for(const edge of edges){const from=meshes.get(edge.from),to=meshes.get(edge.to);if(from&&to)edgePoints.push(...from.position.toArray(),...to.position.toArray());}
    const edgeGeometry=new THREE.BufferGeometry();edgeGeometry.setAttribute('position',new THREE.Float32BufferAttribute(edgePoints,3));
-   const edgeMaterial=new THREE.LineBasicMaterial({color:0x8593ad,transparent:true,opacity:.3,depthWrite:false});scene.add(new THREE.LineSegments(edgeGeometry,edgeMaterial));disposable.push(edgeGeometry,edgeMaterial);
-   const activeGeometry=new THREE.BufferGeometry(),activePositions=new THREE.Float32BufferAttribute(new Float32Array(edgePoints.length),3).setUsage(THREE.DynamicDrawUsage),activeMaterial=new THREE.LineBasicMaterial({color:0xc5d8fa,transparent:true,opacity:.8,depthWrite:false});activeGeometry.setAttribute('position',activePositions);activeGeometry.setDrawRange(0,0);const activeLines=new THREE.LineSegments(activeGeometry,activeMaterial);activeLines.frustumCulled=false;scene.add(activeLines);disposable.push(activeGeometry,activeMaterial);
-   const ringGeometry=new THREE.RingGeometry(.94,1,64),ringMaterial=new THREE.MeshBasicMaterial({color:0xdbe6ff,transparent:true,opacity:.85,side:THREE.DoubleSide,depthTest:false});const ring=new THREE.Mesh(ringGeometry,ringMaterial);ring.visible=false;ring.renderOrder=3;scene.add(ring);disposable.push(ringGeometry,ringMaterial);
+    const edgeMaterial=new THREE.LineBasicMaterial({color:0x8aa9a9,transparent:true,opacity:.3,depthWrite:false});scene.add(new THREE.LineSegments(edgeGeometry,edgeMaterial));disposable.push(edgeGeometry,edgeMaterial);
+    const activeGeometry=new THREE.BufferGeometry(),activePositions=new THREE.Float32BufferAttribute(new Float32Array(edgePoints.length),3).setUsage(THREE.DynamicDrawUsage),activeMaterial=new THREE.LineBasicMaterial({color:0xb5eadc,transparent:true,opacity:.8,depthWrite:false});activeGeometry.setAttribute('position',activePositions);activeGeometry.setDrawRange(0,0);const activeLines=new THREE.LineSegments(activeGeometry,activeMaterial);activeLines.frustumCulled=false;scene.add(activeLines);disposable.push(activeGeometry,activeMaterial);
+    const ringGeometry=new THREE.RingGeometry(.94,1,64),ringMaterial=new THREE.MeshBasicMaterial({color:0xe7a06c,transparent:true,opacity:.85,side:THREE.DoubleSide,depthTest:false});const ring=new THREE.Mesh(ringGeometry,ringMaterial);ring.visible=false;ring.renderOrder=3;scene.add(ring);disposable.push(ringGeometry,ringMaterial);
 
    emphasize.current=()=>{
     const id=selectedId.current??hovered,near=id?layout.get(id)?.neighbours:undefined;
@@ -90,7 +90,7 @@ export default function EvidenceScene({nodes,edges,selected,onSelect}:SceneProps
  useEffect(()=>{emphasize.current();draw.current();},[selected,showAllNames]);
  return <div className="evidence-scene-shell">
   <div className="scene-toolbar" role="group" aria-label="3D map controls"><button type="button" className="button secondary small" onClick={()=>fit.current()} disabled={Boolean(error)}><Maximize2 size={14}/>Fit evidence map</button><button type="button" className="button secondary small" onClick={()=>focus.current()} disabled={Boolean(error)||!validSelection}><Focus size={14}/>Focus selected connections</button><div className="scene-zoom"><button type="button" className="button secondary small" aria-label="Zoom out" onClick={()=>zoom.current(1.25)} disabled={Boolean(error)}><Minus size={15}/></button><button type="button" className="button secondary small" aria-label="Zoom in" onClick={()=>zoom.current(.8)} disabled={Boolean(error)}><Plus size={15}/></button></div><label className="scene-label-control"><input type="checkbox" checked={showAllNames} onChange={event=>setShowAllNames(event.target.checked)} disabled={Boolean(error)}/>All record names</label></div>
-  <div className="evidence-scene" ref={host} role={error?'status':'img'} aria-label={error?'3D view unavailable; use the evidence node table':`Optional 3D evidence dependency graph with ${nodes.length} nodes and ${edges.length} relationships`}>{error&&<p className="scene-fallback">{error}</p>}{hover&&!error&&<span className="scene-tooltip" style={{left:Math.min(hover.left+14,Math.max(8,(host.current?.clientWidth??0)-250)),top:Math.max(8,hover.top-48)}}>{neutralCopy(hover.label)}</span>}</div>
+   <div className="evidence-scene" ref={host} role={error?'status':'img'} aria-label={error?'3D view unavailable; use the evidence node table':`3D evidence dependency graph with ${nodes.length} nodes and ${edges.length} relationships`}>{error&&<p className="scene-fallback">{error}</p>}{hover&&!error&&<span className="scene-tooltip" style={{left:Math.min(hover.left+14,Math.max(8,(host.current?.clientWidth??0)-250)),top:Math.max(8,hover.top-48)}}>{neutralCopy(hover.label)}</span>}</div>
   <div className="graph-legend" aria-label="Evidence record colours">{Object.entries(colors).filter(([kind])=>nodes.some(node=>node.kind===kind)).map(([kind,color])=><span key={kind}><i style={{backgroundColor:'#'+color.toString(16).padStart(6,'0')}}/>{kind}</span>)}</div><p className="muted scene-help">Drag to orbit · Shift + drag to pan · Scroll to zoom. Node size reflects connected records. Select a node to trace its links and keep its name visible. Every record is also in the table below.</p>
  </div>;
 }

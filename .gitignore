@@ -17,3 +17,4 @@ automation/*.local.env
 .runtime/
 local/supabase/.temp/
 local/supabase/.branches/
+graphify-out/

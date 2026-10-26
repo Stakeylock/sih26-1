@@ -1,10 +1,10 @@
 {
   ".mainnav": {
-    "backgroundColor": "rgb(23, 35, 47)",
+    "backgroundColor": "rgb(23, 75, 89)",
     "height": "56px"
   },
   "body": {
-    "backgroundColor": "rgb(236, 239, 241)"
+    "backgroundColor": "rgb(246, 247, 250)"
   },
   ".dispatch-header h1": {
     "fontSize": "31px"

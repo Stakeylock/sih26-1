@@ -1,7 +1,8 @@
 import {neutralCopy} from '../domain/presentation';
-import {useState} from 'react';
-import {ArrowRight,Building2,ClipboardClock,Clock3,Download,FileStack,Plus,Printer,ShieldCheck,TrendingUp} from 'lucide-react';
-import { actionLabels, allowedActions, regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Status, type Workspace, typeLabels } from '../domain/model';
+import {useEffect,useState} from 'react';
+import {ArrowRight,Building2,ClipboardClock,Clock3,Download,FileStack,Plus,Printer,RefreshCw,ShieldCheck,ShieldX} from 'lucide-react';
+import { regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Repository, type Status, type Workspace, typeLabels } from '../domain/model';
+import {nextStep,type CaseNextStep} from '../domain/nextStep';
 import { workingDaysUntil } from '../domain/clock';
 import { workspaceHolidays } from '../domain/calendar';
 const HOLIDAYS = workspaceHolidays();
@@ -13,13 +14,14 @@ const operationalStatus: { [key in Status]: string } = {
   pending_decision: 'Awaiting decision', approved: 'Approved', rejected: 'Rejected',
 };
 import {Badge,Due,Empty} from './common';
+import './integrity.css';
+type ChainCheck={state:'checking'}|{state:'done';scope:'priority'|'all';intact:number;total:number;events:number;broken:{ref:string;at:number|null}|null}|{state:'error';message:string};
 
-function priorityReason(app:Application){const days=workingDaysUntil(app.sla_due_at,undefined,HOLIDAYS);if(days!==null&&days<0)return `Overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return 'Due today';if(days!==null)return `Due in ${days} day${days===1?'':'s'}`;return 'No demo SLA recorded';}
-function nextAction(app:Application,identity:Identity){const action=allowedActions(app,identity)[0];return action?`Your next action: ${actionLabels[action].toLowerCase()}`:'Next authority: '+nextAuthorityLabel(app.status);}
-function nextAuthorityLabel(status:Status){if(status==='deficiency_raised')return 'Institution';const byStage:{[key in Status]:string}={draft:'Institution',submitted:'Scrutiny officer',under_scrutiny:'Assigned scrutiny officer',deficiency_raised:'Institution',resubmitted:'Scrutiny officer',evc_pending:'EVC coordinator',evc_scheduled:'Assigned EVC coordinator',pending_decision:'Regional officer',approved:'Record closed',rejected:'Record closed'};return byStage[status];}
+function nextDue(app:Application,step:CaseNextStep){const days=workingDaysUntil(step.due??app.sla_due_at,undefined,HOLIDAYS);const subject=step.kind==='obligation'?'Obligation':step.kind==='correction'?'Correction':step.kind==='visit'?'Visit':null;const prefix=subject?`${subject} `:'';if(days===null)return 'No recorded target';if(days<0)return `${prefix}overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return `${prefix}due today`;return `${prefix}due in ${days} day${days===1?'':'s'}`;}
+function dueRank(app:Application,step:CaseNextStep){const value=step.due??app.sla_due_at;if(!value)return Number.POSITIVE_INFINITY;const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:Number.POSITIVE_INFINITY;}
 function holdDays(app:Application){const updated=Date.parse(app.updated_at);return Number.isFinite(updated)?Math.max(0,Math.floor((Date.now()-updated)/86400000)):0;}
 function downloadRoster(data:Workspace,scoped:Application[]){const rows=['Reference No,Title,Region,Category,Stage,Status,Remaining Days,Open Deficiencies'];for(const app of scoped){const remaining=workingDaysUntil(app.sla_due_at,undefined,HOLIDAYS);const defCount=data.deficiencies.filter(d=>d.application_id===app.id&&d.status==='open').length;const daysLabel=remaining===null?'None':remaining<0?`${Math.abs(remaining)}d overdue`:`${remaining}d remaining`;rows.push([app.ref_no,app.title,app.region,typeLabels[app.app_type]||app.app_type,routeStage(app.status).label,app.status,daysLabel,String(defCount)].join(','));}const blob=new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`case-pendency-roster-${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);}
-export function Overview({data,identity,open,navigate}:{data:Workspace;identity:Identity;open:(id:string)=>void;navigate:(page:string)=>void}){
+export function Overview({data,identity,repo,open,navigate}:{data:Workspace;identity:Identity;repo:Repository;open:(id:string)=>void;navigate:(page:string)=>void}){
   const active=data.applications.filter(a=>!['draft','approved','rejected'].includes(a.status));
   const closed=data.applications.filter(a=>['approved','rejected'].includes(a.status));
   const [scope,setScope]=useState<'active'|'closed'|'all'>('active');
@@ -27,11 +29,19 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   const actionable=scoped.filter(a=>!['draft','approved','rejected'].includes(a.status));
   const atRisk=actionable.filter(a=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??99)<=3);
   const canCreate=identity.roles.some(r=>r.role==='institution');
-  const withTarget=actionable.filter(a=>workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)!==null);
-  const onTime=withTarget.filter(a=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??-1)>=0).length;
-  const priority=actionable.slice().sort((a,b)=>(workingDaysUntil(a.sla_due_at,undefined,HOLIDAYS)??9999)-(workingDaysUntil(b.sla_due_at,undefined,HOLIDAYS)??9999)).slice(0,3);
-
-  const sla=withTarget.length?`${Math.round(onTime/withTarget.length*100)}%`:'—';
+  const stepContext={documents:data.documents,deficiencies:data.deficiencies,obligations:data.obligations,visits:data.visits};
+  const stepFor=(app:Application)=>nextStep(app,stepContext);
+  const obligationCases=closed.filter(app=>stepFor(app).kind==='obligation');
+  const priorityPool=scope==='closed'?obligationCases:scope==='all'?[...actionable,...obligationCases]:actionable;
+  const priority=priorityPool.slice().sort((a,b)=>dueRank(a,stepFor(a))-dueRank(b,stepFor(b))).slice(0,3);
+  const priorityKey=priority.map(app=>`${app.id}:${stepFor(app).due??app.sla_due_at??''}`).join('|');
+  const [chain,setChain]=useState<ChainCheck>({state:'checking'});
+  const verifyCases=async(apps:Application[])=>{const results=await Promise.all(apps.map(async app=>({app,result:await repo.verifyAudit(app)})));const broken=results.find(item=>!item.result.intact);return {intact:results.filter(item=>item.result.intact).length,total:results.length,events:results.reduce((sum,item)=>sum+item.result.checked,0),broken:broken?{ref:broken.app.ref_no,at:broken.result.broken_at}:null};};
+  useEffect(()=>{let cancelled=false;const targets=priority;if(!targets.length){setChain({state:'done',scope:'priority',intact:0,total:0,events:0,broken:null});return;}setChain({state:'checking'});void verifyCases(targets).then(result=>{if(!cancelled)setChain({state:'done',scope:'priority',...result});}).catch(error=>{if(!cancelled)setChain({state:'error',message:error instanceof Error?error.message:'Chain verification unavailable.'});});return()=>{cancelled=true};},[repo,priorityKey,data.events.length]);
+  const verifyVisible=()=>{if(!scoped.length)return;setChain({state:'checking'});void verifyCases(scoped).then(result=>setChain({state:'done',scope:'all',...result})).catch(error=>setChain({state:'error',message:error instanceof Error?error.message:'Chain verification unavailable.'}));};
+  const chainBroken=chain.state==='done'&&chain.broken!==null;
+  const chainValue=chain.state==='checking'?'···':chain.state==='error'?'—':chain.total?`${chain.intact}/${chain.total}`:'—';
+  const chainNote=chain.state==='checking'?'Recomputing SHA-256 links in this browser…':chain.state==='error'?chain.message:chain.broken?`${chain.broken.ref} breaks at event ${chain.broken.at??'?'}`:chain.total===0?'No visible cases to verify.':`${chain.events} events checked · ${chain.scope==='all'?'visible scope':'priority cases'}`;
 
   const institutionHolding=active.filter(a=>a.status==='deficiency_raised');
   const authorityHolding=active.filter(a=>a.status!=='deficiency_raised');
@@ -104,15 +114,18 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
           </div>
         </section>
 
-        {/* Card 4: Processing target */}
-        <section aria-label="Processing target achievement">
-          <div className="hero-metric-card-inner hero-metric-card-verified">
+        <section aria-label="Chain verification">
+          <div className={`hero-metric-card-inner ${chainBroken?'hero-metric-card-attention':'hero-metric-card-verified'}`}>
             <div className="hero-metric-head">
-              <span>Within configured processing target</span>
-              <TrendingUp size={14}/>
+              <span>Chain verification</span>
+              {chainBroken?<ShieldX size={14}/>:<ShieldCheck size={14}/>}
             </div>
-            <div className="hero-metric-value" style={{color:'var(--verified)',fontSize:'34px'}}>{sla}</div>
-            <span className="hero-metric-note">{onTime} of {withTarget.length} cases with a recorded target meet it</span>
+            <div className="hero-metric-value" style={{color:chainBroken?'var(--critical)':chain.state==='done'?'var(--verified)':undefined,fontSize:'34px'}} role="status" aria-live="polite">{chainValue}</div>
+            <span className="hero-metric-note">{chainNote}</span>
+            <div className="chain-proof-actions">
+              <button type="button" className="text-button small" disabled={chain.state==='checking'||!scoped.length} onClick={verifyVisible}>{chain.state==='done'&&chain.scope==='all'?<><RefreshCw size={12}/>Re-verify</>:<><ShieldCheck size={12}/>Verify all {scoped.length}</>}</button>
+              <button type="button" className="text-button small" onClick={()=>navigate('trust')}>Trust Center <ArrowRight size={12}/></button>
+            </div>
           </div>
         </section>
       </div>
@@ -122,24 +135,25 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
     <section className="dispatch-board" aria-label="Approval dispatch board">
       <div className="dispatch-column dispatch-action-column">
         <div className="dispatch-column-heading">
-          <div><div><h2>Priority queue</h2><p>Cases closest to their next deadline.</p></div></div>
+          <div><div><h2>{scope==='closed'?'Continuing conditions':'Priority queue'}</h2><p>{scope==='closed'?'Recorded decisions with a condition still open.':'Cases closest to their next deadline.'}</p></div></div>
           <span className="dispatch-count">{String(priority.length).padStart(2,'0')}</span>
         </div>
-        {priority.length?priority.map((app,index)=>(
-          <article className={`dispatch-case ${index===0?'dispatch-case-primary':''}`} key={app.id}>
+        {priority.length?priority.map((app,index)=>{
+          const step=stepFor(app);
+          return <article className={`dispatch-case ${index===0?'dispatch-case-primary':''}`} key={app.id}>
             <div className="dispatch-case-index">{String(index+1).padStart(2,'0')}</div>
             <div className="dispatch-case-main">
-              <div className="inline"><span className="mono">{app.ref_no}</span><Badge status={app.status}/></div>
+              <div className="inline"><span className="mono">{app.ref_no}</span><Badge status={app.status}/>{step.kind==='obligation'&&<span className="document-tag pending">Obligation open</span>}</div>
               <h3>{data.institutions.find(i=>i.id===app.institution_id)?.name??'Demo institution'}</h3>
               <p>{neutralCopy(app.title)}</p>
               <div className="dispatch-case-meta">
-                <span><Clock3 size={13}/>{priorityReason(app)}</span>
-                <span><ShieldCheck size={13}/>{nextAction(app,identity)}</span>
+                <span><Clock3 size={13}/>{nextDue(app,step)}</span>
+                <span><ShieldCheck size={13}/>{step.owner} · {step.action}</span>
               </div>
             </div>
             <button className="dispatch-case-open" onClick={()=>open(app.id)} aria-label={`Open ${app.ref_no}`}>Inspect case <ArrowRight size={15}/></button>
-          </article>
-        )):<Empty title="The priority queue is clear">No active cases need intervention right now.</Empty>}
+          </article>;
+        }):<Empty title={scope==='closed'?'No continuing conditions open':'The priority queue is clear'}>{scope==='closed'?'Every visible closed case has no open post-decision condition.':'No active cases need intervention right now.'}</Empty>}
       </div>
       <div className="dispatch-column dispatch-handoff-column">
         <div className="dispatch-column-heading">
@@ -216,4 +230,4 @@ export function Overview({data,identity,open,navigate}:{data:Workspace;identity:
   </>;
 }
 
-export function ApplicationRow({app,institution,open,selectedId}:{app:Application;institution:string;open:(id:string)=>void;selectedId?:string}){const stage=routeStage(app.status);const isSelected=selectedId===app.id;return <tr data-selected={isSelected}><td><button className={`case-link${isSelected?' selected':''}`} aria-pressed={isSelected} onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{neutralCopy(app.title)}</small></td><td>{app.region}</td><td><span className="station-label"><span className="station-number">{String(routeStageIndex(app.status)+1).padStart(2,'0')}</span>{neutralCopy(stage.label)}</span></td><td><span className="status-annotation"><Badge status={app.status}/><small>{operationalStatus[app.status]}</small></span></td><td><Due app={app}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}
+export function ApplicationRow({app,institution,open,selectedId,data}:{app:Application;institution:string;open:(id:string)=>void;selectedId?:string;data?:Pick<Workspace,'deadlines'|'notices'>}){const stage=routeStage(app.status);const isSelected=selectedId===app.id;return <tr data-selected={isSelected}><td><button className={`case-link${isSelected?' selected':''}`} aria-pressed={isSelected} onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{neutralCopy(app.title)}</small></td><td>{app.region}</td><td><span className="station-label"><span className="station-number">{String(routeStageIndex(app.status)+1).padStart(2,'0')}</span>{neutralCopy(stage.label)}</span></td><td><span className="status-annotation"><Badge status={app.status}/><small>{operationalStatus[app.status]}</small></span></td><td><Due app={app} data={data}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}
