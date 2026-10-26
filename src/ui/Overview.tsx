@@ -14,6 +14,7 @@ const operationalStatus: { [key in Status]: string } = {
   pending_decision: 'Awaiting decision', approved: 'Approved', rejected: 'Rejected',
 };
 import {Badge,Due,Empty} from './common';
+import {PolicyChangesBanner} from './PolicyChangesBanner';
 import './integrity.css';
 type ChainCheck={state:'checking'}|{state:'done';scope:'priority'|'all';intact:number;total:number;events:number;broken:{ref:string;at:number|null}|null}|{state:'error';message:string};
 
@@ -64,7 +65,9 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
           <strong>{String(scoped.length).padStart(2,'0')}</strong> <small>{scope==='active'?'active dossiers':scope==='closed'?'closed cases':'all cases'}</small>
         </div>
       </div>
-    </section>      {/* Hero Metrics Bar (Above the Fold) */}
+    </section>
+    <PolicyChangesBanner data={data} identity={identity} navigate={navigate}/>
+      {/* Hero Metrics Bar (Above the Fold) */}
       {/* Hero Stats Row — 4-column leader panel */}
       <div className="overview-hero-metrics" role="region" aria-label="Case overview metrics">
         {/* Card 1: Active Dossiers */}
