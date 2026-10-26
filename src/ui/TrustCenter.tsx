@@ -11,7 +11,7 @@ function shortHash(value:string|null){return value?`${value.slice(0,10)}...${val
 function dateLabel(value:string|null|undefined){return value?new Date(value).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'No expiry';}
 
 export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identity:Identity;repo:Repository;run:Run;busy:boolean}){
-  const [verification,setVerification]=useState<AuditVerification|null>(null);
+  const [verification,setVerification]=useState<AuditVerification|null>(null);const [aggregate,setAggregate]=useState<{ref:string;result:AuditVerification}[]|null>(null);
   const [replayResult,setReplayResult]=useState<AuditVerification|null>(null);
   const now=Date.now();
   const reference=data.applications.find(a=>a.ref_no==='DEMO-2026-1001')??data.applications[0];
@@ -29,6 +29,7 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
   const approvalAgents=data.agents.filter(a=>a.can_approve);
   const canReplay=repo.mode==='demo'&&identity.roles.some(r=>r.role!=='institution');
   const verify=()=>{if(!reference)return;void run(async()=>{setVerification(await repo.verifyAudit(reference));},`Record ${reference.ref_no} verified.`);};
+  const verifyAll=()=>void run(async()=>{const results=await Promise.all(data.applications.map(async app=>({ref:app.ref_no,result:await repo.verifyAudit(app)})));setAggregate(results);},'Visible audit chains verified.');
   const replay=()=>{if(!reference)return;void run(async()=>{setReplayResult(await repo.tamperReplay(reference));},'Tamper replay completed on an isolated copy.');};
   const chainOk=verification?.intact===true;
 
@@ -95,7 +96,10 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
         {!data.agents.length&&<p className="trust-empty">No agents are registered in this workspace.</p>}
       </Panel>
 
-      <Panel className="trust-panel trust-replay" title="Tamper replay" subtitle="Demonstration only. Runs on a copy and never mutates the workspace." action={<Play size={19}/>}>
+       <Panel className="trust-panel" title="All visible chains" subtitle="One report across the cases loaded for this workspace." action={<ShieldCheck size={19}/>}>
+         <div className="trust-replay-body"><div><strong>{aggregate?`${aggregate.filter(item=>item.result.intact).length} of ${aggregate.length} chains intact.`:'Verify every visible case in one pass.'}</strong><p>{aggregate?aggregate.filter(item=>!item.result.intact).map(item=>`${item.ref} breaks at event ${item.result.broken_at??'unknown'}`).join(' · ')||'No broken visible chains found.':'This checks the same stored event links as the single-record action; connected scope and pagination still apply.'}</p></div><button className="button outline" disabled={busy} onClick={verifyAll}><ShieldCheck size={15}/>{busy?'Checking...':'Verify all visible chains'}</button></div>
+       </Panel>
+       <Panel className="trust-panel trust-replay" title="Tamper replay" subtitle="Demonstration only. Runs on a copy and never mutates the workspace." action={<Play size={19}/>}>
         <div className="trust-replay-body">
           <div>
             <strong>{repo.mode==='demo'?'Test the verifier against a deliberately altered event.':'Tamper replay is available in the synthetic demo workspace.'}</strong>

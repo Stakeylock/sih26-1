@@ -89,7 +89,7 @@ export default function App(){
   const prototypeFlowApplication=prototypeFlowId?data?.applications.find(a=>a.id===prototypeFlowId):null;
   const prototypeApplication=prototypeCaseId?data?.applications.find(a=>a.id===prototypeCaseId):null;
   const welcome=!route||route==='welcome';const tourOverlay=tourOpen?<GuidedStory step={tourStep} onNext={nextTourStep} onExit={closeTour}/>:null;
-  if(welcome)return <><Welcome onEnter={()=>navigate('overview')} onStory={startTour} onOpen={route=>navigate(route)} onEnterAs={roleKey=>{setRole(roleKey);navigate('overview');}} theme={theme} toggleTheme={toggleTheme}/>{tourOverlay}</>;
+   if(welcome)return <><Welcome onEnter={()=>navigate('overview')} onProofCase={()=>navigate('case/demo-app-0')} onStory={startTour} onOpen={route=>navigate(route)} onEnterAs={roleKey=>{setRole(roleKey);navigate('overview');}} theme={theme} toggleTheme={toggleTheme}/>{tourOverlay}</>;
   if(loading)return <><Startup page={page} lang={uiLangNow}/>{tourOverlay}</>;
   if(!identity||!repo)return <Login repo={repo} error={error} setError={setError} signedIn={reload}/>;
   const initials=identity.name.split(' ').map(n=>n[0]).slice(0,2).join('');
@@ -106,7 +106,7 @@ export default function App(){
         <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="mainnav-icon"/>
         <button className="icon-button mainnav-icon" title={t('Settings','सेटिंग्स')} aria-label={t('Settings','सेटिंग्स')} onClick={()=>navigate('settings')}><Settings2 size={17}/></button>
         <span className="avatar small-avatar">{initials}</span>
-        <span className="mainnav-identity"><strong>{identity.name}</strong><small>{uiLangNow==='hi'?roleLabelsHi[identity.roles[0]?.role??'institution']:roleLabels[identity.roles[0]?.role??'institution']}</small></span>
+         <span className="mainnav-identity"><strong>{identity.roles[0]?.role==='institution'?'Institution desk':identity.name}</strong><small>{uiLangNow==='hi'?roleLabelsHi[identity.roles[0]?.role??'institution']:roleLabels[identity.roles[0]?.role??'institution']}</small></span>
         <button className="sidebar-logout" title={t('Sign out','साइन आउट')} aria-label={t('Sign out','साइन आउट')} disabled={repo.mode==='demo'} onClick={()=>void repo.signOut().then(reload).catch(e=>setError(String(e)))}><LogOut size={16}/></button>
       </div>
     </div>
@@ -138,7 +138,7 @@ export default function App(){
       </div>
       <footer><span><LockIcon/>Demonstration environment · v0.4</span></footer>
     </main></Suspense></div>
-    <aside className={mobile?'sidebar mobile-open':'sidebar'}><Brand onClick={()=>navigate('welcome')}/><div className="workspace-caption">SIH26262 · DEMONSTRATION</div><nav aria-label={t('Workspace menu','कार्यक्षेत्र मेन्यू')}>{sections.map(section=><div className="nav-group" key={section.id}><div className="nav-section">{t(section.label,section.hi)}</div>{section.items.map(id=>{const item=destinationById[id];return <button key={id} type="button" aria-current={page===id?'page':undefined} className={page===id?'nav-item active':'nav-item'} onClick={()=>navigate(id)}><item.icon size={17}/><span>{t(item.label,item.hi)}</span>{id==='alerts'&&data?.notifications.some(n=>!n.read_at)&&<span className="nav-dot"/>}</button>;})}</div>)}</nav><div className="sidebar-bottom"><div className="sidebar-profile"><span className="avatar">{initials}</span><div><strong>{identity.name}</strong><small>{roleLabels[identity.roles[0]?.role??'institution']}</small></div><button className="sidebar-logout" title="Sign out" aria-label="Sign out" disabled={repo.mode==='demo'} onClick={()=>void repo.signOut().then(reload).catch(e=>setError(String(e)))}><LogOut size={16}/></button></div></div></aside>
+     <aside className={mobile?'sidebar mobile-open':'sidebar'}><Brand onClick={()=>navigate('welcome')}/><div className="workspace-caption">SIH26262 · DEMONSTRATION</div><nav aria-label={t('Workspace menu','कार्यक्षेत्र मेन्यू')}>{sections.map(section=><div className="nav-group" key={section.id}><div className="nav-section">{t(section.label,section.hi)}</div>{section.items.map(id=>{const item=destinationById[id];return <button key={id} type="button" aria-current={page===id?'page':undefined} className={page===id?'nav-item active':'nav-item'} onClick={()=>navigate(id)}><item.icon size={17}/><span>{t(item.label,item.hi)}</span>{id==='alerts'&&data?.notifications.some(n=>!n.read_at)&&<span className="nav-dot"/>}</button>;})}</div>)}</nav><div className="sidebar-bottom"><div className="sidebar-profile"><span className="avatar">{initials}</span><div><strong>{identity.roles[0]?.role==='institution'?'Institution desk':identity.name}</strong><small>{roleLabels[identity.roles[0]?.role??'institution']}</small></div><button className="sidebar-logout" title="Sign out" aria-label="Sign out" disabled={repo.mode==='demo'} onClick={()=>void repo.signOut().then(reload).catch(e=>setError(String(e)))}><LogOut size={16}/></button></div></div></aside>
     {tourOverlay}{notice&&<div className="toast" role="status" aria-label="Workspace notification"><CheckIcon/>{notice}<button className="icon-button" aria-label="Dismiss notification" onClick={()=>setNotice('')}><X size={15}/></button></div>}
   </div>;
 }

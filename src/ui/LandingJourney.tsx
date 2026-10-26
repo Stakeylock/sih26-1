@@ -8,7 +8,8 @@ const steps=[
   {id:'recorded',label:'Recorded',caption:'The human review becomes traceable.',title:'A review, with its rationale.',description:'The evidence version, reviewer role and explanation stay together. This is a claim review, not a final approval.',status:'Human review recorded',file:'fire_safety_certificate_v2.pdf',version:'v2'},
 ] as const;
 const STEP_DURATION=4400;
-export function LandingJourney(){
+type ProofCase={refNo:string;institution:string;title:string;status:string;claims:number;documents:number}|null;
+export function LandingJourney({proof}:{proof:ProofCase}){
   const [reduced,setReduced]=useState(()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const [playing,setPlaying]=useState(()=>!window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const [step,setStep]=useState(0),[visible,setVisible]=useState(true),[pageVisible,setPageVisible]=useState(()=>document.visibilityState!=='hidden'),[run,setRun]=useState(0);
@@ -25,7 +26,8 @@ export function LandingJourney(){
   return <figure ref={figureRef} className="landing-journey" aria-label="Illustrative evidence review" data-step={current.id} data-playing={playing&&!reduced&&visible&&pageVisible} data-reduced-motion={reduced}>
     <div className="journey-toolbar"><span className="journey-toolbar-title"><span className="journey-demo-dot"/>A review in motion</span><div className="journey-controls"><span className="journey-example">Illustration</span><button type="button" aria-label={reduced?'Automatic motion disabled':playing?'Pause illustration':'Play illustration'} title={reduced?'Reduced motion is enabled':playing?'Pause illustration':'Play illustration'} disabled={reduced} onClick={toggle}>{playing&&!reduced?<Pause size={14}/>:<Play size={14}/>}</button><button type="button" aria-label="Replay illustration" title="Replay illustration" onClick={replay}><RotateCcw size={14}/></button></div></div>
     <div className="journey-stage" style={{'--journey-step':step} as CSSProperties}>
-      <div className="journey-case-heading"><div><span className="journey-overline">SAMPLE DOSSIER</span><strong>Cedar Technical Institute</strong></div><span className="journey-case-state">Under review</span></div>
+      <div className="journey-case-heading"><div><span className="journey-overline">SYNTHETIC PROOF CASE · {proof?.refNo??'DEMO-2026-1001'}</span><strong>{proof?.institution??'Synthetic institution'}</strong><span className="journey-case-title">{proof?.title??'Evidence review record'}</span></div><span className="journey-case-state">Under review</span></div>
+      <div className="journey-proof-rail" aria-label="Proof case signals"><div><span>Evidence</span><strong>Original retained</strong><small>{proof?.documents??0} records · replacement linked</small></div><div><span>Authority</span><strong>Human review required</strong><small>{proof?.claims??0} claims · role-gated actions</small></div><div><span>Integrity</span><strong>Hash-linked record</strong><small>Verify or run tamper replay</small></div></div>
       <div className="journey-document" data-state={current.id} id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${current.id}`} tabIndex={0} onFocus={()=>setPlaying(false)}>
         <div className="journey-document-top"><div className="journey-file-icon" aria-hidden="true">{step===2?<FileCheck2 size={23}/>:<FileText size={23}/>}</div><div className="journey-file-name"><strong>Fire safety certificate</strong><span>{current.file}</span></div><span className="journey-version">{current.version}</span></div>
         <div className="journey-document-content" key={current.id}>

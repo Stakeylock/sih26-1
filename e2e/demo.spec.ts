@@ -9,9 +9,9 @@ async function openDemoLab(page:Page){await page.locator('header.topbar details.
 test.beforeEach(async({page})=>{await page.goto('/#overview');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();});
 test('public landing explains the approval record and starts the guided story',async({page})=>{
   await page.goto('/');
-  await expect(page.getByRole('heading',{level:1,name:/The file moves/})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Take a guided tour',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Take a guided tour',exact:true}).click();
+   await expect(page.getByRole('heading',{level:1,name:/Evidence changes/})).toBeVisible();
+   await expect(page.getByRole('button',{name:'Watch the guided path',exact:true})).toBeVisible();
+   await page.getByRole('button',{name:'Watch the guided path',exact:true}).click();
   await expect(page.getByRole('complementary',{name:'Guided demonstration story'})).toBeVisible();
   await expect(page.getByText('Start where the deadline is closest.',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Next handoff',exact:true}).click();
@@ -20,10 +20,10 @@ test('public landing explains the approval record and starts the guided story',a
   await expect(page.getByRole('complementary',{name:'Guided demonstration story'})).toHaveCount(0);
   await expect(page.locator('main h1')).toHaveCount(1);
 });
-test('landing enters the dispatch board',async({page})=>{
+test('landing opens the proof case',async({page})=>{
   await page.goto('/');
-  await page.getByRole('button',{name:'Open demo workspace',exact:true}).click();
-  await expect(page.getByRole('heading',{level:1,name:'Approval operations',exact:true})).toBeVisible();
+   await page.getByRole('button',{name:'Open proof case',exact:true}).click();
+  await expect(page.getByRole('heading',{level:1,name:'Cedar Technical Institute',exact:true})).toBeVisible();
 });
 test('closed case exposes a printable decision receipt',async({page})=>{
   await openDesk(page,'Applications');
@@ -68,7 +68,7 @@ test('overview prioritises current cases and prototype attention reflects review
   await expect(board).not.toContainText('DEMO-2026-1011');
   await openDemoLab(page);await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
   const preview=page.getByRole('complementary',{name:'Selected case preview'});
-  await expect(preview).toContainText('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
+   await expect(preview).toContainText('APH safety: The Fire Safety Certificate expired before the scrutiny date.');
   await expect(preview).toContainText('2 of 9 claims awaiting verification.');
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
@@ -591,4 +591,3 @@ test('relationship prototype threads the claim evidence correction review chain'
   await expect(shell).toBeVisible();
   expect(errors).toEqual([]);
 });
-

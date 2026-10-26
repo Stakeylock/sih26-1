@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { seed } from '../src/data/demo';
-import { attentionReasons } from '../src/ui/caseAttention';
+import { attentionFlags, attentionReasons } from '../src/ui/caseAttention';
 
 const workspace = seed();
 const attached = (applicationId: string) => workspace.documents.filter(document => document.application_id === applicationId);
@@ -20,7 +20,14 @@ describe('overview attention reasons', () => {
   it('reports the open deficiency and claims awaiting verification', () => {
     const app = workspace.applications.find(application => application.id === 'demo-app-0')!;
     const reasons = attentionReasons(app, attached(app.id), workspace.claims, workspace.deficiencies);
-    expect(reasons).toContain('Open deficiency (APH safety): The Fire Safety Certificate expired before the scrutiny date.');
+    expect(reasons).toContain('APH safety: The Fire Safety Certificate expired before the scrutiny date.');
     expect(reasons).toContain('2 of 9 claims awaiting verification.');
+  });
+
+  it('returns deterministic owner, next-action, and escalation metadata', () => {
+    const app = workspace.applications.find(application => application.id === 'demo-app-0')!;
+    const flags = attentionFlags(app, attached(app.id), workspace.claims, workspace.deficiencies);
+    expect(flags[0]).toMatchObject({ owner: 'Institution', next: expect.stringContaining('Submit'), nextEscalationAt: expect.any(String) });
+    expect(flags.map(flag => flag.priority)).toEqual([...flags].map(flag => flag.priority).sort((a, b) => a - b));
   });
 });

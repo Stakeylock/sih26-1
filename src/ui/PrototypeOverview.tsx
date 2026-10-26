@@ -15,7 +15,7 @@ import {
   type Status,
   typeLabels,
 } from '../domain/model';
-import { attentionReasons } from './caseAttention';
+import { attentionFlags } from './caseAttention';
 import { Badge, Due, Empty } from './common';
 
 const operationalStatus: Record<Status, string> = {
@@ -189,7 +189,9 @@ export function PrototypeOverview({ data, identity, open }: Props) {
                 data.institutions[app.institution_id]?.name ?? 'Demo institution';
               const stage = routeStage(app.status);
               const actions = allowedActions(app, identity);
-              const attention = attentionReasons(app, data.documents, data.claims, data.deficiencies);
+               const attention = attentionFlags(app, data.documents, data.claims, data.deficiencies);
+               const institutionFlags = attention.filter(item => item.owner === 'Institution');
+               const authorityFlags = attention.filter(item => item.owner !== 'Institution');
               return (
                 <>
                   <div className="prototype-preview-head">
@@ -222,20 +224,8 @@ export function PrototypeOverview({ data, identity, open }: Props) {
                     </div>
                   </dl>
 
-                  <div className="prototype-preview-block">
-                    <h3>Why it needs attention</h3>
-                    {attention.length > 0 ? (
-                      <ul>
-                        {attention.map(item => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="quiet">
-                        No recorded submission or evidence blocker; the case is waiting on the current authority.
-                      </p>
-                    )}
-                  </div>
+                   {institutionFlags.length > 0 && <div className="prototype-preview-block institution-work"><h3>What we need from the institution</h3><ul>{institutionFlags.map(item => <li key={item.id}><strong>{item.reason}</strong><span>Next: {item.next}</span>{item.nextEscalationAt && <small>Next escalation review · {new Date(item.nextEscalationAt).toLocaleDateString('en-IN')}</small>}</li>)}</ul></div>}
+                   <div className="prototype-preview-block"><h3>{institutionFlags.length ? 'What the authority must complete' : 'Why it needs attention'}</h3>{authorityFlags.length > 0 ? <ul>{authorityFlags.map(item => <li key={item.id}><strong>{item.reason}</strong><span>Owner: {item.owner} · Next: {item.next}</span>{item.nextEscalationAt && <small>Next escalation review · {new Date(item.nextEscalationAt).toLocaleDateString('en-IN')}</small>}</li>)}</ul> : <p className="quiet">No recorded submission or evidence blocker; the case is waiting on the current authority.</p>}</div>
 
                   <div className="prototype-preview-actions">
                     {actions.length > 0 && (
