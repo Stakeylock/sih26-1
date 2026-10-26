@@ -1,6 +1,6 @@
 import type {Application,DocumentRecord,Identity,Repository,Workspace} from '../domain/model';
 import type {NoticeImpact,ScopedDecision} from '../domain/approvals';
-import {documentEligible,noticeItems} from '../domain/approvals';
+import {deadlineRelaxed,documentEligible,noticeItems} from '../domain/approvals';
 import {sha256Hex,stableJson} from '../domain/integrity';
 
 const now=()=>new Date().toISOString();
@@ -67,7 +67,7 @@ export function demoGovernance(options:{state:()=>Workspace;actor:Identity;find:
     async reviewNotice(current,note,requestId=crypto.randomUUID()){await noticeMutation(requestId,{kind:'review',notice:current,note},()=>{const row=notice(current.id);if(row.status!=='draft'||row.revision!==current.revision||note.trim().length<10)throw new Error('Review the current draft source with an explanation.');Object.assign(row,{status:'reviewed',revision:row.revision+1,reviewed_by:actor.id,reviewed_at:now(),review_note:note.trim()});});},
     async previewNotice(current):Promise<NoticeImpact>{admin();const row=notice(current.id);if(row.status!=='reviewed'||row.effective_date>today())throw new Error('Review an effective notice before previewing.');const items=noticeItems(state(),row);return {notice_id:row.id,notice_revision:row.revision,items,impact_hash:await sha256Hex(stableJson({notice:row,items}))};},
     async adoptNotice(current,preview,note,requestId=crypto.randomUUID()){await noticeMutation(requestId,{kind:'adopt',notice:current,preview,note},async()=>{
-      const row=notice(current.id),fresh=await this.previewNotice(row);if(current.revision!==row.revision||preview.impact_hash!==fresh.impact_hash)throw new Error('Impact changed; preview again.');if(!fresh.items.length||note.trim().length<10)throw new Error('Eligible targets and an adoption reason required.');
+       const row=notice(current.id),fresh=await this.previewNotice(row);if(current.revision!==row.revision||preview.impact_hash!==fresh.impact_hash)throw new Error('Impact changed; preview again.');if(!fresh.items.length||note.trim().length<10)throw new Error('Eligible targets and an adoption reason required.');if(fresh.items.some(item=>!deadlineRelaxed(item.old_due_at,item.new_due_at)))throw new Error('Relax-only adoption would move a recorded deadline earlier.');
       for(const item of fresh.items){const previous=state().deadlines?.find(value=>value.subject_key===item.subject_key&&value.status==='active');if(previous&&previous.notice_id!==row.supersedes_notice_id)throw new Error('Explicitly supersede the notice owning the current deadline.');}
       const adoption='demo-adoption-'+crypto.randomUUID();
       for(const item of fresh.items){const app=find(item.application_id),previous=state().deadlines?.find(value=>value.subject_key===item.subject_key&&value.status==='active');if(previous){previous.status='superseded';for(const intent of state().reminder_intents??[])if(intent.deadline_id===previous.id&&intent.status==='pending')intent.status='superseded';}

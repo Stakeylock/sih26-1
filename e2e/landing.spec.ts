@@ -2,10 +2,10 @@ import {test,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {writeFileSync} from 'node:fs';
 
-test.beforeEach(async({page})=>{await page.emulateMedia({colorScheme:'light',reducedMotion:'no-preference'});await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:/The file moves/})).toBeVisible();});
+test.beforeEach(async({page})=>{await page.emulateMedia({colorScheme:'light',reducedMotion:'no-preference'});await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:/Evidence changes/})).toBeVisible();});
 test('the landing has one primary destination and a functional keyboard skip link',async({page})=>{
   await expect(page.getByRole('heading',{level:1})).toHaveCount(1);await page.keyboard.press('Tab');await expect(page.getByRole('link',{name:'Skip to content'})).toBeFocused();await page.keyboard.press('Enter');await expect(page.locator('main')).toBeFocused();await expect(page).toHaveURL('http://127.0.0.1:5174/');
-  await page.getByRole('button',{name:'Open demo workspace',exact:true}).click();await expect(page.getByRole('heading',{name:'Approval operations',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Open proof case',exact:true}).click();await expect(page.getByRole('heading',{name:'Cedar Technical Institute',exact:true})).toBeVisible();
 });
 test('motion pauses, resumes and stops after the evidence review without changing a case',async({page})=>{
   const originalData=await page.evaluate(()=>Object.entries(localStorage).filter(([key])=>key.startsWith('flowpilot-isolated-demo-')));const writes:string[]=[];page.on('request',request=>{if(['POST','PUT','PATCH','DELETE'].includes(request.method()))writes.push(new URL(request.url()).pathname);});
@@ -35,7 +35,7 @@ for(const width of [390,768,1450])test(`landing layout and contrast are accessib
   for(const theme of ['light','dark']){
     if(theme==='dark')await page.getByRole('button',{name:'Switch to dark theme'}).click();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
-    await expect(page.getByRole('button',{name:'Open demo workspace',exact:true})).toBeVisible();
+     await expect(page.getByRole('button',{name:'Open proof case',exact:true})).toBeVisible();
     const result=await new AxeBuilder({page}).analyze();expect(result.violations).toEqual([]);
     await page.screenshot({path:`../../work/flowpilot-landing-${width}-${theme}.png`,fullPage:true});
   }
@@ -69,5 +69,5 @@ test('the landing dataset line states only what the demo seed contains',async({p
 test('the landing headline follows the stored Hindi preference',async({page})=>{
   await page.evaluate(()=>localStorage.setItem('workspace-display-v1',JSON.stringify({scale:1,contrast:false,locale:'hi-IN'})));
   await page.reload();
-  await expect(page.locator('h1')).toContainText('फ़ाइल आगे बढ़ती है.');
+   await expect(page.locator('h1')).toContainText('साक्ष्य बदलता है.');
 });

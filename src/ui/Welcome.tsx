@@ -9,6 +9,9 @@ import './landing.css';
 const LandingJourney=lazy(()=>import('./LandingJourney').then(module=>({default:module.LandingJourney})));
 const dataset=await seed();
 const datasetLine=`${dataset.applications.length} synthetic dossiers · ${dataset.institutions.length} institutions · ${dataset.claims.length} claims · ${dataset.documents.length} evidence documents · ${dataset.events.length} recorded events`;
+const proofApplication=dataset.applications.find(application=>application.id==='demo-app-0')??dataset.applications[0];
+const proofInstitution=dataset.institutions.find(institution=>institution.id===proofApplication?.institution_id);
+const proofCase=proofApplication?{refNo:proofApplication.ref_no,institution:proofInstitution?.name??'Synthetic institution',title:proofApplication.title,status:proofApplication.status,claims:dataset.claims.filter(claim=>claim.application_id===proofApplication.id).length,documents:dataset.documents.filter(document=>document.application_id===proofApplication.id).length}:null;
 const stations:{role:Role;en:string;hi:string;blurb:string}[]=[
   {role:'institution',en:'Institution',hi:roleLabelsHi.institution,blurb:'Submit the record, answer corrections, keep evidence current.'},
   {role:'scrutiny_officer',en:'Scrutiny officer',hi:roleLabelsHi.scrutiny_officer,blurb:'Review claims against their evidence, one case at a time.'},
@@ -26,7 +29,7 @@ const modules:{route:string;label:string;icon:typeof LayoutDashboard}[]=[
   {route:'trust',label:'Trust Center',icon:Fingerprint},
   {route:'alerts',label:'Alerts',icon:Bell},
 ];
-export function Welcome({onEnter,onStory,onOpen,onEnterAs,theme,toggleTheme}:{onEnter:()=>void;onStory:()=>void;onOpen:(route:string)=>void;onEnterAs:(role:Role)=>void;theme:Theme;toggleTheme:()=>void}){
+export function Welcome({onEnter,onProofCase,onStory,onOpen,onEnterAs,theme,toggleTheme}:{onEnter:()=>void;onProofCase:()=>void;onStory:()=>void;onOpen:(route:string)=>void;onEnterAs:(role:Role)=>void;theme:Theme;toggleTheme:()=>void}){
   const t=makeT(useUiLang());
   return <div className="landing-page">
     <a className="landing-skip" href="#landing-content" onClick={event=>{event.preventDefault();document.getElementById('landing-content')?.focus();}}>{t('Skip to content','सामग्री पर जाएँ')}</a>
@@ -35,13 +38,13 @@ export function Welcome({onEnter,onStory,onOpen,onEnterAs,theme,toggleTheme}:{on
       <section className="landing-hero" aria-labelledby="landing-title">
         <div className="landing-copy">
           <p className="landing-eyebrow"><FolderTree size={14} aria-hidden="true"/>{t('An accountable path through approval','अनुमोदन प्रक्रिया में उत्तरदायी मार्ग')}</p>
-          <h1 id="landing-title"><span>{t('The file moves.','फ़ाइल आगे बढ़ती है.')}</span><span>{t('The record stays.','रिकॉर्ड पीछे रहता है.')}</span></h1>
-          <p className="landing-intro">Evidence, corrections, and the people responsible for the next step. One shared record from the first submission to the final review.</p>
+           <h1 id="landing-title"><span>{t('Evidence changes.','साक्ष्य बदलता है.')}</span><span>{t('Accountability remains.','जवाबदेही बनी रहती है.')}</span></h1>
+           <p className="landing-intro">Clauseway keeps evidence versions, human authority, decision rationale, and continuing obligations together in one verifiable record.</p>
           <p className="landing-tagline">{t('Policy into process.','नीति से प्रक्रिया तक।')}</p>
-          <div className="landing-actions"><button type="button" className="landing-primary" onClick={onEnter}>{t('Open demo workspace','डेमो कार्यक्षेत्र खोलें')} <ArrowRight size={17} aria-hidden="true"/></button><button type="button" className="landing-tour" onClick={onStory}><Play size={15} aria-hidden="true"/>{t('Take a guided tour','निर्देशित टूर लें')}</button></div>
+           <div className="landing-actions"><button type="button" className="landing-primary" onClick={onProofCase}>{t('Open proof case','प्रमाण केस खोलें')} <ArrowRight size={17} aria-hidden="true"/></button><button type="button" className="landing-tour" onClick={onStory}><Play size={15} aria-hidden="true"/>{t('Watch the guided path','निर्देशित मार्ग देखें')}</button></div>
           <p className="landing-disclosure">{t('SIH26262 prototype. Synthetic cases only.','SIH26262 प्रोटोटाइप. केवल सिंथेटिक केस.')}<br/>{t('No real institutional data or approval decisions.','कोई वास्तविक संस्थागत डेटा या अनुमोदन निर्णय नहीं.')}</p>
-          <ul className="landing-proof" aria-label={t('Core workflow capabilities','मुख्य कार्य-प्रवाह क्षमताएँ')}><li><FileCheck2 size={16} aria-hidden="true"/>{t('Versioned evidence','संस्करणबद्ध साक्ष्य')}</li><li><ShieldCheck size={16} aria-hidden="true"/>{t('Human review','मानवीय समीक्षा')}</li><li><History size={16} aria-hidden="true"/>{t('Recorded history','रिकॉर्ड किया इतिहास')}</li></ul>
-        </div><Suspense fallback={<div className="landing-journey-loading" role="status">{t('Loading review illustration…','समीक्षा चित्रण लोड हो रहा है…')}</div>}><LandingJourney/></Suspense>
+           <ul className="landing-proof" aria-label={t('What the proof case shows','प्रमाण केस क्या दिखाता है')}><li><FileCheck2 size={16} aria-hidden="true"/>{t('Original evidence retained','मूल साक्ष्य सुरक्षित')}</li><li><ShieldCheck size={16} aria-hidden="true"/>{t('Authority before action','क्रिया से पहले अधिकार')}</li><li><History size={16} aria-hidden="true"/>{t('Hash-linked record','हैश से जुड़ा रिकॉर्ड')}</li></ul>
+         </div><Suspense fallback={<div className="landing-journey-loading" role="status">{t('Loading proof case…','प्रमाण केस लोड हो रहा है…')}</div>}><LandingJourney proof={proofCase}/></Suspense>
       </section>
       <section className="landing-continuity" aria-labelledby="landing-continuity-title">
         <div className="landing-section-heading"><p className="landing-eyebrow">{t('How the record holds up','रिकॉर्ड ऐसे टिकता है')}</p><h2 id="landing-continuity-title">{t('A correction should move the case forward, not erase its past.','संशोधन केस आगे बढ़ाए, पीछे का इतिहास मिटाए नहीं.')}</h2></div>

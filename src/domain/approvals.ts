@@ -45,6 +45,12 @@ export interface ReminderIntent {
 export interface NoticeImpactItem {subject_key:string;application_id:string;obligation_id:string|null;reference:string;old_due_at:string|null;new_due_at:string;trigger_at:string|null;revision:number}
 export interface NoticeImpact {notice_id:string;notice_revision:number;items:NoticeImpactItem[];impact_hash:string}
 
+export function deadlineRelaxed(oldDue:string|null,newDue:string){
+  if(!oldDue)return true;
+  const oldTime=Date.parse(oldDue),newTime=Date.parse(newDue);
+  return Number.isFinite(oldTime)&&Number.isFinite(newTime)&&newTime>=oldTime;
+}
+
 export function academicYear(start:number){return `${start}–${String(start+1).slice(-2)}`;}
 export function documentEligible(document:Pick<DocumentRecord,'scan_status'|'sha256'|'subject_institution_id'|'validity_reviewed_at'|'validity_reviewed_by'|'issue_date'|'validity_mode'|'expires_on'>,today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(Date.now())){
   if(document.scan_status!=='clean'||!document.sha256||!document.subject_institution_id||!document.validity_reviewed_at||!document.validity_reviewed_by)return false;

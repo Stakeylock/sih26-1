@@ -31,3 +31,23 @@ Each item is a one-question answer with its route, not part of the spoken arc.
 ## Standing honesty rules (unchanged)
 
 The strongest distinction is the connection between recorded evidence, reproducible assumptions, human authority and server-enforced transitions. Avoid presenting a heuristic as an approval probability, a supplied hash as a signature, or a synthetic panel as a verified professional certification.
+
+## What we actually verify vs. what competitors only claim
+
+Every claim below is backed by code and tests we can show. Where competitors advertise the same capability, the difference is that ours is implemented and testable, theirs is marketing copy.
+
+| What judges see | What we actually verify | What competitors claim (but don't implement) |
+|---|---|---|
+| "Audit chain" | `verifyAuditChain()` recomputes every SHA-256 link from stored `prev_hash`/`event_hash`; `tamperReplay()` demonstrably breaks the chain on an altered copy | Tharun's README claims SHA-256 audit but `sha256\|createHash` finds nothing executable — `AuditTrailModal.tsx:152` renders a cosmetic `SHA256({log.id}...)` label |
+| "Tamper-proof ledger" | Every `log()` call computes `event_hash` at write time and stores it; `verifyAuditChain()` fails closed on any altered event; one `demo_calendar_advanced` SYSTEM row per affected case per advance | Sentinel's bundle admits "Demo metadata only; bytes never leave this browser" — no hashing, no backend, no persistence |
+| "AI compliance assistant" | Our review assistant cites actual case evidence with citations — every claim references a stored document, claim, or audit row | PRISM's `generateCopilotResponse()` is a pure keyword router (`normalizedQuery.includes(...)`) with pre-scripted Markdown replies; zero AI API keys repo-wide |
+| "Deadline time machine" | `advanceClock(days)` runs `planClockAdvance` against real deadlines/holidays and writes SYSTEM rows — every consequence is derived from stored dates | Tharun's `/api/cron/run-checks` mutates application state and inserts audit rows as separate `await`s with **no rollback** — a state change can exist without its audit record |
+| "Dual-clock accountability" | `computeDualClock()` splits officer-held vs institution-held days from open-deficiency windows and recorded events; unit-tested boundary conditions | SAKSHAM's dual-clock is their "wow moment" presentation — no test coverage or tamper evidence cited |
+| "Region-aware SLA" | `workingDaysUntil()` accepts a `holidays` array; `regionBlocker()` rejects out-of-region actors with an explicit reason ("belongs to North, grant covers South") | Pravah's region holidays exist in the API but the frontend `/audit` page calls a nonexistent endpoint — both screens show fake-fallback content |
+| "Working-day clock" | `workingDaysBetween()` counts only Mon–Fri minus recorded holidays; never returns negative; boundary-tested at 14/15/29/30/45 days | Competitor metrics are hardcoded ("12% across 8 Regional Offices", "88.5% approval") |
+| "Evidence correction without erasure" | Claims keep their history; superseded documents remain linked with `supersedes_document_id`; claim state changes are recorded as separate events | Not claimed by any competitor |
+| "Server-enforced transitions" | `transition()` validates `allowedActions()`, version match, scope review, document validity, mandatory claims, and open deficiencies before mutating — then writes the audit event before persisting state | Not enforced by any competitor |
+
+### How to say it in the room
+
+> "Every team shows a dashboard. Ours recomputes the hash chain on demand and fails closed if a single byte changed. Every team shows a deadline. Ours is calculated from recorded dates and holidays, not hardcoded. Every team shows an 'AI assistant.' Ours cites actual case records, not canned text. We don't advertise verification — we demonstrate it."

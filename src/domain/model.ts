@@ -31,7 +31,7 @@ export interface TemplateDefinition {
 export interface Template extends Omit<PolicyRevision,'definition'> { id: string; app_type: AppType; version: number; status: string; name: string; definition: TemplateDefinition }
 export interface Institution { id: string; owner_id: string; name: string; aicte_ref: string; region: string; state: string }
 export interface Application {
-  academic_year_start?:number|null;scope_revision?:number;scope_reviewed_revision?:number|null;scope_reviewed_by?:string|null;scope_review_note?:string|null;
+  academic_year_start?:number|null;scope_revision?:number;scope_reviewed_revision?:number|null;scope_reviewed_by?:string|null;scope_review_note?:string|null;paused_remaining_working_days?:number|null;paused_at?:string|null;pause_reason?:string|null;
   id: string; ref_no: string; title: string; owner_id: string; institution_id: string; app_type: AppType; status: Status;
   region: string; version: number; template_version: number; template_snapshot: TemplateDefinition;
   form_data: Record<string, string>; evc_required: boolean; assigned_officer: string | null;
