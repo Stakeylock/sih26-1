@@ -386,6 +386,7 @@ test('supporting desks keep task-specific composition',async({page})=>{
   await expect(firstReceipt).toContainText('Synthetic demonstration event');
 });
 test('every desktop route has no serious automated accessibility violations',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
   for(const name of ['Overview','Applications','Approval routes','Verification visits','Compliance','Alerts & escalations','Reports','Trust Center','Audit logs','Settings']){
     await openDesk(page,name);
     await expect(page.locator('main h1')).toHaveCount(1);
@@ -482,6 +483,7 @@ test('alerts offer queue navigation and route visuals expose a return branch',as
   expect(zeroFill).toBe('0px');
 });
 test('claim ledger shows nine claims and stays within a 390px viewport',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
   await openDesk(page,'Applications');
   await openCase(page,'DEMO-2026-1001');
   await expect(page.getByRole('heading',{name:'Claim ledger',exact:true})).toBeVisible();

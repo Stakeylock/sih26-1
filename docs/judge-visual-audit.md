@@ -134,6 +134,7 @@ Implementation note (2026-10-27):
 - Testing exposed a second cause: `.page-body`’s `page-in` animation retained an identity `transform` through `animation-fill-mode:both`, making `.page-body` the containing block for fixed descendants. The open panel measured `y + height = 5734.8px` at `390x844` despite `position:fixed`.
 - `src/styles.css:248-249` now fades opacity only, so fixed positioning resolves against the viewport. Verified at `390x844` and `320x700`: the panel stays inside the viewport and document width does not overflow.
 - Regression coverage: `e2e/judge-audit-fixes.spec.ts` (`deadline explanation stays inside narrow viewports`).
+- Follow-up (same day): the opacity-only fade blends page colors while it runs, so axe scans fired immediately after navigation raced the 0.3s fade and reported transient contrast violations. The app already disables every animation under `prefers-reduced-motion` (`src/styles.css:18`, `.page-body` at `:392`), so the scan specs pin that motion preference (`e2e/demo.spec.ts`, `e2e/recon-operations.spec.ts`, `e2e/virtualClock.spec.ts`); settled-state scans are unchanged in strength. Also fixed: the "Open claim corrections" text-button introduced in the action-rail fix had `--teal` text (2.5:1) on the dark `.dossier-action-card`; scoped to `#fff` in both themes (`src/styles.css`). Full suite now 103/103 e2e, 311/311 unit tests, build passing.
 
 ---
 
