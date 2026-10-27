@@ -30,6 +30,7 @@ test('compliance rows derive urgency from the shifted review clock and stay hone
   await expect(page.locator('.demo-lab-clock')).not.toContainText('+30 calendar days');
 });
 test('shifted calendar state survives reload and the demo lab stays axe-clean',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
   await openDemoCalendar(page);
   await page.getByRole('button',{name:'+7 days',exact:true}).click();
   await expect(page.locator('.demo-lab-clock')).toContainText('+7 calendar days');
