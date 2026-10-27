@@ -1079,6 +1079,10 @@ tr[data-selected="true"] .due{color:#57697c}
 
 /* ── Synthetic document preview ───────────────────────────────────────── */
 .doc-preview{margin:0 0 14px}
+.doc-preview-object{display:block;width:100%;height:330px;border:1px solid var(--rule,#e2e8f0);border-radius:0 0 6px 6px;background:#fff}
+.doc-preview-object:focus-visible{outline:2px solid var(--route,#0c8272);outline-offset:2px}
+.doc-preview-download{margin:8px 0 0}
+.doc-preview-expired-note{margin:8px 0 0;color:#8a5a12;font-size:calc(10px * var(--text-scale,1))}
 .doc-preview-banner{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:6px 10px;border:1px solid #f0ddb5;border-bottom:none;border-radius:6px 6px 0 0;background:#fff7e8;color:#7a4f0e}
 .doc-preview-banner strong{font-size:calc(10px * var(--text-scale,1));letter-spacing:.14em}
 .doc-preview-banner span{font-size:calc(10px * var(--text-scale,1))}

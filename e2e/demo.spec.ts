@@ -637,3 +637,25 @@ test('relationship prototype threads the claim evidence correction review chain'
   await expect(shell).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('watermarked sample PDFs preview as object URLs and clean samples download',async({page})=>{
+  await openCase(page,'DEMO-2026-1001');
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
+  await page.getByRole('button',{name:'fire_safety_certificate.pdf',exact:true}).click();
+  const preview=page.locator('.doc-preview');
+  await expect(preview).toHaveAccessibleName('Watermarked synthetic sample preview of fire_safety_certificate.pdf');
+  const object=preview.locator('object');
+  await expect(object).toBeVisible();
+  await expect(object).toHaveAttribute('type','application/pdf');
+  await expect(object).toHaveAttribute('data',/^blob:/);
+  await object.focus();
+  expect(await object.evaluate(element=>document.activeElement===element)).toBe(true);
+  await expect(preview.locator('a[download]')).toHaveCount(0);
+  await expect(preview).toContainText('download is withheld');
+  const downloadEvent=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download fire_safety_certificate_valid.pdf',exact:true}).click();
+  const download=await downloadEvent;
+  expect(download.suggestedFilename()).toBe('fire_safety_certificate_valid.pdf');
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Document downloaded.');
+});

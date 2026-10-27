@@ -1,0 +1,62 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 2076 >>
+stream
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 36 110 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 216 110 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 396 110 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 36 290 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 216 290 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 396 290 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 36 470 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 216 470 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 396 470 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 36 650 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 216 650 Tm (SAMPLE) Tj ET
+0.88 g BT /F2 46 Tf 0.866 0.5 -0.5 0.866 396 650 Tm (SAMPLE) Tj ET
+0 g BT /F2 15 Tf 56 790 Td (SYNTHETIC SAMPLE ó NOT AN OFFICIAL DOCUMENT) Tj ET
+0.35 g BT /F1 8.5 Tf 56 771 Td (Watermarked synthetic sample generated locally by scripts/generate-sample-pdfs.mjs) Tj ET
+0.75 G 0.75 w 56 763 m 539 763 l S
+0.15 g BT /F1 10 Tf 56 738 Td (Case reference: DEMO-2026-1010 \(synthetic demo case\)) Tj ET
+0.15 g BT /F1 10 Tf 56 722 Td (Document type: Fire Safety Certificate) Tj ET
+0.15 g BT /F1 10 Tf 56 706 Td (File: fire_safety_certificate.pdf) Tj ET
+0 g BT /F2 10.5 Tf 56 674 Td (Fire safety certificate \(synthetic content\)) Tj ET
+0.2 g BT /F1 9.5 Tf 56 657 Td (Certificate number: not recorded on the case record) Tj ET
+0.2 g BT /F1 9.5 Tf 56 642 Td (Synthetic issuing authority: not recorded on the case record) Tj ET
+0.2 g BT /F1 9.5 Tf 56 627 Td (Validity end date on the case record: not recorded) Tj ET
+0.2 g BT /F1 9.5 Tf 56 612 Td (This generated sample certifies nothing; the case record, not this file, drives review.) Tj ET
+0.75 G 0.75 w 56 74 m 539 74 l S
+0.45 g BT /F1 7.5 Tf 56 58 Td (Generated locally - deterministic bytes - SHA-256 recorded in src/data/sample-pdfs.json) Tj ET
+0.45 g BT /F1 7.5 Tf 56 46 Td (SYNTHETIC SAMPLE ó not an official document. No real person, institution, seal or authority appears in this file.) Tj ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000257 00000 n 
+0000000354 00000 n 
+0000000456 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+2583
+%%EOF
