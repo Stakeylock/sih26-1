@@ -32,6 +32,8 @@ Each item is a one-question answer with its route, not part of the spoken arc.
 
 - **How is this different from the dual clocks and deadline time machines other pitches showed?** One recorded clock feeds everything: the consequence report, the deadline cells, the compliance chips and the planner all read the same working-day clock built from the case's own dates and responsibility attribution, and every demo-calendar advance writes a SYSTEM row to each affected case's audit trail - the simulation is itself auditable. Route: Demo lab -> Demo calendar -> Audit logs.
 
+- **Another demo ran a load test at 15,000 applications. Did you?** Yes - ours is a graded run against 10,000 applications/obligations with 25, 50 and 100 read+write virtual clients: 553 rps at 25 clients falling to ~523 rps at 100, p95 page reads 89-273 ms, zero errors at every level, max 25 DB connections and no observed lock waiters. It is single-machine synthetic data too, like theirs. Full results with per-file SHA-256 provenance: `docs/scale-results.json`, context in `docs/scalability-audit.md`.
+
 ## Standing honesty rules (unchanged)
 
 The strongest distinction is the connection between recorded evidence, reproducible assumptions, human authority and server-enforced transitions. Avoid presenting a heuristic as an approval probability, a supplied hash as a signature, or a synthetic panel as a verified professional certification.
@@ -56,3 +58,11 @@ Every claim below is backed by code and tests we can show. Where competitors adv
 ### How to say it in the room
 
 > "Every team shows a dashboard. Ours recomputes the hash chain on demand and fails closed if a single byte changed. Every team shows a deadline. Ours is calculated from recorded dates and holidays, not hardcoded. Every team shows an 'AI assistant.' Ours cites actual case records, not canned text. We don't advertise verification — we demonstrate it."
+
+## Competitor recon addendum (2026-10-27, refreshed after pulls)
+
+Two repos gained upstream commits late on Oct 26; pulled and inspected. bhavinwagh22/SIH_2026 has nothing new.
+
+- **SIH-demo-source-code (Team GeoLogics), 5 commits:** load test at 15,000 applications, SIH 2026 presentation, product rename, handbook link, member credits. The load test is real and honestly documented (`api/scripts/load-test.ts`, `docs/LOAD_TEST.md`): bulk-copies to 15k applications, times two engine cycles (140s first, 74s second with **0 new alerts** - their unique-key idempotency holds at scale), and read-screen percentiles under 20 concurrent requests. Their limitations section says plainly: single-machine test on synthetic data, not a production benchmark.
+- **Integrity warning - they now have a real hash chain too:** `api/src/lib/audit.ts` implements write-time `prevHash + payload` SHA-256 per `chainKey` under an advisory lock, a `verifyChains()` that names the broken row, and a `demo-tamper.ts` script that alters one row and shows detection. Genuine parity with our tamper-evident audit demo. In the room, do not lean on "every team" rhetoric for the chain. If a judge says the other demo verified the same, pivot to our remaining edges: recorded checkpoint replay ("Was that what the record said at the time?"), the evidence passport on each document, the prompt-injection guard, and server-enforced transitions with claim/deficiency gating.
+- **Anumitra, 5 commits:** recorded product gate + bounded SIH handoff, accessible report cells, deterministic browser workflow fixtures, scoped master imports, renewal guidance. Their verification gate is ours-grade discipline: `docs/evidence/product-2026-10-26/full-3/verification.json` binds a gitHead + source digest + per-file SHA-256 to the run's checks - the same evidence-bundle pattern we use. Their audit trail remains plain append-only Prisma rows with no hash chaining anywhere (the only `createHash` in the product hashes uploaded file bytes, `apps/api/src/index.ts:850`) and no in-product tamper detection. Their history view also strips escalation `recipientIds` from evidence for viewers outside the institution - a privacy trim worth considering for ours.
