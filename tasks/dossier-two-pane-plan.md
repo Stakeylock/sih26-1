@@ -71,8 +71,16 @@ ext-step.spec.ts not-contains stop. Gates: tsc clean, build 32 chunks, e2e 105/1
 - A11y fixed during check: axe color-contrast on the dark card (`--ink` is light in dark theme) and strict-mode `.dossier-action-card` uniqueness (section uses its own class, not `.dossier-action-card`).
 - Gates: tsc clean, build 32 chunks, demo.spec 39/39, full e2e 106/106, vitest batches green.
 
-## Checkpoint 3 — pending
+## Checkpoint 3 — done (2026-10-27)
 
-- Prune per-tab repeated summaries (each tab removes its twin summary row); history/trust integrity card stays pane-A-footer only.
-- Re-run vitest + full e2e + axe; screenshots at 390px/768px/1450px.
+- Prune review: inspected all five tabs (evidence/review/history/scope/policy). Checkpoint 1 already removed the duplicate summaries (readiness scorecards ×2, custody/status duplicate headers, panel-footnote paste, decorative section titles). Each tab's remaining count line (documents/fields/required docs · EVENTS · REQUIRED CHECKS) is page-specific information, not a twin of pane A or another tab — nothing removable without losing information. History/trust integrity card remains pane-A-footer only.
+- Gates re-run: tsc clean, build 32 chunks, full e2e 106/106 (after all src edits), demo.spec 39/39, vitest batches green.
+- Viewports verified at 390px/768px/1450px against the live build: scrollWidth === innerWidth at all three widths (no horizontal overflow); screenshots captured to /tmp/dossier-{390,768,1450}.png (not committed).
 
+Checkpoint 3 is the last dossier-plan item; no further dossier-plan work remains.
+
+
+
+## Cross-slice note
+
+- The deferred per-step persona controller is implemented as its own slice (`tasks/persona-controller-slice-plan.md`) and rendered in the dossier rail; it presents computed `allowedActions`/`nextStep` state only, with no backend or entitlement change.
