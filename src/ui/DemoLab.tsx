@@ -122,6 +122,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         </li>)}
       </ol>
       <p className="support-footnote">Arming reads only the loaded workspace. Review actions are yours to record back in the opened surface.</p>
+      <p className="support-footnote demo-lab-scope-note">"Not armed" can mean your current preview role cannot see those records, not that the capability is missing. Switching this page's workspace identity back to "National administrator" restores the full showcase; each step always opens under its own role.</p>
     </section>
     <section className="support-surface demo-lab-rehearsal">
       <div className="support-surface-heading">
