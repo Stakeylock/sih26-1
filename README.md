@@ -2,6 +2,19 @@
 
 A locally editable React/TypeScript application continuing the existing Baseline database and design-tool design. All accounts, evidence and decisions in this workspace are synthetic. This is not an Institutional Review service and is not approved for real regulatory work.
 
+## Run the whole demo
+
+One-time setup (requires Docker Desktop and the Supabase CLI), then start everything:
+
+```text
+npm run local:setup   # once: provisions and migrates the local Supabase stack
+npm run local:start   # starts the stack, the advisory service and both frontends
+```
+
+This brings up Supabase (http://127.0.0.1:55321), the local advisory service on 127.0.0.1:8787, the connected workspace on 5173 and the isolated demo on 5174.
+
+Workload requirement: connected mode requires the advisory service; the demo on 5174 works standalone, but the document pre-check needs that same service.
+
 ## 25 October implementation
 
 The app now includes source-pinned scenarios, actual-history exploration, optional 3D evidence navigation, expert reservations, reviewed workflow publication/adoption, independent recommendations and delivery attempt history. [Implementation inventory and validation](docs/implementation notes) · [Judges’ walkthrough](docs/demo walkthrough). The local Auth/Storage/REST stack and authenticated LangGraph service have been exercised with fresh synthetic fixtures. The nested n8n runtime remains disabled because of its critical dependency findings.
@@ -15,7 +28,7 @@ The app now includes source-pinned scenarios, actual-history exploration, option
 - With Docker Desktop running, run `npm run local:start` or `npm run local:start`. The launcher starts an isolated Clauseway stack, applies checked migrations, provisions synthetic accounts, and starts both frontends and the API. Install dependencies first with `npm ci` if needed.
 - The connected app now uses the ignored `.env.connected.local`, generated from the local stack. The existing hosted `.env.local` is preserved and is not used by this local connected mode.
 - The connected app requires explicitly provisioned accounts. Integration accounts have randomly generated passwords in the ignored `.env.integration.local` file. No credentials are included in this README, source archive, or reports. The connected UI has no role selector.
-- In the isolated demo, use **Preview as** to explore the five roles. **Ctrl/Cmd+K** opens workspace search. Its seed documents are synthetic references without downloadable bytes; newly selected files add metadata only.
+- In the isolated demo, use **Preview as** to explore the five roles. **Ctrl/Cmd+K** opens workspace search. Its seed documents are watermarked synthetic samples served from `public/samples/` (nothing personal or official); newly selected files add metadata only.
 
 ## Architecture
 
