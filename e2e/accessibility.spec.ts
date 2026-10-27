@@ -59,4 +59,6 @@ test('data tables name their columns with explicit header scope',async({page})=>
   await page.goto('/#operations');
   await scoped(page.getByRole('table',{name:'Recorded delivery lifecycle for selected case'}));
   await scoped(page.getByRole('table',{name:'Working days since submission, counted from recorded dates only'}));
+  await page.goto('/#workflows');
+  await scoped(page.getByRole('table',{name:'Route coverage and gating roles'}));
 });
