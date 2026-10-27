@@ -573,6 +573,45 @@ test('demo lab guide arms live steps and switches roles into the work surface',a
   expect(errors).toEqual([]);
 });
 
+test('judge showcase opens the strongest live proof surfaces',async({page})=>{
+  await openDemoLab(page);
+  const showcase=page.locator('.demo-showcase');
+  await expect(showcase).toContainText('Start with the proof, then follow the record.');
+  await expect(showcase.getByRole('button',{name:'Trace the evidence map'})).toHaveClass(/demo-showcase-featured/);
+  await showcase.getByRole('button',{name:'Trace the evidence map'}).click();
+  await expect(page).toHaveURL(/#analysis/);
+  await expect(page.getByRole('button',{name:'Hide 3D evidence map'})).toBeVisible();
+  await page.goto('/#demo-lab');
+  await page.locator('.demo-showcase').getByRole('button',{name:'Open the proof case'}).click();
+  await expect(page).toHaveURL(/#case\/demo-app-0/);
+  await page.goto('/#demo-lab');
+  await page.locator('.demo-showcase').getByRole('button',{name:'Verify the audit chain'}).click();
+  await expect(page).toHaveURL(/#trust/);
+  await page.goto('/#demo-lab');
+  await page.locator('.demo-showcase').getByRole('button',{name:'Inspect continuing obligations'}).click();
+  await expect(page).toHaveURL(/#compliance/);
+});
+
+test('attention cues mark only real unresolved records and quiet under reduced motion',async({page})=>{
+  await page.goto('/#compliance');
+  await expect(page.getByRole('heading',{name:'Compliance monitoring',exact:true})).toBeVisible();
+  const overdue=page.locator('tbody tr.attention-choreography-overdue');
+  await expect(overdue.filter({hasText:'Synthetic safety-document follow-up'})).toHaveCount(1);
+  const ahead=page.locator('tbody tr').filter({hasText:'Synthetic land-document follow-up'});
+  await expect(ahead).toHaveCount(1);
+  expect(await ahead.first().getAttribute('class')??'').not.toContain('attention-choreography');
+  await page.goto('/#alerts');
+  await expect(page.getByRole('heading',{name:'Escalation desk',exact:true})).toBeVisible();
+  const unread=page.locator('.alert-row.attention-choreography-unread');
+  await expect(unread).toHaveCount(3);
+  await expect(page.locator('.alert-row.read.attention-choreography-unread')).toHaveCount(0);
+  expect(await unread.first().evaluate(el=>getComputedStyle(el).animationName)).toContain('attention-choreography-pulse');
+  await unread.first().getByRole('button',{name:'Mark read',exact:true}).click();
+  await expect(page.locator('.alert-row.attention-choreography-unread')).toHaveCount(2);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  expect(await page.locator('.alert-row.attention-choreography-unread').first().evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
+});
+
 
 test('relationship prototype threads the claim evidence correction review chain',async({page})=>{
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
