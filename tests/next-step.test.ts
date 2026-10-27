@@ -1,7 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {seed} from '../src/data/demo';
 import {nextStep,type NextStepContext} from '../src/domain/nextStep';
-import type {Application,Obligation} from '../src/domain/model';
+import type {Application,DocumentRecord,Obligation} from '../src/domain/model';
 
 const workspace=seed();
 const app=(id:string,extra:Partial<Application>={}):Application=>{
@@ -14,6 +14,11 @@ const context=(application:Application,extra:Partial<NextStepContext>={}):NextSt
   deficiencies:workspace.deficiencies.filter(item=>item.application_id===application.id),
   obligations:workspace.obligations.filter(item=>item.application_id===application.id),
   visits:workspace.visits.filter(item=>item.application_id===application.id),
+  ...extra,
+});
+const documentFor=(application:Application,extra:Partial<DocumentRecord>={}):DocumentRecord=>({
+  ...workspace.documents[0],
+  application_id:application.id,
   ...extra,
 });
 
@@ -90,5 +95,33 @@ describe('next step',()=>{
     const rejected=app('demo-app-10');
     expect(nextStep(approved,context(approved))).toMatchObject({kind:'closed',owner:'No workflow transition',due:null});
     expect(nextStep(rejected,context(rejected))).toMatchObject({kind:'closed',owner:'No workflow transition',due:null});
+  });
+
+  it('names renewal guidance when a closed case records an expired document',()=>{
+    const application=app('demo-app-8');
+    const expired=documentFor(application,{id:'test-expired',doc_type:'Fire Safety Certificate',file_name:'expired.pdf',expires_on:'2020-01-01',scan_status:'clean'});
+    const result=nextStep(application,context(application,{documents:[expired]}));
+    expect(result).toMatchObject({kind:'renewal',owner:'Institution',due:null,source:'Recorded document validity'});
+    expect(result.obligationId).toBeUndefined();
+    expect(result.action).toContain('Renew the expired Fire Safety Certificate');
+    expect(result.action).toContain('decision is unchanged');
+    expect(result.action).toContain('does not accept replacement evidence');
+    expect(result.detail).toContain('2020-01-01');
+    expect(result.detail).toContain('No renewal deadline is recorded');
+  });
+
+  it('leaves renewal guidance behind an open continuing obligation',()=>{
+    const application=app('demo-app-5');
+    const expired=documentFor(application,{id:'test-expired',doc_type:'Fire Safety Certificate',expires_on:'2020-01-01'});
+    const result=nextStep(application,context(application,{documents:[...context(application).documents,expired]}));
+    expect(result.kind).toBe('obligation');
+  });
+
+  it('does not ask for renewal when the same document type has a current record',()=>{
+    const application=app('demo-app-8');
+    const expired=documentFor(application,{id:'test-expired',doc_type:'Fire Safety Certificate',expires_on:'2020-01-01'});
+    const current=documentFor(application,{id:'test-current',doc_type:'Fire Safety Certificate',expires_on:'2028-01-01'});
+    const result=nextStep(application,context(application,{documents:[expired,current]}));
+    expect(result.kind).toBe('closed');
   });
 });

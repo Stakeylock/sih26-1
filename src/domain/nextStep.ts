@@ -1,6 +1,7 @@
+import {expiryState} from './expiry';
 import {missingInputs,roleLabels,type Application,type Deficiency,type DocumentRecord,type Obligation,type Visit} from './model';
 
-export type NextStepKind='submission'|'correction'|'scrutiny'|'visit'|'decision'|'obligation'|'closed';
+export type NextStepKind='submission'|'correction'|'scrutiny'|'visit'|'decision'|'obligation'|'renewal'|'closed';
 
 export interface NextStepContext {
   documents:DocumentRecord[];
@@ -43,6 +44,14 @@ function currentVisit(app:Application,context:NextStepContext){
   return context.visits
     .filter(item=>item.application_id===app.id&&item.planning_state!=='cancelled')
     .sort((left,right)=>dateValue(right.scheduled_for)-dateValue(left.scheduled_for))[0]??null;
+}
+
+function renewalDocument(app:Application,context:NextStepContext){
+  const documents=context.documents.filter(item=>item.application_id===app.id);
+  const currentTypes=new Set(documents.filter(item=>expiryState(item.expires_on)!=='expired').map(item=>item.doc_type));
+  return documents
+    .filter(item=>expiryState(item.expires_on)==='expired'&&!currentTypes.has(item.doc_type))
+    .sort((left,right)=>dateValue(left.expires_on)-dateValue(right.expires_on))[0]??null;
 }
 
 export function nextStep(app:Application,context:NextStepContext):CaseNextStep {
@@ -136,6 +145,18 @@ export function nextStep(app:Application,context:NextStepContext):CaseNextStep {
       source:'Recorded continuing obligation',
       detail:obligation.required_evidence?.join(', ')??null,
       obligationId:obligation.id,
+    };
+  }
+
+  const expired=renewalDocument(app,context);
+  if(expired){
+    return {
+      kind:'renewal',
+      owner:roleLabels.institution,
+      action:`Renew the expired ${expired.doc_type}. The recorded decision is unchanged; this closed dossier is read-only and does not accept replacement evidence.`,
+      due:null,
+      source:'Recorded document validity',
+      detail:`Expired on ${expired.expires_on}. No renewal deadline is recorded.`,
     };
   }
 

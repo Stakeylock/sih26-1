@@ -30,7 +30,7 @@ test('a closed case without an open condition stays closed',async({page})=>{
 test('the closed-case queue names the continuing owner and action',async({page})=>{
   await page.goto('/#overview');
   await page.locator('.scope-selector').getByRole('button',{name:'Closed',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Continuing conditions'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Post-decision follow-ups'})).toBeVisible();
   const card=page.locator('.dispatch-case').filter({hasText:'DEMO-2026-1006'});
   await expect(card).toContainText('Obligation open');
   await expect(card).toContainText('Institution');

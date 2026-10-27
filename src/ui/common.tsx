@@ -20,7 +20,7 @@ export function Due({app,data}:{app:Application;data?:DeadlineContext}){
   const remaining=days===null?null:days<0?`${-days} working day${-days===1?'':'s'} overdue`:days===0?'0 working days remaining (due today)':`${days} working day${days===1?'':'s'} remaining`;
   const source=derivation.source;
   return <details className="due-explain">
-    <summary className={days!==null&&days<=3?'due urgent':'due'} aria-label={`${aria}. Open how this target was derived.`}><Clock3 size={13} aria-hidden="true"/>{text}<ChevronDown size={11} aria-hidden="true" className="due-explain-caret"/></summary>
+    <summary className={days!==null&&days<=3?'due urgent':'due'}><Clock3 size={13} aria-hidden="true"/>{text}<span className="sr-only">{aria===text?'. ':`. ${aria}. `}Open how this target was derived.</span><ChevronDown size={11} aria-hidden="true" className="due-explain-caret"/></summary>
     <div className="due-explain-panel">
       <strong>Deadline derivation</strong>
       <dl>

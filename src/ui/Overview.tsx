@@ -18,7 +18,7 @@ import {PolicyChangesBanner} from './PolicyChangesBanner';
 import './integrity.css';
 type ChainCheck={state:'checking'}|{state:'done';scope:'priority'|'all';intact:number;total:number;events:number;broken:{ref:string;at:number|null}|null}|{state:'error';message:string};
 
-function nextDue(app:Application,step:CaseNextStep){const days=workingDaysUntil(step.due??app.sla_due_at,undefined,HOLIDAYS);const subject=step.kind==='obligation'?'Obligation':step.kind==='correction'?'Correction':step.kind==='visit'?'Visit':null;const prefix=subject?`${subject} `:'';if(days===null)return 'No recorded target';if(days<0)return `${prefix}overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return `${prefix}due today`;return `${prefix}due in ${days} day${days===1?'':'s'}`;}
+function nextDue(app:Application,step:CaseNextStep){if(step.kind==='renewal')return 'No renewal deadline recorded';const days=workingDaysUntil(step.due??app.sla_due_at,undefined,HOLIDAYS);const subject=step.kind==='obligation'?'Obligation':step.kind==='correction'?'Correction':step.kind==='visit'?'Visit':null;const prefix=subject?`${subject} `:'';if(days===null)return 'No recorded target';if(days<0)return `${prefix}overdue by ${Math.abs(days)} day${Math.abs(days)===1?'':'s'}`;if(days===0)return `${prefix}due today`;return `${prefix}due in ${days} day${days===1?'':'s'}`;}
 function dueRank(app:Application,step:CaseNextStep){const value=step.due??app.sla_due_at;if(!value)return Number.POSITIVE_INFINITY;const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:Number.POSITIVE_INFINITY;}
 function holdDays(app:Application){const updated=Date.parse(app.updated_at);return Number.isFinite(updated)?Math.max(0,Math.floor((Date.now()-updated)/86400000)):0;}
 function downloadRoster(data:Workspace,scoped:Application[]){const rows=['Reference No,Title,Region,Category,Stage,Status,Remaining Days,Open Deficiencies'];for(const app of scoped){const remaining=workingDaysUntil(app.sla_due_at,undefined,HOLIDAYS);const defCount=data.deficiencies.filter(d=>d.application_id===app.id&&d.status==='open').length;const daysLabel=remaining===null?'None':remaining<0?`${Math.abs(remaining)}d overdue`:`${remaining}d remaining`;rows.push([app.ref_no,app.title,app.region,typeLabels[app.app_type]||app.app_type,routeStage(app.status).label,app.status,daysLabel,String(defCount)].join(','));}const blob=new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`case-pendency-roster-${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);}
@@ -32,8 +32,8 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
   const canCreate=identity.roles.some(r=>r.role==='institution');
   const stepContext={documents:data.documents,deficiencies:data.deficiencies,obligations:data.obligations,visits:data.visits};
   const stepFor=(app:Application)=>nextStep(app,stepContext);
-  const obligationCases=closed.filter(app=>stepFor(app).kind==='obligation');
-  const priorityPool=scope==='closed'?obligationCases:scope==='all'?[...actionable,...obligationCases]:actionable;
+  const closedFollowUps=closed.filter(app=>['obligation','renewal'].includes(stepFor(app).kind));
+  const priorityPool=scope==='closed'?closedFollowUps:scope==='all'?[...actionable,...closedFollowUps]:actionable;
   const priority=priorityPool.slice().sort((a,b)=>dueRank(a,stepFor(a))-dueRank(b,stepFor(b))).slice(0,3);
   const priorityKey=priority.map(app=>`${app.id}:${stepFor(app).due??app.sla_due_at??''}`).join('|');
   const [chain,setChain]=useState<ChainCheck>({state:'checking'});
@@ -138,7 +138,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
     <section className="dispatch-board" aria-label="Approval dispatch board">
       <div className="dispatch-column dispatch-action-column">
         <div className="dispatch-column-heading">
-          <div><div><h2>{scope==='closed'?'Continuing conditions':'Priority queue'}</h2><p>{scope==='closed'?'Recorded decisions with a condition still open.':'Cases closest to their next deadline.'}</p></div></div>
+          <div><div><h2>{scope==='closed'?'Post-decision follow-ups':'Priority queue'}</h2><p>{scope==='closed'?'Recorded decisions with a condition or renewal still open.':'Cases closest to their next deadline.'}</p></div></div>
           <span className="dispatch-count">{String(priority.length).padStart(2,'0')}</span>
         </div>
         {priority.length?priority.map((app,index)=>{
@@ -146,7 +146,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
           return <article className={`dispatch-case ${index===0?'dispatch-case-primary':''}`} key={app.id}>
             <div className="dispatch-case-index">{String(index+1).padStart(2,'0')}</div>
             <div className="dispatch-case-main">
-              <div className="inline"><span className="mono">{app.ref_no}</span><Badge status={app.status}/>{step.kind==='obligation'&&<span className="document-tag pending">Obligation open</span>}</div>
+              <div className="inline"><span className="mono">{app.ref_no}</span><Badge status={app.status}/>{step.kind==='obligation'&&<span className="document-tag pending">Obligation open</span>}{step.kind==='renewal'&&<span className="document-tag pending">Renewal needed</span>}</div>
               <h3>{data.institutions.find(i=>i.id===app.institution_id)?.name??'Demo institution'}</h3>
               <p>{neutralCopy(app.title)}</p>
               <div className="dispatch-case-meta">
@@ -156,7 +156,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
             </div>
             <button className="dispatch-case-open" onClick={()=>open(app.id)} aria-label={`Open ${app.ref_no}`}>Inspect case <ArrowRight size={15}/></button>
           </article>;
-        }):<Empty title={scope==='closed'?'No continuing conditions open':'The priority queue is clear'}>{scope==='closed'?'Every visible closed case has no open post-decision condition.':'No active cases need intervention right now.'}</Empty>}
+        }):<Empty title={scope==='closed'?'No post-decision follow-ups open':'The priority queue is clear'}>{scope==='closed'?'Every visible closed case has no open condition or renewal follow-up.':'No active cases need intervention right now.'}</Empty>}
       </div>
       <div className="dispatch-column dispatch-handoff-column">
         <div className="dispatch-column-heading">
@@ -193,14 +193,15 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
         <div className="support-surface-heading"><div><div><h2>Cases by region</h2><p>Regional totals calculated from the visible scope.</p></div></div><span className="quiet-label"><ShieldCheck size={14}/>{regions.length} configured demonstration regions</span></div>
         <div className="table-wrap" style={{marginTop:'12px'}}>
           <table>
+            <caption className="sr-only">Cases by region</caption>
             <thead>
               <tr>
-                <th>Institutional Review Region</th>
-                <th>Visible Dossiers</th>
-                <th>Under Scrutiny</th>
-                <th>EVC Inspection Queue</th>
-                <th>Overdue</th>
-                <th>SLA Compliance</th>
+                <th scope="col">Institutional Review Region</th>
+                <th scope="col">Visible Dossiers</th>
+                <th scope="col">Under Scrutiny</th>
+                <th scope="col">EVC Inspection Queue</th>
+                <th scope="col">Overdue</th>
+                <th scope="col">SLA Compliance</th>
               </tr>
             </thead>
             <tbody>

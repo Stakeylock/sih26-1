@@ -1,6 +1,6 @@
 import {neutralCopy} from '../domain/presentation';
 import {useEffect,useState} from 'react';
-import {CalendarClock,FastForward,FileStack,Play,RefreshCw,RotateCcw,TriangleAlert} from 'lucide-react';
+import {ArrowRight,CalendarClock,FastForward,FileStack,Fingerprint,GitBranch,Play,RefreshCw,RotateCcw,Ruler,ShieldCheck,TriangleAlert} from 'lucide-react';
 import {ViewHeader} from './common';
 import {formatDateTime} from './DisplayPreferences';
 import {guideSteps} from './demoGuide';
@@ -48,8 +48,21 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
     {id:'obligation',label:'Continuing obligation',detail:'A post-decision condition remains visible.'},
     {id:'audit',label:'Audit integrity',detail:'Recorded events can be verified and replay-tested.'},
   ].map(item=>{const armed=item.id==='human-review'?steps.some(step=>(step.id==='scrutiny'||step.id==='decision')&&step.armed):steps.find(step=>step.id===item.id)?.armed??false;return {...item,armed};});
+  const showcase=[
+    {id:'map',label:'Trace the evidence map',detail:'See the recorded relationships between documents, claims, corrections, and obligations.',icon:GitBranch,role:'national_admin' as Role,route:'analysis',featured:true},
+    {id:'case',label:'Open the proof case',detail:'Read the correction thread and its human review basis in the dossier.',icon:FileStack,role:'institution' as Role,route:'case/demo-app-0'},
+    {id:'trust',label:'Verify the audit chain',detail:'Inspect the visible security boundaries and replay the stored event links.',icon:Fingerprint,role:'national_admin' as Role,route:'trust'},
+    {id:'obligation',label:'Inspect continuing obligations',detail:'Follow a recorded post-decision condition after the case closes.',icon:Ruler,role:'national_admin' as Role,route:'compliance'},
+  ];
   return <>
     <ViewHeader title="Demo lab" summary="Simulation controls for the synthetic workspace. Nothing here changes a real record."/>
+    <section className="support-surface demo-showcase" aria-labelledby="demo-showcase-title">
+      <div className="support-surface-heading"><div><span className="demo-showcase-kicker">JUDGE SHOWCASE</span><h2 id="demo-showcase-title">Start with the proof, then follow the record.</h2><p>Four live routes reveal the strongest evidence-backed features without creating state or changing permissions.</p></div><span className="quiet-label"><ShieldCheck size={14}/>Synthetic workspace</span></div>
+      <div className="demo-showcase-grid">
+        {showcase.map(item=>{const Icon=item.icon;return <button key={item.id} type="button" className={`demo-showcase-item${item.featured?' demo-showcase-featured':''}`} onClick={()=>onSwitch(item.role,item.route)}><span className="demo-showcase-icon"><Icon size={18}/></span><span className="demo-showcase-copy"><strong>{item.label}</strong><small>{item.detail}</small></span><ArrowRight className="demo-showcase-arrow" size={16}/></button>;})}
+      </div>
+      <p className="support-footnote demo-showcase-note">Each action opens the existing workspace surface. The map, table, dossier, audit records, and obligation register remain the source of truth.</p>
+    </section>
     <section className="support-surface demo-lab-clock">
       <div className="support-surface-heading">
         <div><h2>Demo calendar</h2><p>Shifts the workspace review clock ahead by whole days. The consequence planner then re-derives each open deadline from its recorded date as a dry run, and the outcome is recorded as SYSTEM notes in the affected cases.</p></div>
