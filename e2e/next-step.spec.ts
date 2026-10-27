@@ -16,7 +16,7 @@ test('an approved case keeps its continuing obligation visible',async({page})=>{
   await expect(page.locator('.dossier-route-note')).toContainText('Institution');
   await expect(page.locator('.readiness-status.pending')).toHaveText('Obligation open');
   await expect(page.locator('.dossier-viewing')).toContainText('A continuing obligation remains open.');
-  await expect(page.locator('.dossier-action-card')).toContainText('A continuing obligation remains open.');
+  await expect(page.locator('.dossier-action-card')).not.toContainText('A continuing obligation remains open.');
 });
 
 test('a closed case without an open condition stays closed',async({page})=>{

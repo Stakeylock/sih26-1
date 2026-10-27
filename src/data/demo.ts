@@ -319,7 +319,12 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
         list.push(row);affected.set(row.application_id,list);
       }
       for(const [applicationId,rows] of affected){const anchor=state.applications.find(item=>item.id===applicationId&&visible(item));if(!anchor)continue;
-        await log(anchor,'demo_calendar_advanced',null,'Simulated demo calendar advanced by '+report.days+' days; derived consequence of recorded deadlines and validity dates. No notices were dispatched and no review decision was recorded.',{demo:true,coverage:'derived_horizon',days:report.days,horizon_end:new Date(Date.now()+report.days*86400000).toISOString().slice(0,10),consequences:structuredClone(rows)},{actor_id:null,actor_role:'system'});
+        const base=new Date(Date.now()).toISOString().slice(0,10);
+        const priorHorizon=state.events.filter(ev=>ev.action==='demo_calendar_advanced'&&ev.application_id===applicationId&&typeof ev.payload.horizon_end==='string'&&ev.payload.horizon_end>base).map(ev=>ev.payload.horizon_end as string).sort().pop()??null;
+        const catchUp=priorHorizon!==null;
+        const payload:Record<string,unknown>={demo:true,coverage:'derived_horizon',days:report.days,horizon_end:new Date(Date.now()+report.days*86400000).toISOString().slice(0,10),consequences:structuredClone(rows)};
+        if(catchUp&&priorHorizon)payload.catch_up_from=priorHorizon;
+        await log(anchor,'demo_calendar_advanced',null,'Simulated demo calendar advanced by '+report.days+' days; derived consequence of recorded deadlines and validity dates. '+(catchUp&&priorHorizon?'Partial catch-up: consequences through '+priorHorizon+' were already derived by an earlier calendar shift. ':'')+'No notices were dispatched and no review decision was recorded.',payload,{actor_id:null,actor_role:'system'});
       }
       persist();return report;},
     async fulfil(id,reason){if(!['national_admin','regional_officer'].includes(role))throw new Error('Decision role required.');const o=state.obligations.find(o=>o.id===id);if(o){if((o.required_evidence??[]).length)throw new Error('Select reviewed evidence with the versioned compliance command.');o.status='fulfilled';await log(find(o.application_id),'obligation_fulfilled',null,reason);}persist();},

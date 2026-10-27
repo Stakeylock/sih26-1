@@ -24,6 +24,7 @@ describe('case renewal guidance',()=>{
     expect(html).toContain('No renewal deadline recorded');
     expect(html).toContain('Renewal needed');
     expect(html).toContain('An expired document needs renewal; the dossier remains read-only.');
-    expect(html).toContain('An expired document needs renewal.');
+    expect(html).toContain('This decision is recorded. An expired document needs renewal');
+    expect(html).not.toContain('>YOUR ACCESS<');
   });
 });

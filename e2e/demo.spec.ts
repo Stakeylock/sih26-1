@@ -92,6 +92,22 @@ test('institution creates and saves a synthetic draft; unsafe upload is rejected
   await page.getByLabel('Upload Building Plan').setInputFiles({name:'active.html',mimeType:'text/html',buffer:Buffer.from('<script>alert(1)</script>')});
   await expect(page.getByRole('alert')).toContainText('PDF, PNG, or JPEG');
 });
+test('a dropped document travels the same upload path as the click input',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await page.getByRole('button',{name:'New application',exact:true}).first().click();
+  await page.getByRole('textbox',{name:'Application title'}).fill('Demo robotics programme request');
+  await page.getByRole('button',{name:'Continue to institution details'}).click();
+  await page.getByRole('button',{name:'Save draft & continue to evidence'}).click();
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
+  const dropPdf=await page.evaluateHandle((mime:string)=>{const transfer=new DataTransfer();transfer.items.add(new File(['%PDF-1.7 synthetic robotics report'],'robotics-report.pdf',{type:mime}));return transfer;},'application/pdf');
+  await page.getByLabel('Upload Building Plan').dispatchEvent('drop',{dataTransfer:dropPdf});
+  await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('No file bytes were uploaded');
+  await expect(page.locator('.document').filter({hasText:'robotics-report.pdf'}).first()).toBeVisible();
+  const dropHtml=await page.evaluateHandle((mime:string)=>{const transfer=new DataTransfer();transfer.items.add(new File(['<p>text</p>'],'floor-plan.html',{type:mime}));return transfer;},'text/html');
+  await page.getByLabel('Upload Building Plan').dispatchEvent('drop',{dataTransfer:dropHtml});
+  await expect(page.getByRole('alert')).toContainText('PDF, PNG, or JPEG');
+  await expect(page.locator('.document').filter({hasText:'floor-plan.html'})).toHaveCount(0);
+});
 test('evidence passport surfaces duplicate use and linked claims',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
   await openCase(page,'DEMO-2026-1001');
@@ -450,12 +466,15 @@ test('mobile applications use case cards and the dossier route stays inside the 
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.locator('.application-mobile-card').filter({hasText:'DEMO-2026-1001'}).getByRole('button',{name:/Open DEMO-2026-1001/}).click();
   await expect(page.getByText(/Viewing as/)).toContainText('National administrator');
+  await expect(page.locator('.dossier-action-card')).not.toContainText('National administrator');
   await expect(page.getByText('Claims 6 of 9',{exact:true})).toBeVisible();
   await expect(page.getByText(/Ready for next gate|Ready for the next workflow gate/)).toHaveCount(0);
   await expect(page.locator('.claim-summary')).toContainText('3 unresolved: 2 awaiting review, 1 deficiency');
   await expect(page.getByText('Current authority',{exact:true})).toHaveCount(0);
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index',exact:true})).toBeVisible();
+  await expect(page.locator('.prototype-readiness')).toHaveCount(0);
+  await expect(page.locator('#evidence .dossier-paper-heading').getByText(/\d+ of \d+ fields · \d+ of \d+ required documents/)).toBeVisible();
   await expect(page.locator('.workflow-rail-scroll')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

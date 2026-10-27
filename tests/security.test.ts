@@ -1,6 +1,6 @@
 import { beforeAll,afterAll,beforeEach,afterEach,describe,it,expect } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
-import {database,as,ids,scalar,failure,draft,ready,transition,grantRole} from './database';
+import {database,as,ids,scalar,failure,draft,ready,readyClaims,transition,grantRole} from './database';
 let db:PGlite;
 beforeAll(async()=>{db=await database();},60000);
 afterAll(async()=>{await db?.close();});
@@ -38,6 +38,23 @@ describe('PostgreSQL authorization and workflow security',()=>{
     await as(db,ids.west);
     expect(await scalar<number>(db,'select count(*)::int from public.applications')).toBe(0);
     expect(await failure(db,`select public.fp_transition($1,'start_scrutiny','', '{}',3,$2)`,[id,crypto.randomUUID()])).toContain('unavailable');
+  });
+  it('returns zero rows, not an existence hint, for another tenant\'s document and history rows by exact id',async()=>{
+    const id=await ready(db);
+    await as(db,ids.institution);
+    const doc=await scalar<string>(db,'select id from public.application_documents where application_id=$1 limit 1',[id]);
+    await as(db,ids.other);
+    expect((await db.query(`select * from public.application_documents where id=$1`,[doc])).rows).toHaveLength(0);
+    expect(await scalar<number>(db,'select count(*)::int from public.application_events where application_id=$1',[id])).toBe(0);
+  });
+  it('keeps generated workflow notifications bound to their recipient user',async()=>{
+    const {id,claims}=await readyClaims(db);
+    await as(db,ids.scrutiny);
+    await db.query(`select public.fp_raise_deficiency($1,'The synthetic fire certificate is stale.','Upload a current synthetic certificate.',now()+interval '7 days',(select version from public.applications where id=$2),gen_random_uuid())`,[claims.FIRE_SAFETY,id]);
+    await as(db,ids.institution);
+    expect(await scalar<number>(db,'select count(*)::int from public.notifications where user_id=$1',[ids.institution])).toBeGreaterThanOrEqual(1);
+    await as(db,ids.other);
+    expect(await scalar<number>(db,'select count(*)::int from public.notifications')).toBe(0);
   });
   it('does not combine a role in one region with a different role elsewhere',async()=>{
     const id=await ready(db); await transition(db,id,'submit');

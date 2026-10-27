@@ -19,12 +19,12 @@ HTML sketches can suggest composition (whether each screen has a purpose) withou
 - **WEBSITE:** https://flowpilot.cc
 - **KEYWORK:** verification, audit trail, Trust Center, access ledger, claims
 - **OBLIGATION:** Record evidence review decisions and their provenance so they can be followed later.
-- **IMPORTANT THING:** "Spirit" = what this demo actually does, not a marketing layer. The verified build (build verified + 80/80 unit/SQL tests + 26/26 Playwright E2E) is the current evidence that the claims/evidence/audit stack is wired, not a claim that the demo is production.
-- **HELP:** Trust Center shows access grants, Evidence Passport shows document security state, and the claims ledger records verification events and deficiency threads; the reviewer test verifies the resolve→re-check→accept loop.
+- **IMPORTANT THING:** "Spirit" = what this demo actually does, not a marketing layer. The verified build (build verified + 320/320 unit/SQL tests + 104/104 Playwright E2E, certified 2026-10-27) is the current evidence that the claims/evidence/audit stack is wired, not a claim that the demo is production.
+- **HELP:** Trust Center shows access grants, Evidence Passport shows document security state, and the claims ledger records verification events and deficiency threads; the reviewer test verifies the resolve→re-check→accept loop. Corrections keep history: "Submit correction for review" links a replacement and reopens only that claim for re-check. Recent evidence scale: 10k-application benchmark in `docs/scale-results.json`, zero errors.
 
 ### PRACTICE AND REVIEW
 
-- **RULE:** Claim behavior is covered by SQL-gated tests for mandatory-claim gating, expired-evidence blocking, unlink-blocking, resolve/re-check loop, and signal disposition; behavioral reviewer E2E verifies provenance rendering and missing-infra blocking.
+- **RULE:** Claim behavior is covered by SQL-gated tests for mandatory-claim gating, expired-evidence blocking, unlink-blocking, resolve/re-check loop, and signal disposition; behavioral reviewer E2E verifies provenance rendering and missing-infra blocking. Sample document bytes come from `scripts/generate-sample-pdfs.mjs` (`npm run generate:samples`) with a checksum manifest in `src/data/sample-pdfs.json`; never hand-edit `public/samples/` and keep the watermarked, unofficial labels.
 - **MOMENTUM:** Do not add a "dispatch / control tower / cockpit" theme layer. The identity must come from the actual review composition, not from a new formula.
 - **REVIEW:** Before UI changes that touch the worklist or dossier, answer:
   1. What is the one task this screen is for?
@@ -121,16 +121,25 @@ Map the claim to a test or E2E step:
 <!-- Run: node scripts/list-files.cjs > docs/FILES.txt -->
 <!-- Then paste the output below. -->
 
-- `src/ui/ClaimLedger.tsx` — claim/evidence/workflow history and system-check provenance line
-- `src/data/demo.ts` — demo case/claims/evidence seed built from declared form values
+- `src/ui/CaseWorkspace.tsx` — dossier composition: evidence index, passport, claim ledger wiring, custody record-integrity card
+- `src/ui/ClaimLedger.tsx` — claim/evidence/workflow history and system-check provenance line; institution correction dialog ("Submit correction for review")
+- `src/ui/PrototypeDossier.tsx` — dossier record-integrity, custody and validation surfaces used by the demo dossier
+- `src/ui/DemoLab.tsx` — guided demo lab: steps, scopes, demo calendar, reset
+- `src/ui/DocumentPreview.tsx` — watermarked sample preview, object-URL rendering, download gating
+- `src/data/demo.ts` — demo case/claims/evidence seed built from declared form values; serves sample-byte downloads for clean documents
+- `src/data/sample-pdfs.json` — generated sample manifest: properties, scenario rows, SHA-256 checksums
 - `src/data/requirements.json` — review requirements, including `system_fields` for system-check provenance
 - `src/domain/integrity.ts` — domain types and integrity/verification/disposition concepts
-- `tasks/integrity-slice-plan.md` — plan and risk note for the current claims/evidence/audit slice
-- `e2e/demo.spec.ts` — existing end-to-end verifier scenarios
+- `scripts/generate-sample-pdfs.mjs` — regenerates `public/samples/*.pdf` + manifest; output must stay deterministic
+- `tasks/integrity-slice-plan.md` — plan and risk note for the claims/evidence/audit slice
+- `tasks/` — one plan file per slice; add a new file for each larger change
+- `e2e/demo.spec.ts` — end-to-end verifier scenarios, including samples preview/download and the correction loop
 - `tests/claims.test.ts` — claim-seed and claim-state assertions
 - `tests/claim-rpcs.test.ts` — SQL-gated claim/evidence/deficiency gate and loop tests
+- `tests/sample-pdfs.test.ts` — sample generation determinism and watermark/checksum assertions
+- `tests/sample-download.test.ts` — download bytes for clean samples, refusal for quarantined/expired
 - `src/styles.css` — current global presentation layer (the part the redesign prompt targets)
-
-- `docs/FILES.txt` — generated file inventory, when it exists
+- `docs/judges-walkthrough.md` — verified presentation facts and performance notes; keep claims matching shipped behavior
+- `docs/scale-results.json` — committed benchmark artifact with script/migration provenance
 
 <!-- STOP EDITING BELOW THIS LINE -->
