@@ -3,6 +3,7 @@ import type {AnalysisCalendar} from './intelligence';
 import type {InspectionExpert,ExpertAvailability,ExpertConflict,ExpertReservation,PanelSnapshot} from './planning';
 import type {AnalysisSnapshot,SavedScenario,ScenarioParameters} from './intelligence';
 import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement, SignalDisposition } from './integrity';
+import type { DispatchNotificationParams, DispatchNotificationResult, DeliveryStatus, NotificationChannel } from './notification';
 import type {CaseHistory} from './review';
 import type {ApprovalRecord,ApprovalScopeItem,DeadlineNotice,DeadlineRevision,NoticeImpact,NoticeInput,ReminderIntent,ScopeInput,ScopeRequest,ValidityInput,ValidityMode} from './approvals';
 import {demoNow} from './virtualClock';
@@ -50,7 +51,7 @@ export interface ExpertMember {
 }
 export interface Visit { ends_at?:string|null;visit_mode?:'physical'|'online'|'hybrid'|null;planning_state?:'legacy'|'tentative'|'confirmed'|'completed'|'cancelled';resource_planned?:boolean;version?:number;panel_snapshot?:PanelSnapshot[];planning_note?:string|null;report_due_at?:string|null;report_basis?:Record<string,unknown>|null; id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null; committee?: ExpertMember[] }
 export interface Obligation { kind?:string;approval_id?:string|null;document_id?:string|null;document_expiry_on?:string|null;deadline_revision?:number; id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string; escalation_level?: 'normal' | 't_minus_30' | 't_minus_0' | 'escalated_ro' | 'escalated_hq'; statutory_norm?: string; lease_years_remaining?: number; required_evidence?: string[] }
-export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null }
+export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null; channel?: NotificationChannel; deliveryStatus?: DeliveryStatus; previewUrl?: string }
 export interface Workspace { case_reviews?:CaseReview[];delivery_outbox?:Delivery[];delivery_attempts?:DeliveryAttempt[];worker_health?:WorkerHealth[]; inspection_experts?:InspectionExpert[];expert_availability?:ExpertAvailability[];expert_conflicts?:ExpertConflict[];expert_reservations?:ExpertReservation[]; analysis_snapshots?:AnalysisSnapshot[];analysis_scenarios?:SavedScenario[]; scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[] }
 export const routeStages = [
   { key: 'submission', label: 'Submission', statuses: ['draft'] },
@@ -113,7 +114,7 @@ export interface Repository {
   history(application: Application): Promise<CaseHistory>;
   tamperReplay(application: Application): Promise<AuditVerification>;
   upload(application: Application, type: string, file: File): Promise<void>; download(document: DocumentRecord): Promise<void>;
-  markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>; dispositionSignal(signalId: string, disposition: SignalDisposition, reason: string, requestId?: string): Promise<void>;
+  markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>; dispositionSignal(signalId: string, disposition: SignalDisposition, reason: string, requestId?: string): Promise<void>; dispatchNotification(params: DispatchNotificationParams): Promise<DispatchNotificationResult>;
   advanceClock?(days: number): Promise<ClockReport>;
   advisory(application:Application,documents:DocumentRecord[]):Promise<Advisory>;
 }

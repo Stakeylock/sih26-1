@@ -124,6 +124,23 @@ test('evidence passport surfaces duplicate use and linked claims',async({page})=
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText('DOSSIER / DEMO-2026-1005',{exact:true})).toBeVisible();
 });
+test('a scrutiny officer dispositions an integrity signal through the passport',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await openCase(page,'DEMO-2026-1001');
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
+  await page.locator('.document').filter({hasText:'fire_safety_certificate.pdf'}).first().getByRole('button',{name:/View document record/}).click();
+  const passport=page.getByRole('dialog');
+  await expect(passport.getByRole('heading',{name:'Document record'})).toBeVisible();
+  await expect(passport).toContainText('expired document');
+  await expect(passport).toContainText('open');
+  await passport.getByRole('button',{name:'Record disposition',exact:true}).first().click();
+  await passport.getByLabel('Reason for disposition').fill('Synthetic review reason: the expired certificate predates the application window.');
+  await passport.getByRole('button',{name:'Confirmed',exact:true}).click();
+  await expect(passport).toContainText('Disposition: confirmed');
+  await expect(passport).toContainText('Synthetic review reason: the expired certificate predates the application window.');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
 test('evidence passport remains readable at 390px',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');

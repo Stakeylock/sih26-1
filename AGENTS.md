@@ -10,7 +10,7 @@ HTML sketches can suggest composition (whether each screen has a purpose) withou
 
 - React 19 + TypeScript + Vite
 - Supabase (Postgres + RLS) in production; PGlite harness for local/CI unit and SQL-gated tests
-- Current task: evidence verification and auditability
+- Current task: evidence verification and auditability — complete (two-pane dossier, teammate-adoption, persona-controller, signal-disposition slices; all gates green). Next task not yet set.
 
 ## Recent windows
 

@@ -5,6 +5,7 @@ import {ViewHeader} from './common';
 import {formatDateTime} from './DisplayPreferences';
 import {guideSteps} from './demoGuide';
 import {advanceDemoClock,DEMO_CLOCK_EVENT,demoClockOffset,resetDemoClock} from '../domain/virtualClock';
+import {NotificationTester} from './NotificationTester';
 import type {ClockReport} from '../domain/consequences';
 import type {Repository,Role,Workspace} from '../domain/model';
 
@@ -107,6 +108,9 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         <h2>Relationship prototype</h2>
         <p>Read one synthetic case as claim → evidence → correction → review threads. Same record as the dossier; nothing here records or changes state.</p>
         <button className="button outline" type="button" onClick={onOpenFlow}><FileStack size={14}/>Open relationship prototype</button>
+      </section>
+      <section className="support-surface demo-lab-card">
+        <NotificationTester repo={repo}/>
       </section>
     </div>
     <section className="support-surface demo-lab-guide">
