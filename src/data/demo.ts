@@ -9,6 +9,8 @@ import {seedGovernance,demoGovernance,approvalInput,recordApproval,closeApplicat
 import templatesJson from './templates.json';
 import requirementsJson from './requirements.json';
 import documentHashesJson from './document-hashes.json';
+import samplePdfsJson from './sample-pdfs.json';
+import {expiryState} from '../domain/expiry';
 import type { Advisory,Application, AuditEvent, DocumentRecord, Identity, Repository, Role, Status, Template, Transition, Workspace } from '../domain/model';
 import type { AccessAssignment, AgentRecord, AuditEventLike, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from '../domain/integrity';
 import { canonicalAuditPayload, sha256Hex, verifyAuditChain } from '../domain/integrity';
@@ -23,7 +25,13 @@ import {buildReviewBasis,reviewBasisCurrent,canUploadEvidence,currentClaimEviden
 const templates = templatesJson as Template[];
 const requirements = requirementsJson as Requirement[];
 const documentHashes = documentHashesJson as Record<string,string>;
-const STORAGE = 'clauseway-isolated-demo-v11';
+type SampleFixture={sha256:string;bytes:number};
+const samplePdfs=(samplePdfsJson as {samples:Record<string,SampleFixture>}).samples;
+/** Origin label for the seeded sample bytes; the preview (and the passport that embeds it) reads this string. */
+const SAMPLE_ORIGIN_LABEL='Watermarked synthetic sample (generated locally)';
+const samplePath=(id:string)=>`/samples/${id}.pdf`;
+const sampleFields=(id:string)=>{const fixture=samplePdfs[`${id}.pdf`];if(!fixture)throw new Error('Missing sample PDF fixture: '+id);return {file_path:samplePath(id),size_bytes:fixture.bytes,sample_sha256:fixture.sha256,origin_label:SAMPLE_ORIGIN_LABEL};};
+const STORAGE = 'clauseway-isolated-demo-v12';
 export const demoIdentities: Identity[] = [
   {id:'demo-national',name:'Aarav Mehta',email:'national@demo.invalid',roles:[{role:'national_admin',region:null}]},
   {id:'demo-institution',name:'Maya Patel',email:'institution@demo.invalid',roles:[{role:'institution',region:null}]},
@@ -60,14 +68,16 @@ export function seed(): Workspace {
     const inst=institutions[i===3?2:i%institutions.length]; const t=templates[i%3]; const id=`demo-app-${i}`; const closed=['approved','rejected'].includes(status);
     return {id,ref_no:`DEMO-2026-${String(1001+i)}`,title:i===0?'Self-disclosure extension · 2026-27':i===1?'Institution name change':i===2?'New programme · Computer science':t.name,owner_id:i===10?'demo-institution':inst.owner_id,institution_id:inst.id,app_type:t.app_type,status,region:inst.region,version:1,template_version:1,template_snapshot:t.definition,form_data:Object.fromEntries(t.definition.required_fields.map(f=>[f.key,`Synthetic ${f.label.toLowerCase()}`])),evc_required:['evc_pending','evc_scheduled'].includes(status),assigned_officer:status==='under_scrutiny'?'demo-scrutiny':null,sla_due_at:['approved','rejected','draft'].includes(status)?null:iso(i===0?2:i===4?-1:4+i),submitted_at:status==='draft'?null:iso(-6-i),created_at:iso(-8-i),updated_at:iso(-i),decision_reason:closed?(status==='approved'?'Synthetic evidence accepted for demonstration only.':'Synthetic evidence did not meet the demo checklist. Human review recorded.'):null,decision_evidence:closed?`demo-doc-${id}-0`:null,is_demo:true};
   });
-  const expiredFireOn=iso(-12).slice(0,10);
-  const documents=applications.flatMap(a=>a.template_snapshot.required_documents.map((type,i):DocumentRecord=>{const id=`demo-doc-${a.id}-${i}`;const doc:DocumentRecord={id,application_id:a.id,doc_type:type,file_name:type.toLowerCase().replaceAll(' ','_')+'.pdf',file_path:'demo-only',size_bytes:120000+i*45300,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash(id),uploaded_at:a.created_at};if(id==='demo-doc-demo-app-0-1'){doc.expires_on=expiredFireOn;doc.issuer='Synthetic Fire Department';doc.document_number='FIRE-DEMO-001';}return doc;}));
+  // Fixed dates shared with scripts/generate-sample-pdfs.mjs so the sample PDF and the record agree.
+  const expiredFireOn='2026-10-15';
+  const validFireOn='2027-08-23';
+  const documents=applications.flatMap(a=>a.template_snapshot.required_documents.map((type,i):DocumentRecord=>{const id=`demo-doc-${a.id}-${i}`;const doc:DocumentRecord={id,application_id:a.id,doc_type:type,file_name:type.toLowerCase().replaceAll(' ','_')+'.pdf',...sampleFields(id),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash(id),uploaded_at:a.created_at};if(id==='demo-doc-demo-app-0-1'){doc.expires_on=expiredFireOn;doc.issuer='Synthetic Fire Department';doc.document_number='FIRE-DEMO-001';}return doc;}));
   documents.push(
-    {id:'demo-doc-demo-app-0-2',application_id:'demo-app-0',doc_type:'Faculty List',file_name:'faculty_list.pdf',file_path:'demo-only',size_bytes:210000,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-2'),uploaded_at:iso(-6),extracted:{faculty_count:'10'}},
-    {id:'demo-doc-demo-app-0-3',application_id:'demo-app-0',doc_type:'Land Document',file_name:'land_document.pdf',file_path:'demo-only',size_bytes:255300,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-3'),uploaded_at:iso(-6)},
-    {id:'demo-doc-demo-app-0-4',application_id:'demo-app-0',doc_type:'Undertaking',file_name:'undertaking.pdf',file_path:'demo-only',size_bytes:180600,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-4'),uploaded_at:iso(-6)},
-    {id:'demo-doc-demo-app-0-5',application_id:'demo-app-0',doc_type:'Fire Safety Certificate',file_name:'fire_safety_certificate_valid.pdf',file_path:'demo-only',size_bytes:201900,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-5'),uploaded_at:iso(-2),expires_on:iso(300).slice(0,10),issuer:'Synthetic Fire Department',document_number:'FIRE-DEMO-002'},
-    {id:'demo-doc-demo-app-4-extra-0',application_id:'demo-app-4',doc_type:'Fire Safety Certificate',file_name:'fire_safety_certificate.pdf',file_path:'demo-only',size_bytes:165300,mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-4-extra-0'),uploaded_at:iso(-5),expires_on:expiredFireOn,issuer:'Synthetic Fire Department',document_number:'FIRE-DEMO-001'},
+    {id:'demo-doc-demo-app-0-2',application_id:'demo-app-0',doc_type:'Faculty List',file_name:'faculty_list.pdf',...sampleFields('demo-doc-demo-app-0-2'),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-2'),uploaded_at:iso(-6),extracted:{faculty_count:'10'}},
+    {id:'demo-doc-demo-app-0-3',application_id:'demo-app-0',doc_type:'Land Document',file_name:'land_document.pdf',...sampleFields('demo-doc-demo-app-0-3'),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-3'),uploaded_at:iso(-6)},
+    {id:'demo-doc-demo-app-0-4',application_id:'demo-app-0',doc_type:'Undertaking',file_name:'undertaking.pdf',...sampleFields('demo-doc-demo-app-0-4'),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-4'),uploaded_at:iso(-6)},
+    {id:'demo-doc-demo-app-0-5',application_id:'demo-app-0',doc_type:'Fire Safety Certificate',file_name:'fire_safety_certificate_valid.pdf',...sampleFields('demo-doc-demo-app-0-5'),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-5'),uploaded_at:iso(-2),expires_on:validFireOn,issuer:'Synthetic Fire Department',document_number:'FIRE-DEMO-002'},
+    {id:'demo-doc-demo-app-4-extra-0',application_id:'demo-app-4',doc_type:'Fire Safety Certificate',file_name:'fire_safety_certificate.pdf',...sampleFields('demo-doc-demo-app-4-extra-0'),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-4-extra-0'),uploaded_at:iso(-5),expires_on:expiredFireOn,issuer:'Synthetic Fire Department',document_number:'FIRE-DEMO-001'},
   );
   const app0=applications[0];
   // Cross-document contradiction seed: the dossier declares 12 faculty, but the attached roster lists 10.
@@ -131,11 +141,11 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
   let state=await seed();
   const heads=new Map<string,{sequence:number;hash:string}>();
   for(const event of state.events){const current=heads.get(event.application_id);const seq=event.sequence??0;const hash=typeof event.event_hash==='string'?event.event_hash:'';if(!current||seq>current.sequence)heads.set(event.application_id,{sequence:seq,hash:hash});}
-  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===11 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) {state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],agents:saved.workspace.agents??[]};
+  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===12 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) {state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],agents:saved.workspace.agents??[]};
     } } catch { /* Corrupt demo storage is discarded. */ }
   state=neutralDemoLabels(state);
   if(!state.inspection_experts)seedPlanning(state);
-  const persist=()=>localStorage.setItem(STORAGE,JSON.stringify({format:11,workspace:state}));
+  const persist=()=>localStorage.setItem(STORAGE,JSON.stringify({format:12,workspace:state}));
   const visible=(a:Application)=>a.owner_id===actor.id || (a.status!=='draft' && actor.roles.some(r=>r.role==='national_admin'||(r.role!=='institution'&&r.region===a.region)));
   const find=(id:string)=>{const a=state.applications.find(x=>x.id===id);if(!a||!visible(a))throw new Error('Demo application is unavailable.');return a;};
   async function prepareChainEvent(a:Application,action:string,old:Status|null,reason:string|null=null,detail:Record<string,unknown>={},options:{actor_id?:string|null;actor_role?:string|null}={}):Promise<AuditEvent>{
@@ -282,7 +292,24 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
     async verifyAudit(application):Promise<AuditVerification>{const a=find(application.id);return verifyAuditChain(await buildAuditChain(state.events.filter(e=>e.application_id===a.id)));},
     async tamperReplay(application):Promise<AuditVerification>{const a=find(application.id);if(a.owner_id===actor.id||!['scrutiny_officer','regional_officer','national_admin'].includes(role))throw new Error('Review or decision authority required.');const events=await buildAuditChain(state.events.filter(e=>e.application_id===a.id));if(!events.length)return verifyAuditChain(events);const target=Math.max(1,Math.ceil(events.length/2));return verifyAuditChain(events.map((event,index)=>index===target-1?{...event,reason:`${event.reason??'Synthetic event'} [tamper replay on copy]`}:event));},
     async upload(application,type,file){validateFile(file);const a=find(application.id);if(!canUploadEvidence(a,actor,state.claims,state.deficiencies,type,state.obligations))throw new Error('Application is locked for this evidence type.');        state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id});await log(a,'document_reserved',a.status,'Demo metadata only; bytes never leave this browser.');persist();},
-    async download(){throw new Error('Seeded demo documents are synthetic references. No document bytes are stored.');},
+    async download(record){
+      if(record.scan_status!=='clean')throw new Error('Quarantined documents are not downloadable.');
+      if(expiryState(record.expires_on)==='expired')throw new Error('Expired documents stay on file for review history and are not downloadable.');
+      if(!record.file_path.startsWith('/samples/'))throw new Error('No generated sample bytes exist for this document.');
+      const response=await fetch(record.file_path);
+      if(!response.ok)throw new Error('The generated sample asset is unavailable.');
+      const bytes=new Uint8Array(await response.arrayBuffer());
+      const digest=await crypto.subtle.digest('SHA-256',bytes);
+      const hash=Array.from(new Uint8Array(digest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
+      if(record.sample_sha256&&hash!==record.sample_sha256)throw new Error('Sample bytes do not match the recorded checksum.');
+      const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+      const anchor=globalThis.document.createElement('a');
+      anchor.href=url;anchor.download=record.file_name;
+      globalThis.document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      globalThis.setTimeout(()=>URL.revokeObjectURL(url),1000);
+    },
     async markRead(id){const n=state.notifications.find(n=>n.id===id);if(n)n.read_at=iso();persist();},
     async advanceClock(days){const report=planClockAdvance(days,{now:Date.now(),applications:state.applications,obligations:state.obligations,documents:state.documents,holidays:workspaceHolidays()});
               const affected=new Map<string,ClockConsequence[]>();

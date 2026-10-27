@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build --mode demo && node scripts/verify-demo-build.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
+    "generate:samples": "node scripts/generate-sample-pdfs.mjs",
     "test:e2e": "playwright test",
     "check": "npm run build && npm test",
     "test:integration": "node scripts/run-integration.mjs",

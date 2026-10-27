@@ -1,0 +1,153 @@
+{
+  "generator": "scripts/generate-sample-pdfs.mjs",
+  "samples": {
+    "demo-doc-demo-app-0-0.pdf": {
+      "sha256": "05f59173db4c6d4c544ca7a68c186305b0e959a8a427c93e18eca7a6006dd4df",
+      "bytes": 2592
+    },
+    "demo-doc-demo-app-0-1.pdf": {
+      "sha256": "60b0007a303df652e366adaa74b55825a8c2881093ee3148f17d3dd1f45ea629",
+      "bytes": 2761
+    },
+    "demo-doc-demo-app-0-2.pdf": {
+      "sha256": "7a70e2fe8698c8b30cfc9f6e76304d814167c6ed3ad5fe7f6200c11a4f2a3c44",
+      "bytes": 3741
+    },
+    "demo-doc-demo-app-0-3.pdf": {
+      "sha256": "d4350e4921da1902b73fa8eba87872d1491b5de38f1271624ec5150fabd472a0",
+      "bytes": 2719
+    },
+    "demo-doc-demo-app-0-4.pdf": {
+      "sha256": "8e131b9c6df25d2c2c907ae4da7a64c619dc298f9eb37bde182871e02fa7b94e",
+      "bytes": 2602
+    },
+    "demo-doc-demo-app-0-5.pdf": {
+      "sha256": "1d2ed64847928f1113620ad48ac4b9f56ae221a4eaaab144ccdf1627ff24a309",
+      "bytes": 2767
+    },
+    "demo-doc-demo-app-1-0.pdf": {
+      "sha256": "4c5a2e18812a82f369edc5a9d62110c1f1d45c6bdf9f167e0d656c77eb96dfcd",
+      "bytes": 2627
+    },
+    "demo-doc-demo-app-1-1.pdf": {
+      "sha256": "f8c69cabe5edfb74fb4c0fb72f9a80a0d223310df12a0d7a0498031243d3591c",
+      "bytes": 2617
+    },
+    "demo-doc-demo-app-1-2.pdf": {
+      "sha256": "7284eecb10e72317e3ab3bb51ab3638e3d1f58538f94ecfb8d2749bd90b0d48a",
+      "bytes": 2647
+    },
+    "demo-doc-demo-app-10-0.pdf": {
+      "sha256": "900e475cff273d74f9d292067eaec8ca4abd3b47f0d47909ee55cc64aa401600",
+      "bytes": 2627
+    },
+    "demo-doc-demo-app-10-1.pdf": {
+      "sha256": "5b2f72d598c59bc117d4ba9d5a867e009d456aa736e608af3802cf3d3e858952",
+      "bytes": 2617
+    },
+    "demo-doc-demo-app-10-2.pdf": {
+      "sha256": "094491987f0aa90e5f9a1e90b88b5ce58f7ed4156db292761ffc9cd99eb8ad4b",
+      "bytes": 2647
+    },
+    "demo-doc-demo-app-11-0.pdf": {
+      "sha256": "c696153e5426d2e056f7b704e2392018d8b09edfcb7ce372c20d85bd8b6bd356",
+      "bytes": 2698
+    },
+    "demo-doc-demo-app-11-1.pdf": {
+      "sha256": "4fa8c67f1f5d387767fabf9764f34cdcdd7da710f5a669fdbc77b4ef7b21e8ec",
+      "bytes": 3741
+    },
+    "demo-doc-demo-app-11-2.pdf": {
+      "sha256": "154743363afc01aa69d937dc585e0fea3a7427f22b234f7734d96db4c146f97d",
+      "bytes": 2662
+    },
+    "demo-doc-demo-app-2-0.pdf": {
+      "sha256": "c8c487bcb0cfbbcead3287cfdbf766ecbf958952808acb5160bf51765cd75a15",
+      "bytes": 2698
+    },
+    "demo-doc-demo-app-2-1.pdf": {
+      "sha256": "4d4db92417780fe1d5b290d482e5064f02675c79b63165355aad080bfc070e72",
+      "bytes": 3741
+    },
+    "demo-doc-demo-app-2-2.pdf": {
+      "sha256": "7e718f2fc97f88fbe149fdb878b59e7a519812987346045d26ef72ed4110fa5e",
+      "bytes": 2662
+    },
+    "demo-doc-demo-app-3-0.pdf": {
+      "sha256": "76e8ea81d1d424a8d19c54eb78325b9930e392a95578c31fa731db756dbcbd92",
+      "bytes": 2592
+    },
+    "demo-doc-demo-app-3-1.pdf": {
+      "sha256": "72379476c236773ccf01cf8480b923e27704425b4ec967646820d544433bdb68",
+      "bytes": 2787
+    },
+    "demo-doc-demo-app-4-0.pdf": {
+      "sha256": "087e3eb0b586bec75de87ffb277c7eee52c87d78ac0ca455c46cfa06a8764b11",
+      "bytes": 2627
+    },
+    "demo-doc-demo-app-4-1.pdf": {
+      "sha256": "66bf3c6f070e4e7b6d33fe96f7e1deb871439ef79276ead8ebddfb2f64137f88",
+      "bytes": 2617
+    },
+    "demo-doc-demo-app-4-2.pdf": {
+      "sha256": "ecc62dc487401db137bd3a44d20db0a264e7c95db3e339b3435174b782c88626",
+      "bytes": 2647
+    },
+    "demo-doc-demo-app-4-extra-0.pdf": {
+      "sha256": "c61921e6f846f60c3e189a08d6585dd9b90aa21879338b1a0718f08d83bb999c",
+      "bytes": 2761
+    },
+    "demo-doc-demo-app-5-0.pdf": {
+      "sha256": "5dffd6b9c964191a94939b405339cda581b7ff92e4c6420e3f75e94edb51cdf7",
+      "bytes": 2698
+    },
+    "demo-doc-demo-app-5-1.pdf": {
+      "sha256": "aa65da7f4a95fa41a7cc5cafe87e46d3199593631bb7ba2f585dc24c9389ddd2",
+      "bytes": 3741
+    },
+    "demo-doc-demo-app-5-2.pdf": {
+      "sha256": "c8d4e2e3be57b9edb06514a1e60c4e9fac545181245aa4b3bb435e44f205dc44",
+      "bytes": 2662
+    },
+    "demo-doc-demo-app-6-0.pdf": {
+      "sha256": "99002546d4f6dfe37bf592d9ce30e54736af8f567b44da44de90d7d4b7c2dc06",
+      "bytes": 2592
+    },
+    "demo-doc-demo-app-6-1.pdf": {
+      "sha256": "622ad4eb9151e824332a988910505e83939c53a8ddb4b8a3e09cdb942e8650a8",
+      "bytes": 2787
+    },
+    "demo-doc-demo-app-7-0.pdf": {
+      "sha256": "05c39438b10f1399e0b9cc69094b9c84514269323499852579afff27ee22a07f",
+      "bytes": 2627
+    },
+    "demo-doc-demo-app-7-1.pdf": {
+      "sha256": "190816e47adec5eb34b6cde6425489abaad2b8e6e6eb9d5146de0d8fa4148189",
+      "bytes": 2617
+    },
+    "demo-doc-demo-app-7-2.pdf": {
+      "sha256": "f0af98fd8c0e467241cfa638af8ae7d4ebab4ad63aa6278c643c094ec73883b3",
+      "bytes": 2647
+    },
+    "demo-doc-demo-app-8-0.pdf": {
+      "sha256": "c0b11a0e672cdcd77b5d5225427cb16ee0263aa9eece4441341c96e54bdc29c5",
+      "bytes": 2698
+    },
+    "demo-doc-demo-app-8-1.pdf": {
+      "sha256": "03ebc199adbe985a1c66e70d8888c95258ff8fd3ebb251ea6bf54f35429a5aa3",
+      "bytes": 3741
+    },
+    "demo-doc-demo-app-8-2.pdf": {
+      "sha256": "4ad0084e5280248d6133b94af394a120123509cbda26662e416ea05b19932eb1",
+      "bytes": 2662
+    },
+    "demo-doc-demo-app-9-0.pdf": {
+      "sha256": "e6eaf399de507add5f5758b8cf752138b8146f9c34f3400f325d28c526228fdf",
+      "bytes": 2592
+    },
+    "demo-doc-demo-app-9-1.pdf": {
+      "sha256": "f4a86c8912a61d73210fcc1822475d6775ec7f61702abd0ec7b2d24c5978fa2c",
+      "bytes": 2787
+    }
+  }
+}
