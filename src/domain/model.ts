@@ -2,7 +2,7 @@ import type {CaseReview,Delivery,DeliveryAttempt,WorkerHealth,Candidate,Readines
 import type {AnalysisCalendar} from './intelligence';
 import type {InspectionExpert,ExpertAvailability,ExpertConflict,ExpertReservation,PanelSnapshot} from './planning';
 import type {AnalysisSnapshot,SavedScenario,ScenarioParameters} from './intelligence';
-import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
+import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement, SignalDisposition } from './integrity';
 import type {CaseHistory} from './review';
 import type {ApprovalRecord,ApprovalScopeItem,DeadlineNotice,DeadlineRevision,NoticeImpact,NoticeInput,ReminderIntent,ScopeInput,ScopeRequest,ValidityInput,ValidityMode} from './approvals';
 import {demoNow} from './virtualClock';
@@ -113,7 +113,7 @@ export interface Repository {
   history(application: Application): Promise<CaseHistory>;
   tamperReplay(application: Application): Promise<AuditVerification>;
   upload(application: Application, type: string, file: File): Promise<void>; download(document: DocumentRecord): Promise<void>;
-  markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>;
+  markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>; dispositionSignal(signalId: string, disposition: SignalDisposition, reason: string, requestId?: string): Promise<void>;
   advanceClock?(days: number): Promise<ClockReport>;
   advisory(application:Application,documents:DocumentRecord[]):Promise<Advisory>;
 }

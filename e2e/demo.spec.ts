@@ -259,6 +259,33 @@ test('dossier tabs preserve the case route and open the selected view',async({pa
   await expect(page).toHaveURL(route);
   await expect(page.getByRole('heading',{name:'Replayable review record',exact:true})).toBeVisible();
 });
+test('a scrutiny officer dispositions an integrity signal; an institution sees none',async({page})=>{
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('scrutiny_officer');
+  await openCase(page,'DEMO-2026-1001');
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
+  await page.locator('.document').filter({hasText:'fire_safety_certificate.pdf'}).first().getByRole('button',{name:/View document record/}).click();
+  const passport=page.getByRole('dialog');
+  await expect(passport.getByRole('heading',{name:'Document record',exact:true})).toBeVisible();
+  await expect(passport).toContainText('duplicate document');
+  await expect(passport).toContainText('expired document');
+  await passport.getByRole('button',{name:'Record disposition',exact:true}).first().click();
+  await passport.getByLabel('Reason for disposition').fill('Synthetic review reason: the expired certificate predates the application window.');
+  await passport.getByRole('button',{name:'Explained',exact:true}).click();
+  await expect(passport).toContainText('Disposition: explained');
+  await passport.getByRole('button',{name:'Record disposition',exact:true}).click();
+  await passport.getByLabel('Reason for disposition').fill('Synthetic review reason: the duplicate hash belongs to a corrected resubmission.');
+  await passport.getByRole('button',{name:'Confirmed',exact:true}).click();
+  await expect(passport).toContainText('Disposition: confirmed');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
+  await openCase(page,'DEMO-2026-1001');
+  await page.getByRole('tab',{name:'Evidence',exact:true}).click();
+  await page.locator('.document').filter({hasText:'fire_safety_certificate.pdf'}).first().getByRole('button',{name:/View document record/}).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('button',{name:'Record disposition',exact:true})).toHaveCount(0);
+  await page.keyboard.press('Escape');
+});
 test('wizard intake is retained in the saved draft after reload',async({page})=>{
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
   await page.getByRole('button',{name:'New application',exact:true}).first().click();

@@ -136,6 +136,7 @@ export function createSupabaseRepository(): Repository {
     },
     async markRead(id) { const {error}=await client.rpc('fp_mark_read',{_id:id}); check(error); },
     async fulfil(id,reason) { const {error}=await client.rpc('fp_fulfil',{_id:id,_reason:reason}); check(error); },
+  async dispositionSignal(signalId,disposition,reason) { const {error}=await client.rpc('fp_disposition_signal',{_signal:signalId,_disposition:disposition,_reason:reason}); check(error); },
     async advisory(application) {const {data:{session}}=await client.auth.getSession();if(!session)throw new Error('Sign in again to request an advisory.');const response=await fetch('/api/advisories',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({caseId:application.id})});if(!response.ok)throw new Error('Advisory service unavailable. Start the local automation service and retry.');return response.json() as Promise<Advisory>;},
   };
 }
