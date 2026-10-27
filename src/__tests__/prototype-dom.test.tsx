@@ -175,7 +175,7 @@ describe('PrototypeDossier', () => {
   it.each([
     ['renders the institution title', 'Demo institution'],
     ['renders the case reference', 'APP/2026/014'],
-    ['renders the role restriction line near the header', 'Read-only at this gate'],
+    ['renders the role restriction line near the header', 'Read-only at this stage'],
     ['renders submission completeness', '2 of 2 fields'],
     ['renders the current authority', 'Scrutiny officer'],
     ['renders the document navigation', 'proof-of-identity'],

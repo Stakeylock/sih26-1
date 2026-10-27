@@ -146,7 +146,7 @@ export function PrototypeDossier({
             ? 'This record is closed.'
             : actions.length
               ? 'You hold the next permitted action.'
-              : `Read-only at this gate. ${nextGate} holds the next action.`}
+              : `Read-only at this stage. ${app.status === 'deficiency_raised' ? 'The open correction is awaiting the institution’s response; the assigned scrutiny officer re-checks after resubmission.' : nextGate + ' holds the next action.'}`}
         </span>
       </div>
 
@@ -453,7 +453,7 @@ export function PrototypeDossier({
                   ? 'You hold the next permitted action.'
                   : closed
                     ? 'This record is closed and read-only.'
-                    : `Read-only at this gate. ${nextGate} holds the next action.`}
+                    : `Read-only at this stage. ${app.status === 'deficiency_raised' ? 'The open correction is awaiting the institution’s response; the assigned scrutiny officer re-checks after resubmission.' : nextGate + ' holds the next action.'}`}
               </p>
               <div className="prototype-access-actions">
                 {actions.map(a => (
