@@ -1,6 +1,7 @@
 import {neutralCopy} from '../domain/presentation';
 import {DisplayControls} from './DisplayPreferences';
 import {InspectionPlanner} from './InspectionPlanner';
+import {EvcScheduling} from './EvcScheduling';
 import {documentEligible} from '../domain/approvals';
 import {useState} from 'react';
 import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,ExternalLink,FileCheck2,GitBranch,Info,LockKeyhole,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
@@ -71,6 +72,7 @@ export function Visits({data,open,identity,repo,run,busy,initialApplicationId}:{
   const groups=visits.reduce<{key:string;label:string;visits:Workspace['visits']}[]>((result,visit)=>{const key=dayKey(visit.scheduled_for);const last=result.at(-1);if(last?.key===key)last.visits.push(visit);else result.push({key,label:new Date(visit.scheduled_for).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),visits:[visit]});return result;},[]);
   return <>
     <ViewHeader title="Verification agenda" summary="Scheduled visits with coordinator, committee, evidence state, and dossier linkage." count={String(upcoming).padStart(2,'0')} label="upcoming visits"/>
+    <EvcScheduling data={data} identity={identity} repo={repo} run={run} busy={busy} initialApplicationId={initialApplicationId}/>
     <InspectionPlanner initialApplicationId={initialApplicationId} data={data} identity={identity} repo={repo} run={run} busy={busy}/>
     <section className="support-surface agenda-surface">
       <div className="support-surface-heading"><div><div><h2>Visit register</h2><p>Scheduled by day, with recorded panel and evidence context for each visit.</p></div></div><span className="quiet-label"><CalendarClock size={14}/>Regional EVC coordination</span></div>

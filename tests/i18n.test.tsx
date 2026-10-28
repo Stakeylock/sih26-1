@@ -36,7 +36,7 @@ describe('i18n helper',()=>{
     expect(uiLang()).toBe('hi');
   });
   it('roleLabelsHi covers every role key',()=>{
-    expect(Object.keys(roleLabelsHi)).toEqual(['institution','scrutiny_officer','evc_coordinator','regional_officer','national_admin']);
+    expect(Object.keys(roleLabelsHi)).toEqual(['institution','scrutiny_officer','evc_coordinator','evc_member','regional_officer','national_admin']);
   });
   it('useUiLang renders English initially and switches Hindi when the event fires',async()=>{
     act(()=>{root.render(createElement(Probe,{en:'Case operations',hi:'केस संचालन'}));});

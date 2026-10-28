@@ -32,7 +32,7 @@ const MANIFEST = resolve(flag('--manifest', 'src/data/sample-pdfs.json'));
 const EXPIRED_FIRE_ON = '2026-10-15';
 const VALID_FIRE_ON = '2027-08-23';
 
-// Mirrors the seed() document plan in src/data/demo.ts: 12 cases across three
+// Mirrors the seed() document plan in src/data/demo.ts: 13 cases across three
 // templates, plus the five extra documents pushed onto demo-app-0 and demo-app-4.
 const TEMPLATE_DOCUMENTS = [
   ['Affidavit', 'Fire Safety Certificate'],
@@ -43,7 +43,7 @@ const refNo = index => `DEMO-2026-${1001 + index}`;
 const fileName = type => type.toLowerCase().replaceAll(' ', '_') + '.pdf';
 
 const samples = [];
-for (let app = 0; app < 12; app += 1) {
+for (let app = 0; app < 13; app += 1) {
   TEMPLATE_DOCUMENTS[app % 3].forEach((docType, position) => {
     const anchor = app === 0 && position === 1;
     samples.push({

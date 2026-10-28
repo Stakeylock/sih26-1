@@ -61,6 +61,14 @@
       "sha256": "154743363afc01aa69d937dc585e0fea3a7427f22b234f7734d96db4c146f97d",
       "bytes": 2662
     },
+    "demo-doc-demo-app-12-0.pdf": {
+      "sha256": "0a6ef8587658b87033ac48a2a3ed4a9b4d7c54c6b1fb36990ee5c8c394fd0895",
+      "bytes": 2592
+    },
+    "demo-doc-demo-app-12-1.pdf": {
+      "sha256": "590362afde0885d99cb5499548c22a90fb9652c8d0c387dc8584c4d113b938d0",
+      "bytes": 2787
+    },
     "demo-doc-demo-app-2-0.pdf": {
       "sha256": "c8c487bcb0cfbbcead3287cfdbf766ecbf958952808acb5160bf51765cd75a15",
       "bytes": 2698

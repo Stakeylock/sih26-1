@@ -36,35 +36,26 @@ describe('APH clause seed',()=>{
 });
 
 describe('delay risk advisory',()=>{
-  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(Date.now());
+  const fmt=(ms:number)=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(ms);
+  const now=Date.now();
+  const due=(days:number)=>fmt(now+days*86400000);
+  const day=86400000;
 
   it('marks fulfilled obligations resolved regardless of due date',()=>{
-    expect(delayRiskAdvisory(today,'fulfilled')).toBe('resolved');
+    expect(delayRiskAdvisory(fmt(now),'fulfilled')).toBe('resolved');
   });
 
   it('marks overdue open obligations',()=>{
-    const yesterday=new Date(Date.now()-86400000);
-    const overdue=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(yesterday);
-    expect(delayRiskAdvisory(overdue,'open')).toBe('overdue');
+    expect(delayRiskAdvisory(due(-1),'open',now+2*day)).toBe('overdue');
   });
 
   it('marks near-term open obligations critical/urgent/watch',()=>{
-    const in3Days=new Date(Date.now()+3*86400000);
-    const in3DaysStr=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(in3Days);
-    expect(delayRiskAdvisory(in3DaysStr,'open')).toBe('critical');
-
-    const in20Days=new Date(Date.now()+20*86400000);
-    const in20DaysStr=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(in20Days);
-    expect(delayRiskAdvisory(in20DaysStr,'open')).toBe('urgent');
-
-    const in45Days=new Date(Date.now()+45*86400000);
-    const in45DaysStr=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(in45Days);
-    expect(delayRiskAdvisory(in45DaysStr,'open')).toBe('watch');
+    expect(delayRiskAdvisory(due(3),'open',Date.parse(due(3)+'T00:00:00Z'))).toBe('critical');
+    expect(delayRiskAdvisory(due(20),'open',Date.parse(due(20)+'T00:00:00Z')-7*day)).toBe('urgent');
+    expect(delayRiskAdvisory(due(45),'open',Date.parse(due(45)+'T00:00:00Z')-31*day)).toBe('watch');
   });
 
   it('marks distant obligations low',()=>{
-    const in90Days=new Date(Date.now()+90*86400000);
-    const in90DaysStr=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(in90Days);
-    expect(delayRiskAdvisory(in90DaysStr,'open')).toBe('low');
+    expect(delayRiskAdvisory(due(90),'open',Date.parse(due(90)+'T00:00:00Z')-61*day)).toBe('low');
   });
 });
