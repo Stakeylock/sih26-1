@@ -1,4 +1,4 @@
-# FlowPilot — Evidence Review Demo
+# Clauseway — Evidence Review Demo
 
 ## Intent
 
@@ -9,8 +9,8 @@ HTML sketches can suggest composition (whether each screen has a purpose) withou
 ## Context
 
 - React 19 + TypeScript + Vite
-- Supabase (Postgres + RLS) in production; PGlite harness for local/CI unit and SQL-gated tests
-- Current task: evidence verification and auditability — complete (two-pane dossier, teammate-adoption, persona-controller, signal-disposition slices; all gates green). Next task not yet set.
+- Supabase (Postgres + RLS) in connected mode; PGlite harness for local/CI unit and SQL-gated tests
+- Current focus: evidence verification, traceability and release readiness. Check `docs/VALIDATION.md` for current test status and blockers.
 
 ## Recent windows
 
@@ -19,7 +19,7 @@ HTML sketches can suggest composition (whether each screen has a purpose) withou
 - **WEBSITE:** https://flowpilot.cc
 - **KEYWORK:** verification, audit trail, Trust Center, access ledger, claims
 - **OBLIGATION:** Record evidence review decisions and their provenance so they can be followed later.
-- **IMPORTANT THING:** "Spirit" = what this demo actually does, not a marketing layer. The verified build (build verified + 320/320 unit/SQL tests + 104/104 Playwright E2E, certified 2026-10-27) is the current evidence that the claims/evidence/audit stack is wired, not a claim that the demo is production.
+- **IMPORTANT THING:** "Spirit" = what this demo actually does, not a marketing layer. Dated build and test records are tracked in `docs/VALIDATION.md`; do not call a historical result a current CI pass or production certification.
 - **HELP:** Trust Center shows access grants, Evidence Passport shows document security state, and the claims ledger records verification events and deficiency threads; the reviewer test verifies the resolve→re-check→accept loop. Corrections keep history: "Submit correction for review" links a replacement and reopens only that claim for re-check. Recent evidence scale: 10k-application benchmark in `docs/scale-results.json`, zero errors.
 
 ### PRACTICE AND REVIEW

@@ -1,94 +1,95 @@
-# Clauseway SIH26262 · local continuation
+# Clauseway
 
-A locally editable React/TypeScript application continuing the existing Lovable database and Figma design. All accounts, evidence and decisions in this workspace are synthetic. This is not an Institutional Review service and is not approved for real regulatory work.
+**A traceable approval-workflow and continuing-compliance prototype for Smart India Hackathon 2026.**
 
-## Run the whole demo
+**Team Verity · SIH26262 · Smart Automation · Software**
 
-One-time setup (requires Docker Desktop and the Supabase CLI), then start everything:
+[![CI](https://github.com/Stakeylock/sih26-1/actions/workflows/ci.yml/badge.svg)](https://github.com/Stakeylock/sih26-1/actions/workflows/ci.yml)
+[Implementation](docs/recon-implementation.md) · [Validation](docs/VALIDATION.md) · [Demo walkthrough](docs/judges-walkthrough.md) · [Deployment readiness](docs/DEPLOYMENT_READINESS.md)
 
-```text
-npm run local:setup   # once: provisions and migrates the local Supabase stack
-npm run local:start   # starts the stack, the advisory service and both frontends
+> **Demonstration only.** Clauseway uses synthetic identities, documents, applications, approvals and timelines. It is **not an official AICTE service**, has no live AICTE integration, and must not be used to issue or verify real regulatory approvals.
+
+![Clauseway workspace overview](docs/overview.png)
+
+## Why Clauseway?
+
+Approval cases span evidence, scrutiny, inspection, decisions and obligations that can remain open after a decision. Clauseway keeps the case, its governing workflow version, reviewed evidence and recorded actions together. When an evidence link or declared review input changes, it flags the **affected configured findings** for re-review without silently treating unrelated reviews as stale. Authorized people—not the software—make decisions.
+
+This is **evidence-linked revalidation**, not a claim to invent selective re-scrutiny or provide general semantic dependency inference.
+
+## What the prototype demonstrates
+
+- **Dossier and claim ledger:** evidence links, deficiencies, responses, validity review and targeted claim rechecks.
+- **Role-scoped workflow:** authenticated local workspace with user, institution and region checks enforced by PostgreSQL and row-level security.
+- **Policy versioning:** recorded routes, calendars, authority gates, policy notices, explicit adoption and case-specific snapshots.
+- **Inspection coordination:** expert availability, conflict checks and reservation constraints.
+- **Continuing compliance:** post-decision obligations, document expiry and pending actions.
+- **Trust and history:** SHA-256-linked audit events, recorded review bases, replayable snapshots and scoped exports.
+- **Reliability:** durable notification/deadline/scan jobs; private upload quarantine and a **locally tested** ClamAV scanner.
+- **Optional analysis:** explainable, source-pinned what-if analysis and an optional 3D evidence relationship view.
+
+The optional LangGraph advisory is deterministic and does **not** call an external LLM or decide cases. The separately packaged n8n runtime is **disabled** pending dependency remediation.
+
+## Quick start
+
+Requires **Node.js 22** and npm. Start the standalone synthetic demo without Docker:
+
+```bash
+npm ci
+npm run dev
 ```
 
-This brings up Supabase (http://127.0.0.1:55321), the local advisory service on 127.0.0.1:8787, the connected workspace on 5173 and the isolated demo on 5174.
+Open the loopback URL printed by Vite (normally `http://127.0.0.1:5173`). This is the **isolated browser demo**, with preview personas, synthetic documents and no real backend permissions. Some advisory/pre-check functionality requires its separate local service.
 
-Workload requirement: connected mode requires the advisory service; the demo on 5174 works standalone, but the document pre-check needs that same service.
+For the **full local authenticated stack**, additionally install Docker Desktop and use the project's Supabase CLI dependency:
 
-## 25 October implementation
+```bash
+npm run local:setup   # first-time local provisioning
+npm run local:start   # local Supabase + workers + advisory + both frontends
+```
 
-The app now includes source-pinned scenarios, actual-history exploration, optional 3D evidence navigation, expert reservations, reviewed workflow publication/adoption, independent recommendations and delivery attempt history. [Implementation inventory and validation](docs/recon-implementation.md) · [Judges’ walkthrough](docs/judges-walkthrough.md). The local Auth/Storage/REST stack and authenticated LangGraph service have been exercised with fresh synthetic fixtures. The nested n8n runtime remains disabled because of its critical dependency findings.
-
-## Open the app
-
-- Isolated browser demo: http://127.0.0.1:5174
-- Authenticated local workspace: http://127.0.0.1:5173/#overview
-- Local advisory backend: http://127.0.0.1:8787/api/automation/health
-- Local Supabase Auth, Data API, and private Storage: http://127.0.0.1:55321
-- With Docker Desktop running, run `Start-FlowPilot.ps1` or `npm run local:start`. The launcher starts an isolated Clauseway stack, applies checked migrations, provisions synthetic accounts, and starts both frontends and the API. Install dependencies first with `npm ci` if needed.
-- The connected app now uses the ignored `.env.connected.local`, generated from the local stack. The existing hosted `.env.local` is preserved and is not used by this local connected mode.
-- The connected app requires explicitly provisioned accounts. Integration accounts have randomly generated passwords in the ignored `.env.integration.local` file. No credentials are included in this README, source archive, or reports. The connected UI has no role selector.
-- In the isolated demo, use **Preview as** to explore the five roles. **Ctrl/Cmd+K** opens workspace search. Its seed documents are watermarked synthetic samples served from `public/samples/` (nothing personal or official); newly selected files add metadata only.
+The launcher uses loopback-only services: isolated demo `5174`, authenticated frontend `5173`, Supabase API `55321`, advisory `8787`, and worker health `8791`. The connected frontend signs in with explicitly provisioned **synthetic accounts**; credentials remain in ignored local environment files. See [local setup and troubleshooting](docs/LOCAL_RUN.md).
 
 ## Architecture
 
-React 19 + TypeScript + Vite; self-hosted Inter and Lucide icons; Supabase Auth/PostgreSQL/Storage. Database functions validate live sessions, role and region, application state, optimistic version, required evidence, and idempotency keys. Writes and append-only audit events commit together. Client roles never authorize mutations.
-
-`src/domain` contains types and display helpers. `src/data` contains separate connected and isolated-demo adapters. `src/ui` contains application views. `supabase/reference/lovable-baseline.sql` preserves the original Lovable migrations. Eight migrations were previously applied to the isolated local PostgreSQL database. The ninth correction-review migration is staged and SQL-tested; Docker is currently unavailable, so its connected verification remains pending. Migration checksums protect the local bootstrap path. See `docs/LOCAL_RUN.md` and `docs/ASTRA_REVIEW.md` for current scope and checks.
-
-### n8n and LangGraph
-
-The actual LangGraph JavaScript graph validates and minimizes case metadata, checks evidence completeness, and prepares an advisory summary. It uses deterministic rules with **no external model** and cannot change workflow state or release files. Connected requests validate the Supabase user and read the case under that user's RLS.
-
-The automation service at port 8787 stores a durable SQLite outbox. The checked-in n8n workflows receive authenticated, minimal demo events, acknowledge follow-up tasks idempotently, and poll due tasks every 15 minutes. No email or external message is sent. n8n has no Supabase service-role credential or approval RPC access. Its authenticated webhook and callback were tested against a real local n8n instance.
-
-**n8n was stopped and disconnected after its audit reported high and critical dependency findings.** Its runtime is kept separate under `automation/n8n`, out of the application bundle. Resolve and retest those findings in an isolated supported runtime before enabling it. Do not run `npm audit fix --force` or accept the suggested downgrade blindly. The LangGraph advisory remains usable without n8n.
-
-### Evidence handling
-
-The evidence bucket is private. Uploads require an existing reservation for an editable owned case. Objects cannot be overwritten or deleted by browser clients. Documents remain quarantined until a trusted scanner confirms uploaded-byte metadata and supplies a hash and engine provenance. Pending/rejected files cannot be read or used to submit a case.
-
-Only a trusted server scanner may call `fp_complete_document`. A production malware-scanning provider is not configured. Integration tests used known synthetic PNG fixtures and explicitly label that provenance; this does **not** validate malware detection. Signed-link expiration and a real antivirus provider remain release gates. Browser downloads use the authenticated storage API and do not persist public URLs.
-
-## Validate
-
 ```text
+React 19 / TypeScript / Vite
+  ├─ Isolated demo adapter → in-memory synthetic cases and demo audit replay
+  └─ Connected adapter → Supabase Auth + PostgreSQL RPCs + RLS
+                              ├─ Versioned cases, claims, decisions, audit events
+                              ├─ Private Storage (quarantine before release)
+                              └─ Durable jobs → ClamAV / deadlines / in-app delivery
+
+Separate local advisory service → deterministic, read-only LangGraph summary
+Optional n8n workflow runtime → disabled due to unresolved dependency findings
+```
+
+| Area | Source |
+| --- | --- |
+| Application shell and screens | `src/App.tsx`, `src/ui/` |
+| Domain rules and audit representation | `src/domain/` |
+| Demo and connected data adapters | `src/data/demo.ts`, `src/data/supabase.ts` |
+| Database schema, permissions and RPCs | `supabase/migrations/` |
+| Local worker and scanner | `workers/`, `deploy/` |
+| Advisory automation | `automation/` |
+| Automated validation | `tests/`, `e2e/`, `scripts/` |
+
+## Verify the build
+
+```bash
 npm run build
 npm test
 npm run test:e2e
-node node_modules/@playwright/test/cli.js test --config playwright.connected.config.ts
-node scripts/release-check.mjs
 ```
 
-The fast SQL security suite uses PGlite. A full local Supabase Docker stack now independently verifies Auth, PostgreSQL, RLS, private Storage, concurrency, and claim remediation through real HTTP APIs. Local published ports are checked for loopback binding. The launcher only operates on containers labelled for `flowpilot-sih26-local`; other projects are left alone.
+With the full local services available, run `npm run test:connected`, `npm run test:reliability:local`, and `npm run test:scale:local` as appropriate. These tests may require their own isolated local environment and should **not** be pointed at production records. The `scripts/release-check.mjs` release gate intentionally returns a non-zero exit code while its blockers remain.
 
-Read `docs/VALIDATION.md` and the JSON evidence files. The release gate intentionally fails. The previous Vercel deployment has not been replaced. No production readiness claim is made.
+The recorded 25 October synthetic PostgreSQL run used **10,000 cases**, **100 virtual clients** sharing **25 database connections**, and measured **522.64 operations/s** with **273.07 ms p95 register reads** over about **11.1 seconds**. Those are database-test measurements, **not end-to-end production capacity or regulatory SLAs**. See [test methodology and limitations](docs/scalability-audit.md) and [raw results](docs/scale-results.json).
 
-## Maintain safely
+**Latest recorded CI status and limitations:** [Validation](docs/VALIDATION.md). Automated checks and local scanner integration are not a penetration test, official authorization or production certification.
 
-- Preserve the original Lovable history. This project was reconstructed locally from its schema and design references; it is not a clone of a discovered canonical GitHub repository.
-- Keep private files named `.env*`, SQLite files, runtime state, and credentials out of Git and packages. Only publishable client configuration may enter the browser.
-- Bootstrap administrators through trusted database administration. New signups always receive institution privileges, regardless of supplied metadata. Staff regions must be explicit; only national administrators have global scope.
-- Published workflows are read-only in this UI. Create reviewed new workflow versions through migrations; in-flight cases retain their snapshots.
-- RLS controls access to records. UI queries currently cap lists at 200 cases / 500 audit events; large installations need cursor pagination and reporting queries.
-- Hardened Vercel headers are included, but the advisory service and persistent outbox need a separately validated deployment topology. The included SQLite service is for local Work mode.
-- Drive is the engineering documentation vault, not the transactional database or evidence bucket.
+## Documentation
 
-## Design references
+Start at the [documentation index](docs/README.md). For an evaluation, follow the [six-minute case walkthrough](docs/judges-walkthrough.md). For staging and Vercel, read [deployment readiness](docs/DEPLOYMENT_READINESS.md) first: **the Vercel build produces the synthetic frontend; it does not deploy the connected database, advisory or scanning worker.**
 
-The original Figma frames define the navy sidebar, teal actions, warm-white canvas, Inter typography, overview, case workspace and application wizard. Awwwards' Attio entry informed quick navigation and the structured register; its mobile guidelines informed visible actions and responsive behavior. Keyboard search, focus rings, clear validation and reduced-motion support are implemented in Clauseway's own components.
-
-The user-supplied `per-simmons/clone-app-pat-pro-public` repository is a reconstruction skill, not an app. Its computed-style comparison script was used against Clauseway's measured tokens: 8 assertions passed. We adapted that method to the existing app rather than claiming a pixel-for-pixel clone of an Awwwards site. Figma's static design contained no image/SVG assets requiring export.
-
-- Figma: https://www.figma.com/design/0YuF68RLR5zwXZm9RzvR5q
-- Awwwards Attio: https://www.awwwards.com/sites/attio
-- Awwwards mobile guidance: https://www.awwwards.com/mobile-excellence-guidelines.pdf
-- Visual QA reference: https://github.com/per-simmons/clone-app-pat-pro-public
-
-No proprietary Awwwards/Attio code, logos, or marketing assets were copied.
-
-## Reliability services and measurements
-
-The connected register uses server-filtered cursor pages and fetches case details independently. The local worker service runs deadline reminders, durable in-app delivery and actual ClamAV document scanning. Start it with `npm run workers:start`; inspect it with `npm run workers:health`. The local launcher also starts these services.
-
-See [reliability operations](docs/reliability-operations.md) and the updated [scalability audit](docs/scalability-audit.md). Reproduce service-boundary validation with `npm run test:reliability:local` and the disposable 10,000-case database workload with `npm run test:scale:local`. Remote deployment requires its own host configuration and validation.
+For contributions, see [CONTRIBUTING.md](CONTRIBUTING.md). To report a security concern, see [SECURITY.md](SECURITY.md). The code is released under the [MIT License](LICENSE).

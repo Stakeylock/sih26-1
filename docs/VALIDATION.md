@@ -1,42 +1,58 @@
-# Validation record
+# Validation and evidence
 
-**25 October 2026:** Docker has been recovered and the current local stack is running. The six new feature migrations and the preceding governance/correction changes have been applied locally. Fresh Auth/Storage/workflow, claim-remediation and recon-capability integration tests now pass. See [current implementation and validation](recon-implementation.md). Earlier Docker-unavailable notes below are historical.
+**Status reviewed: 28 October 2026.** The latest inspected `main` revision is `a155635da4f5ae5c4ab60b17d6ea0ad1c33a3932` (27 October). This document separates **GitHub CI**, **recorded local integrations** and **deployment blockers**. It does not claim a production deployment or a full security certification.
 
-Correction-review slice, **24 October 2026**: both demo and connected builds pass; 151 automated unit/SQL/domain tests and 31 demo browser checks, including the merged dark-mode history and policy views cover the revised source. The main application dependency audit previously reported zero findings and no dependencies were added in this slice. The ninth migration records review bases and immutable snapshots; its SQL is exercised in PGlite with explicit authenticated roles. Read [ASTRA_REVIEW.md](ASTRA_REVIEW.md) for the exact scope and remaining boundary.
+## GitHub CI — 27 October baseline
 
-The latest upstream top navigation, dark mode and specimen previews were pulled at `f63a8fe` before reapplying this slice. The Docker engine is unavailable in this session. The ninth migration has **not** been applied to the previously provisioned local PostgreSQL stack or any hosted project. New real Auth/REST/Storage and concurrent-session checks remain unverified. Earlier connected results below are historical. The isolated demo and deterministic advisory can run independently; n8n remains disabled.
+[CI run 40566142578](https://github.com/Stakeylock/sih26-1/actions/runs/40566142578) for the above commit completed with a **failure**:
 
-Latest local run: **23 October 2026**. See [LOCAL_RUN.md](LOCAL_RUN.md) for the corrected stack and reproducible commands. Both builds, 91 unit/security tests, 28 browser tests, 11 core local integration checks, and 13 claim-remediation checks passed. All eight migrations are applied to the isolated local Supabase database. The review fixes are local changes; no hosted database or public deployment was modified. n8n and unvalidated production malware scanning remain release limits.
+| Stage | Recorded result |
+| --- | --- |
+| Dependency installation and demo build | Passed |
+| Vitest unit/SQL tests | **343 passed** across 46 test files |
+| Root application dependency audit | Zero reported vulnerabilities |
+| Playwright demo browser checks | **107 passed, 1 failed** |
 
-The record below is retained as historical evidence from 22 October 2026 and does not describe the current local stack.
+The remaining browser failure was `e2e/governance.spec.ts` on the policy-changes banner: after navigating to policy notices, the alert stayed visible when the test expected it to be acknowledged. The proposed fix is reviewed in the repository-readiness PR; **a green rerun must be observed before claiming the issue is resolved**. CI checks only the scopes actually configured in `.github/workflows/ci.yml`.
 
-Environment: local Work mode, connected only to the exact Clauseway Lovable demo database. Synthetic identities and fixtures only.
+## Recorded local integration — 25 October
 
-| Check | Evidence / result |
-|---|---|
-| TypeScript and optimized connected build | Passed |
-| PostgreSQL/RLS and automation unit tests | 26 passed |
-| Demo browser flows and mobile accessibility | 5 passed, including keyboard command search and reduced motion |
-| Measured style assertions | 8/8 passed using the supplied repository's comparator |
-| Hosted Supabase integration | 11 passed; 8 real synthetic accounts, private upload/download, tenant/region denials, concurrency, audited transitions and retry-safe decisions |
-| Actual LangGraph → n8n → callback smoke | 8 passed; no external messages or LLM calls |
-| Connected browser flow | 1 passed: real login, draft creation/editing, persistence after reload, scoped advisory, logout |
-| Application production dependency audit | No vulnerabilities reported |
-| Separate n8n dependency audit | 12 critical, 43 high, 94 moderate, 3 low; runtime stopped and webhook disconnected |
-| Production malware scanning | Not validated; fixtures used a clearly labelled trusted test completion |
-| Full local Supabase container stack | Unavailable: Docker Desktop startup error |
-| Public deployment | Withheld; existing Vercel demo retained |
+The following are **stored test records**, not services being live at the time you read this:
 
-The hosted test revealed implicit write grants from the managed database's defaults. A second migration now explicitly revokes direct table/sequence writes in addition to RLS. The rerun passed.
+| Check | Recorded outcome | Evidence |
+| --- | --- | --- |
+| Local Supabase, authenticated claims and workflow | Synthetic Auth/Storage/RPC checks completed | [Implementation report](recon-implementation.md), [recon results](recon-live-results.json) |
+| Private upload and real local ClamAV | Three clean fixtures accepted; antivirus-test and MIME mismatch rejected; quarantine read blocked | [Service results](reliability-integration-results.json) |
+| Worker restart recovery | One pending in-app effect recovered after worker restart | [Service results](reliability-integration-results.json) |
+| Local PostgreSQL workload | 10,000 synthetic applications, 100 virtual clients, ~523 operations/s, 273.07 ms p95 register read | [Scalability audit](scalability-audit.md), [raw results](scale-results.json) |
+| Previous comprehensive local suite | 275 unit/SQL, 77 demo browser and two connected browser tests passed | [Reliability audit](scalability-audit.md) |
 
-The automated accessibility check covers serious/critical axe findings in the tested mobile register. It is not a WCAG certification. A formal keyboard/screen-reader audit, all screen states, backups and restore, operational monitoring, scanner integration, signed-link expiry tests, and domain approval remain required before a production release.
+The workload used **PostgreSQL on a local machine**, a **25-connection pool**, and roughly **11 seconds** for the 100-client stage. It excludes HTTP, hosted authentication, storage-byte transfer and WAN. A successful local test does not establish sustained production concurrency.
 
-The n8n integration is implemented and was exercised locally, but it is deliberately disabled because its upstream runtime dependency tree did not pass the security gate. The main application and LangGraph advisory remain separate from those dependencies.
+The local worker scanned actual synthetic bytes with ClamAV, but **no remote production scanner service is configured or validated**. Local SMTP testing establishes transport acceptance by a test sink, **not external email delivery**.
 
-The connected browser flow passed against the hosted Supabase demo with the local advisory service. n8n was then left disabled; connected advisories remain available independently.
+## Release gates — not satisfied
 
-## 2026-10-25 reliability implementation
+- `docs/release-gates.json` currently records `deployAllowed: false`.
+- The optional n8n runtime remains disabled after dependency-audit findings; do not enable it as part of a frontend release.
+- Remote scanning, secret handling, host configuration, migrations, backups/restores, monitoring and access controls require staging validation.
+- Formal accessibility testing, institutional policy/authority review and official integration permissions remain outstanding.
+- The current Vercel `npm run build` creates a **demo frontend**, not a deployed authenticated backend.
+- The private GitHub repository and protected Vercel links may not be accessible to SIH evaluators without planned authorization.
 
-Demo/connected builds passed. The unit/SQL suite passed 275 tests; demo E2E passed 77 and connected E2E passed two. The actual local Supabase/ClamAV integration passed quarantine, file hash, antivirus test, MIME mismatch, isolation and worker-restart checks. Local database advisors reported no warning/error findings, and the application dependency audit reported zero vulnerabilities. The sustained disposable Postgres workload and its limitations are recorded in `scale-results.json`; service results are in `reliability-integration-results.json`. See `reliability-operations.md` for reproduction and deployment configuration.
+## Reproduce (only in a safe local environment)
 
-The later post-merge builds and 275-test unit/SQL run also passed. A subsequent live-service recheck could not connect: Docker's CLI was unavailable in that command environment and the loopback Supabase/worker endpoints refused connections. The earlier successful live results remain timestamped in `reliability-integration-results.json`; they are not a claim that the containers are currently running. The integration script now additionally checks the recorded malware-signature reason independently from the MIME-mismatch reason; that stricter follow-up needs a running Docker stack.
+```bash
+npm ci
+npm run build
+npm test
+npm run test:e2e
+```
+
+With an intentionally provisioned local Supabase/worker stack, use `npm run test:connected`, `npm run test:reliability:local` and `npm run test:scale:local`. Inspect `docs/reliability-operations.md` before starting workers.
+
+`node scripts/release-check.mjs` writes `docs/release-gates.json` and currently **fails intentionally**. A failed release gate must never be interpreted as a successful deploy authorization.
+
+## Historical records
+
+Earlier 22–24 October partial integration runs, Docker-unavailable incidents and initial schema validation remain available in the repository's Git history and dated implementation notes. They must not override the newer 25 October local evidence or the 27 October CI outcome.
