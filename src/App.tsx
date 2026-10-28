@@ -4,12 +4,13 @@ const CaseAnalysis=lazy(()=>import('./ui/CaseAnalysis').then(module=>({default:m
 
 const PolicyNotices=lazy(()=>import('./ui/PolicyNotices').then(module=>({default:module.PolicyNotices})));
 import {lazy,Suspense,useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
-import {ArrowLeft,ArrowRight,BarChart3,Bell,Building2,ChevronDown,ClipboardList,FileClock,Fingerprint,GitBranch,LayoutDashboard,LogOut,Menu,Play,RefreshCw,Settings2,ShieldCheck,ShieldEllipsis,Clock3,TriangleAlert,X,CalendarClock} from 'lucide-react';
+import {ArrowLeft,ArrowRight,BarChart3,Bell,Building2,ChevronDown,ClipboardList,FileClock,Fingerprint,GitBranch,LayoutDashboard,LogOut,Mail,Menu,Play,RefreshCw,Settings2,ShieldCheck,ShieldEllipsis,Clock3,TriangleAlert,X,CalendarClock} from 'lucide-react';
 import {repository} from './data/repository';
 import {mergeCaseBundle} from './domain/register';
 import {roleLabels,routeStages,type Identity,type Repository,type Role,type Workspace} from './domain/model';
 import {Overview} from './ui/Overview';
 import {DueWork} from './ui/DueWork';
+import {NotificationTester} from './ui/NotificationTester';
 import {Applications,NewApplication,type Run} from './ui/Applications';
 const CaseWorkspace=lazy(()=>import('./ui/CaseWorkspace').then(module=>({default:module.CaseWorkspace})));
 const Alerts=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Alerts})));
@@ -34,14 +35,14 @@ import {AccessibilityMenu} from './ui/AccessibilityMenu';
 import {makeT,roleLabelsHi,useUiLang,type UiLang} from './ui/i18n';
 import './ui/prototype.css';
 applyDisplayPreferences();
-const navigation=[{id:'operations',label:'Case operations',hi:'केस संचालन',icon:ClipboardList},{id:'overview',label:'Overview',hi:'अवलोकन',icon:LayoutDashboard},{id:'analysis',label:'Case analysis',hi:'केस विश्लेषण',icon:GitBranch},{id:'applications',label:'Applications',hi:'प्रार्थनाएँ',icon:ClipboardList},{id:'workflows',label:'Approval routes',hi:'अनुमोदन प्रक्रिया',icon:GitBranch},{id:'visits',label:'Verification visits',hi:'सत्यापन निरीक्षण',icon:CalendarClock},{id:'compliance',label:'Compliance',hi:'अनुपालन',icon:ShieldCheck},{id:'alerts',label:'Alerts & escalations',hi:'अलर्ट और एस्कलेशन',icon:Bell},{id:'reports',label:'Reports',hi:'रिपोर्ट',icon:BarChart3},{id:'trust',label:'Trust Center',hi:'ट्रस्ट सेंटर',icon:Fingerprint},{id:'notices',label:'Policy notices',hi:'नीति सूचनाएँ',icon:FileClock},{id:'audit',label:'Audit logs',hi:'ऑडिट लॉग',icon:FileClock},{id:'due-work',label:'Due work',hi:'देय कार्य',icon:Clock3},{id:'settings',label:'Settings',hi:'सेटिंग्स',icon:Settings2}];
+const navigation=[{id:'operations',label:'Case operations',hi:'केस संचालन',icon:ClipboardList},{id:'overview',label:'Overview',hi:'अवलोकन',icon:LayoutDashboard},{id:'analysis',label:'Case analysis',hi:'केस विश्लेषण',icon:GitBranch},{id:'applications',label:'Applications',hi:'प्रार्थनाएँ',icon:ClipboardList},{id:'workflows',label:'Approval routes',hi:'अनुमोदन प्रक्रिया',icon:GitBranch},{id:'visits',label:'Verification visits',hi:'सत्यापन निरीक्षण',icon:CalendarClock},{id:'compliance',label:'Compliance',hi:'अनुपालन',icon:ShieldCheck},{id:'alerts',label:'Alerts & escalations',hi:'अलर्ट और एस्कलेशन',icon:Bell},{id:'reports',label:'Reports',hi:'रिपोर्ट',icon:BarChart3},{id:'trust',label:'Trust Center',hi:'ट्रस्ट सेंटर',icon:Fingerprint},{id:'notices',label:'Policy notices',hi:'नीति सूचनाएँ',icon:FileClock},{id:'audit',label:'Audit logs',hi:'ऑडिट लॉग',icon:FileClock},{id:'notifications',label:'Notifications',hi:'सूचनाएँ',icon:Mail},{id:'due-work',label:'Due work',hi:'देय कार्य',icon:Clock3},{id:'settings',label:'Settings',hi:'सेटिंग्स',icon:Settings2}];
 type Section={id:string;label:string;hi:string;home:string;items:string[]};
 // Four primary sections instead of ten equal-weight destinations; destinations show contextually below the section row.
 const sections:Section[]=[
   {id:'workbench',label:'Workbench',hi:'कार्यक्षेत्र',home:'overview',items:['overview','analysis']},
   {id:'approvals',label:'Approvals',hi:'अनुमोदन',home:'applications',items:['applications','workflows','visits']},
   {id:'compliance',label:'Compliance',hi:'अनुपालन',home:'compliance',items:['compliance']},
-  {id:'oversight',label:'Oversight',hi:'नियंत्रण',home:'operations',items:['operations','reports','alerts','notices','trust','audit','due-work']},
+  {id:'oversight',label:'Oversight',hi:'नियंत्रण',home:'operations',items:['operations','reports','alerts','notices','trust','audit','notifications','due-work']},
 ];
 const destinations=navigation;
 const destinationById=Object.fromEntries(destinations.map(item=>[item.id,item]));
@@ -52,8 +53,8 @@ function sectionOf(page:string):Section|null{
   if(page==='demo-lab'||page.startsWith('prototype'))return sections[0];
   return null;
 }
-const titles:Record<string,string>={operations:'Case operations',analysis:'Case analysis',notices:'Policy notices',overview:'Overview',applications:'Applications',new:'New approval application',case:'Application workspace',receipt:'Decision receipt',workflows:'Approval routes',visits:'Verification visits',compliance:'Compliance monitoring',alerts:'Alerts & escalations',reports:'Reports & insights',trust:'Trust Center',audit:'Audit logs',settings:'Workspace settings',prototype:'Applications requiring attention',['prototype/case']:'Application workspace','demo-lab':'Demo lab'};
-const titlesHi:Record<string,string>={operations:'केस संचालन',analysis:'केस विश्लेषण',notices:'नीति सूचनाएँ',overview:'अवलोकन',applications:'प्रार्थनाएँ',new:'नया अनुमोदन प्रार्थना',case:'आवेदन कार्यक्षेत्र',receipt:'निर्णय प्राप्ति',workflows:'अनुमोदन प्रक्रिया',visits:'सत्यापन निरीक्षण',compliance:'अनुपालन निगरानी',alerts:'अलर्ट और एस्कलेशन',reports:'रिपोर्ट और विश्लेषण',trust:'ट्रस्ट सेंटर',audit:'ऑडिट लॉग',settings:'कार्यक्षेत्र सेटिंग्स',prototype:'समीक्षा अधीन प्रार्थनाएँ',['prototype/case']:'आवेदन कार्यक्षेत्र','demo-lab':'डेमो लैब'};
+const titles:Record<string,string>={operations:'Case operations',analysis:'Case analysis',notices:'Policy notices',overview:'Overview',applications:'Applications',new:'New approval application',case:'Application workspace',receipt:'Decision receipt',workflows:'Approval routes',visits:'Verification visits',compliance:'Compliance monitoring',alerts:'Alerts & escalations',reports:'Reports & insights',trust:'Trust Center',audit:'Audit logs',settings:'Workspace settings',notifications:'Notifications',prototype:'Applications requiring attention',['prototype/case']:'Application workspace','demo-lab':'Demo lab'};
+const titlesHi:Record<string,string>={operations:'केस संचालन',analysis:'केस विश्लेषण',notices:'नीति सूचनाएँ',overview:'अवलोकन',applications:'प्रार्थनाएँ',new:'नया अनुमोदन प्रार्थना',case:'आवेदन कार्यक्षेत्र',receipt:'निर्णय प्राप्ति',workflows:'अनुमोदन प्रक्रिया',visits:'सत्यापन निरीक्षण',compliance:'अनुपालन निगरानी',alerts:'अलर्ट और एस्कलेशन',reports:'रिपोर्ट और विश्लेषण',trust:'ट्रस्ट सेंटर',audit:'ऑडिट लॉग',settings:'कार्यक्षेत्र सेटिंग्स',notifications:'सूचनाएँ',prototype:'समीक्षा अधीन प्रार्थनाएँ',['prototype/case']:'आवेदन कार्यक्षेत्र','demo-lab':'डेमो लैब'};
 export default function App(){
   const [detailReady,setDetailReady]=useState('');
   const [role,setRole]=useState<Role>('national_admin');const [repo,setRepo]=useState<Repository|null>(null);const [identity,setIdentity]=useState<Identity|null>(null);const [data,setData]=useState<Workspace|null>(null);
@@ -152,6 +153,7 @@ export default function App(){
         {page==='trust'&&<TrustCenter data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
         {page==='audit'&&<Audit data={data} repo={repo} run={run} busy={busy} openReceipt={(id)=>navigate(`receipt/${encodeURIComponent(id)}`)}/>}
         {page==='due-work'&&<DueWork data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
+        {page==='notifications'&&<NotificationTester data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
         {page==='settings'&&<Settings identity={identity} repo={repo}/>}
         {page==='demo-lab'&&(repo.mode==='demo'?<DemoLab data={data} repo={repo} onStartTour={startTour} onOpenPrototype={()=>navigate('prototype')} onOpenFlow={()=>navigate('prototype/flow/demo-app-0')} onSwitch={(nextRole,nextRoute)=>{setRole(nextRole);navigate(nextRoute);}} onRefresh={()=>{void reload();setNotice('Demo calendar advanced; derived deadlines were recorded as SYSTEM notes.');}}/>:<div className="empty"><h2>Demo lab unavailable</h2><p>Simulation controls are only available in demo mode.</p><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>)}
         {!titles[page]&&<div className="empty"><h2>Page unavailable</h2><button className="button outline" onClick={()=>navigate('overview')}>Return to overview</button></div>}

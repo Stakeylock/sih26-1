@@ -8,7 +8,13 @@ import {advanceDemoClock,DEMO_CLOCK_EVENT,demoClockOffset,resetDemoClock} from '
 import {NotificationTester} from './NotificationTester';
 import {VoiceCallRehearsal} from './VoiceCallRehearsal';
 import type {ClockReport} from '../domain/consequences';
-import type {Repository,Role,Workspace} from '../domain/model';
+import {EVC_REQUIRED_SEATS,type Repository,type Role,type Workspace} from '../domain/model';
+
+const scenarioSteps=[
+  {id:'schedule',label:'Schedule EVC visit'},
+  {id:'assign',label:'Assign three members'},
+  {id:'advance',label:'Advance clock 30 days'},
+] as const;
 
 const rehearsalStages=[
   {stage:'t_minus_90',label:'Example window before expiry',badge:'90 days before',recipient:'Case owner and reviewer',summary:'This sample window is counted back from a recorded expiry date. It does not set a notice deadline or evidence rule.'},
@@ -26,6 +32,12 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
   const [clockBusy,setClockBusy]=useState(false);
   const [clockError,setClockError]=useState<string|null>(null);
   const [clockReport,setClockReport]=useState<ClockReport|null>(null);
+  const [scenarioStep,setScenarioStep]=useState<number|null>(null);
+  const [scenarioCompleted,setScenarioCompleted]=useState<boolean[]>([]);
+  const [scenarioBusy,setScenarioBusy]=useState(false);
+  const [scenarioError,setScenarioError]=useState<string|null>(null);
+  const [scenarioResults,setScenarioResults]=useState<{label:string;value:string}[]>([]);
+  const [scenarioVisitId,setScenarioVisitId]=useState<string|null>(null);
   useEffect(()=>{
     const sync=()=>setOffset(demoClockOffset());
     window.addEventListener(DEMO_CLOCK_EVENT,sync);
@@ -41,6 +53,42 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
     }).catch((error:unknown)=>{setClockError(error instanceof Error?error.message:'Demo calendar advance failed.');}).finally(()=>setClockBusy(false));
   };
   const reset=()=>{void import('../data/demo').then(module=>module.resetDemo());};
+  const runScenarioStep=async(index:number)=>{
+    if(scenarioBusy)return;
+    setScenarioBusy(true);setScenarioError(null);
+    try{
+      const app=data.applications.find(item=>item.id==='demo-app-12');
+      if(!app)throw new Error('demo-app-12 not found.');
+      if(index===0){
+        const start=new Date(Date.now()+7*86400000);
+        const end=new Date(Date.parse(start.toISOString())+3*60*60*1000);
+        await repo.scheduleEVC(app,{scheduledStart:start.toISOString(),scheduledEnd:end.toISOString(),mode:'ONLINE',note:'Demo scenario: scheduled EVC visit for judge walkthrough.'});
+        const visits=await repo.getEVCVisits(app);
+        const visit=visits.find(v=>v.status==='SCHEDULED');
+        if(!visit)throw new Error('Scheduled visit not found.');
+        setScenarioVisitId(visit.id);
+        setScenarioResults([{label:'Visit scheduled',value:`${visit.id} · ${visit.mode} · ${formatDateTime(visit.scheduled_start)}`}]);
+      } else if(index===1){
+        if(!scenarioVisitId)throw new Error('No visit scheduled.');
+        const members=EVC_REQUIRED_SEATS.map((seat,i)=>({expertId:`demo-evc-member-${i+1}` as string,seat}));
+        await repo.assignEVCMembers(app,scenarioVisitId,members);
+        setScenarioResults(prev=>[...prev,{label:'Members assigned',value:'Academician · Expert · Architect-Planning'}]);
+      } else if(index===2){
+        if(!scenarioVisitId)throw new Error('No visit scheduled.');
+        const report=(await repo.advanceClock!(30)) as ClockReport & {dispatched:{reminders:number;overdue:number;escalations:number;expiries:number}};
+        setScenarioResults(prev=>[...prev,{label:'Clock advanced +30 days',value:`${report.dispatched.reminders} reminders · ${report.dispatched.overdue} overdue · ${report.dispatched.escalations} escalations · ${report.dispatched.expiries} expiries`}]);
+      }
+      setScenarioCompleted(prev=>{const next=[...prev];next[index]=true;return next;});
+      setScenarioStep(prev=>prev===null?0:prev+1);
+    }catch(err){
+      setScenarioError(err instanceof Error?err.message:'Scenario step failed.');
+    }finally{
+      setScenarioBusy(false);
+    }
+  };
+  const resetScenario=()=>{
+    setScenarioStep(null);setScenarioCompleted([]);setScenarioBusy(false);setScenarioError(null);setScenarioResults([]);setScenarioVisitId(null);void reset();
+  };
   const steps=guideSteps(data);
   const counters=[['Reminders',clockReport?.reminders.length??null],['Overdue marks',clockReport?.overdue.length??null],['Escalations',clockReport?.escalations.length??null],['Validity lapses',clockReport?.expiries.length??null]] as const;
   const rows=clockReport?[...clockReport.overdue,...clockReport.escalations,...clockReport.expiries,...clockReport.reminders]:[];
@@ -89,6 +137,32 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         <p className="support-footnote">Planning output derived only from recorded deadlines and validity dates. Cases show the same dates without the shifted clock; a SYSTEM note is recorded per affected case in the audit trail. Nothing is dispatched, verified, or approved.</p>
       </div>}
     </section>
+    <section className="support-surface demo-lab-scenario">
+      <div className="support-surface-heading">
+        <div>
+          <h2>End-to-end EVC + escalation demo</h2>
+          <p>Walk a complete case through the system: schedule an EVC visit, assign the three required members, advance the demo clock 30 days, and watch obligations turn overdue with notifications dispatched.</p>
+        </div>
+        <span className="quiet-label"><ShieldCheck size={14}/>National administrator · demo mode</span>
+      </div>
+      <div className="demo-lab-scenario-controls">
+        {scenarioSteps.map((step,index)=>(
+          <button key={step.id} type="button" className={`button small ${scenarioStep===index?(scenarioBusy?'button secondary':'button'):scenarioCompleted[index]?'button secondary':'button outline'}`} disabled={scenarioBusy||(index>0&&!scenarioCompleted[index-1])} onClick={()=>runScenarioStep(index)}>
+            <span className="demo-scenario-step-index">{String(index+1).padStart(2,'0')}</span>
+            <span>{step.label}</span>
+            {scenarioStep===index&&scenarioBusy&&<span className="mono"> · running…</span>}
+          </button>
+        ))}
+        {scenarioStep===scenarioSteps.length&&<button className="button text small" type="button" onClick={resetScenario}><RotateCcw size={12}/>Reset scenario</button>}
+      </div>
+      {scenarioError&&<p className="callout">{scenarioError}</p>}
+      {scenarioResults.length>0&&(
+        <div className="demo-lab-scenario-results">
+          <h3>Results</h3>
+          {scenarioResults.map((r,idx)=>(<div key={idx} className="demo-scenario-result-row"><strong>{r.label}</strong><span className="mono">{r.value}</span></div>))}
+        </div>
+      )}
+    </section>
     <div className="demo-lab-grid">
       <section className="support-surface demo-lab-card">
         <h2>Reset synthetic workspace</h2>
@@ -111,7 +185,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         <button className="button outline" type="button" onClick={onOpenFlow}><FileStack size={14}/>Open relationship prototype</button>
       </section>
       <section className="support-surface demo-lab-card">
-        <NotificationTester repo={repo}/>
+        <NotificationTester data={data} repo={repo}/>
       </section>
     </div>
     <VoiceCallRehearsal repo={repo} data={data}/>

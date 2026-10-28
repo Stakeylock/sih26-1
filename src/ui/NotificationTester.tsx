@@ -1,139 +1,61 @@
-import { useState } from 'react';
-import { Send, ShieldCheck } from 'lucide-react';
-import type { DispatchNotificationParams, DispatchNotificationResult, GatewayStatus, NotificationChannel } from '../domain/notification';
-import { getGatewayStatus } from '../domain/notification';
-import type { Repository } from '../domain/model';
+import {useMemo,useState} from 'react';
+import {Send,ShieldCheck,TimerReset} from 'lucide-react';
+import {getGatewayStatus,type DispatchNotificationParams,type NotificationChannel} from '../domain/notification';
+import {type Identity,type Repository,type Workspace} from '../domain/model';
+import {Empty,ViewHeader} from './common';
+import type {Run} from './Applications';
 
-const KINDS: {kind:'REMINDER'|'OVERDUE'|'ESCALATION'|'INFO'|'RETURN';label:string}[]=[
-  {kind:'REMINDER',label:'Reminder'},
-  {kind:'OVERDUE',label:'Overdue'},
-  {kind:'ESCALATION',label:'Escalation'},
-  {kind:'INFO',label:'Information'},
-  {kind:'RETURN',label:'Return / correction'},
-];
-const CHANNELS: NotificationChannel[]=['in_app','email','sms','voice'];
+const KINDS:DispatchNotificationParams['kind'][]=['REMINDER','OVERDUE','ESCALATION','INFO','RETURN'];
 
-export function NotificationTester({repo}:{repo:Repository}){
-  const [gateway, setGateway] = useState<GatewayStatus|null>(null);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<DispatchNotificationResult|null>(null);
-  const [error, setError] = useState<string|null>(null);
-  const [form, setForm] = useState<DispatchNotificationParams>({
-    channel:['in_app'],
-    kind:'REMINDER',
-    subject:'Synthetic test notification',
-    body:'This is a test notification dispatched from the demo workspace.',
-  });
+function statusChip(status:string){
+  if(status==='in_app_delivered')return 'document-tag clean';
+  if(status==='pending'||status==='retry_wait')return 'document-tag pending';
+  if(status==='failed'||status==='superseded'||status==='exhausted')return 'document-tag';
+  return 'document-tag';
+}
 
-  async function loadGateway(){
-    setGateway(getGatewayStatus());
-  }
-
-  async function handleSubmit(e:React.FormEvent){
-    e.preventDefault();
-    setLoading(true); setError(null); setResult(null);
-    try{
-      const identity = await repo.identity();
-      if(!identity) throw new Error('No authenticated identity.');
-      const params:DispatchNotificationParams={
-        ...form,
-        kind:form.kind as 'REMINDER'|'OVERDUE'|'ESCALATION'|'INFO'|'RETURN',
-      };
-      const out = await repo.dispatchNotification(params);
-      setResult(out);
-    }catch(err){
-      setError(err instanceof Error?err.message:'Dispatch failed.');
-    }finally{
-      setLoading(false);
-    }
-  }
-
-  const attemptStatusColor=(status:string)=>{
-    switch(status){
-      case 'delivered': return 'badge success';
-      case 'sent_sandbox': return 'badge info';
-      case 'simulated': return 'badge warning';
-      case 'failed': return 'badge danger';
-      default: return 'badge';
-    }
-  };
-
+export function NotificationTester({data,identity,repo,run,busy}:{data:Workspace;identity?:Identity;repo:Repository;run?:Run;busy?:boolean}){
+  const demoIdentity={id:'demo',name:'Demo',email:'demo@demo.in',roles:[{role:'national_admin',region:null}]};
+  const identityVal=identity??demoIdentity;
+  const runVal=run??(async()=>{});
+  const busyVal=busy??false;
+  const [appId,setAppId]=useState(data.applications[0]?.id??'');
+  const [channel,setChannel]=useState<NotificationChannel>('in_app');
+  const [kind,setKind]=useState<DispatchNotificationParams['kind']>('REMINDER');
+  const [subject,setSubject]=useState('Synthetic test notification');
+  const [body,setBody]=useState('This is a test notification dispatched from the demo workspace.');
+  const [reason,setReason]=useState('');
+  const [gateway,setGateway]=useState<ReturnType<typeof getGatewayStatus>|null>(null);
+  useMemo(()=>{setGateway(getGatewayStatus());},[]);
+  const app=data.applications.find(item=>item.id===appId);
+  const canManage=Boolean(app&&app.owner_id!==identityVal.id&&identityVal.roles.some(role=>role.role==='national_admin'||(role.role==='regional_officer'&&role.region===app.region)));
+  const isAdmin=identityVal.roles.some(role=>role.role==='national_admin');
+  const deliveries=(data.delivery_outbox??[]).filter(item=>item.application_id===appId).sort((left,right)=>Date.parse(right.created_at)-Date.parse(left.created_at));
+  const attempts=(data.delivery_attempts??[]).filter(item=>deliveries.some(d=>d.id===item.outbox_id)).sort((left,right)=>Date.parse(right.happened_at)-Date.parse(left.happened_at));
+  const canQueue=Boolean(app&&canManage&&!busyVal&&reason.trim().length>=10&&subject.trim().length>=3&&body.trim().length>=5&&channel==='in_app');
+  const canProcess=Boolean(app&&isAdmin&&deliveries.some(item=>item.status==='pending')&&!busyVal);
+  const queue=()=>{if(!app||!canQueue)return;void runVal(()=>repo.operationsCommand('outbox_queue',app.id,{channel,kind,subject,body,note:reason.trim()},app.version).then(()=>{}),'Notification queued to the durable outbox.');setReason('');};
+  const process=()=>{if(!app||!canProcess)return;void runVal(()=>repo.operationsCommand('process_demo',app.id,{note:'Process pending delivery intents.'},app.version).then(()=>{}),'Pending deliveries processed.');};
+  const retry=(id:string)=>{if(!app||busyVal)return;void runVal(()=>repo.operationsCommand('outbox_retry',id,{note:'Retry eligible intent.'},app.version).then(()=>{}),'Delivery intent retried.');};
+  const cancel=(id:string)=>{if(!app||busyVal)return;void runVal(()=>repo.operationsCommand('outbox_cancel',id,{note:'Cancel intent.'},app.version).then(()=>{}),'Delivery intent cancelled.');};
   return (
-    <section className="support-surface" aria-label="Live notification dispatcher">
-      <div className="support-surface-heading">
-        <div>
-          <h2>Live notification dispatcher</h2>
-          <p>Dispatch a synthetic test notification through each channel and observe the honest delivery state. Nothing is sent to a real channel unless a gateway is explicitly configured.</p>
-        </div>
-        <span className="quiet-label"><ShieldCheck size={14}/>{gateway?.emailConfigured?'Email configured · ':'Email not configured · '}{gateway?.smsConfigured?'SMS configured':'SMS not configured'} · Voice simulated</span>
-      </div>
-      <div className="demo-notification-gateway">
-        <span className="demo-notification-gateway-label">Gateway state</span>
-        <span className={`demo-notification-gateway-chip ${gateway?.emailConfigured?'demo-notification-gateway-configured':'demo-notification-gateway-unconfigured'}`}>
-          Email: {gateway?.emailGateway??'—'}
-        </span>
-        <span className={`demo-notification-gateway-chip ${gateway?.smsConfigured?'demo-notification-gateway-configured':'demo-notification-gateway-unconfigured'}`}>
-          SMS: {gateway?.smsGateway??'—'}
-        </span>
-        <span className="demo-notification-gateway-chip demo-notification-gateway-unconfigured">
-          Voice: {gateway?.voiceGateway??'—'}
-        </span>
-        {!gateway?.emailConfigured&&!gateway?.smsConfigured&&<span className="demo-notification-gateway-note">Email and SMS will report simulated until a gateway is configured. Voice is always simulated.</span>}
-      </div>
-      <form onSubmit={handleSubmit} className="demo-notification-form">
-        <div className="form-grid">
-          <label className="field">Target<small>Defaults to the application owner.</small>
-            <select className="field-input" value={form.targetType||'institution'} onChange={e=>setForm({...form,targetType:e.target.value as 'institution'|'user'})}>
-              <option value="institution">Application owner (institution)</option>
-              <option value="user">Specific user</option>
-            </select>
-          </label>
-          {form.targetType==='user'&&(
-            <>
-              <label className="field">Target user id
-                <input className="field-input" type="text" value={form.targetId??''} onChange={e=>setForm({...form,targetId:e.target.value})} placeholder="User id"/>
-              </label>
-            </>
-          )}
-          <label className="field">Channel
-            <select className="field-input" value={form.channel?.[0]??'in_app'} onChange={e=>setForm({...form,channel:[e.target.value as NotificationChannel]})}>
-              {CHANNELS.map(c=><option key={c} value={c}>{c.replace('_',' ')}</option>)}
-            </select>
-          </label>
-          <label className="field">Kind
-            <select className="field-input" value={form.kind} onChange={e=>setForm({...form,kind:e.target.value as 'REMINDER'|'OVERDUE'|'ESCALATION'|'INFO'|'RETURN'})}>
-              {KINDS.map(k=><option key={k.kind} value={k.kind}>{k.label}</option>)}
-            </select>
-          </label>
-          <label className="field">Subject
-            <input className="field-input" type="text" value={form.subject} onChange={e=>setForm({...form,subject:e.target.value})} maxLength={200}/>
-          </label>
-          <label className="field">Body
-            <textarea className="field-input" value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={3} maxLength={2000}/>
-          </label>
-        </div>
-        <div className="form-actions">
-          <button className="button" type="submit" disabled={loading}><Send size={14}/>{loading?'Dispatching…':'Dispatch test notification'}</button>
-          <button className="button outline" type="button" onClick={()=>loadGateway()} disabled={loading}>Refresh gateway state</button>
-        </div>
-      </form>
-      {error&&<p className="callout warning" role="alert">{error}</p>}
-      {result&&(
-        <section className="demo-notification-result" aria-label="Dispatch result">
-          <h3>Dispatch result</h3>
-          <p><strong>Notification id:</strong> {result.notificationId}<span className="demo-notification-gateway-note"> · Gateway: {result.gateway.emailGateway} / {result.gateway.smsGateway} / {result.gateway.voiceGateway}</span></p>
-          <ul className="demo-notification-attempts">
-            {result.attempts.map((a,index)=>(
-              <li key={index} className="demo-notification-attempt">
-                <span className={`demo-notification-attempt-chip ${attemptStatusColor(a.status)}`}>{a.channel}</span>
-                <span className="demo-notification-attempt-status">{a.status}</span>
-                {a.previewUrl&&<a className="demo-notification-attempt-preview" href={a.previewUrl} target="_blank" rel="noopener noreferrer">Preview</a>}
-                {a.detail&&<span className="demo-notification-attempt-detail">{a.detail}</span>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+    <section className="page-stack">
+      <ViewHeader title="Notification outbox" summary="Durable notification delivery: queue source-bound intents, process them as the national administrator, retry or cancel pending intents. Every state change is audited." count={String(deliveries.length).padStart(2,'0')} label="delivery intents"/>
+      {!app&&<Empty title="No application">Choose an application to queue notifications for.</Empty>}
+      {app&&<>
+        <div className="spread"><div><h2>Gateway state</h2><p className="muted">Email and SMS report simulated until a live gateway is configured. Voice is always simulated. In-app is recorded immediately when processed.</p></div><span className="quiet-label">{gateway?.emailConfigured?'Email configured · ':'Email not configured · '}{gateway?.smsConfigured?'SMS configured':'SMS not configured'} · Voice simulated</span></div>
+        <label className="field">Application<select value={appId} onChange={event=>setAppId(event.target.value)}>{data.applications.map(item=><option key={item.id} value={item.id}>{item.ref_no} · {item.region}</option>)}</select></label>
+        <label className="field">Channel<select value={channel} onChange={event=>setChannel(event.target.value as NotificationChannel)}><option value="in_app">In-app notification</option></select></label>
+        <label className="field">Kind<select value={kind} onChange={event=>setKind(event.target.value as DispatchNotificationParams['kind'])}>{KINDS.map(item=><option key={item} value={item}>{item}</option>)}</select></label>
+        <label className="field">Subject<input value={subject} onChange={event=>setSubject(event.target.value)} maxLength={200}/></label>
+        <label className="field">Body<textarea value={body} onChange={event=>setBody(event.target.value)} rows={3} maxLength={2000}/></label>
+        <label className="field">Operational reason<textarea value={reason} onChange={event=>setReason(event.target.value)} minLength={10} maxLength={2000} required/></label>
+        <div className="form-actions"><button className="button" type="button" onClick={queue} disabled={busyVal||!canQueue}><Send size={14}/>Queue to outbox</button>{isAdmin&&<button className="button secondary" type="button" onClick={process} disabled={busyVal||!canProcess}><TimerReset size={14}/>Process pending intents</button>}</div>
+        {app.owner_id===identityVal.id&&canManage===false&&<p className="muted">Queueing is restricted to national_admin or a regional_officer grant in this application's region who is not the owner.</p>}
+        <div className="table-wrap" role="region" aria-label="Delivery outbox" tabIndex={0}><table><caption>Delivery intents for {app.ref_no}</caption><thead><tr><th scope="col">Generation</th><th scope="col">Channel</th><th scope="col">Actual state</th><th scope="col">Attempts</th><th scope="col">Last detail</th><th scope="col">Management</th></tr></thead><tbody>{deliveries.length?deliveries.map(item=><tr key={item.id}><td>{item.generation} · {item.channel.replaceAll('_',' ')}</td><td>{item.channel.replaceAll('_',' ')}</td><td><span className={statusChip(item.status)}>{item.status.replaceAll('_',' ')}{item.accepted_at&&<span className="mono"> · accepted</span>}</span></td><td>{item.attempts}</td><td>{item.last_error??'No transport outcome recorded'}</td><td><div className="form-actions">{item.status==='pending'&&<button className="button secondary small" type="button" onClick={()=>retry(item.id)} disabled={busyVal}>Retry</button>}{item.status!=='ambiguous'&&<button className="button text small" type="button" onClick={()=>cancel(item.id)} disabled={busyVal}>Cancel</button>}</div></td></tr>):<tr><td colSpan={6} className="muted">No delivery intents for this application.</td></tr>}</tbody></table></div>
+        <div className="table-wrap" role="region" aria-label="Delivery attempt history" tabIndex={0}><table><caption>Immutable delivery attempt history</caption><thead><tr><th scope="col">Attempt</th><th scope="col">Intent</th><th scope="col">State</th><th scope="col">Detail</th><th scope="col">Happened at</th></tr></thead><tbody>{attempts.length?attempts.map(item=>{const delivery=deliveries.find(d=>d.id===item.outbox_id);return <tr key={item.id}><td>Attempt {item.attempt}</td><td>{delivery?.generation??'—'}</td><td>{item.state.replaceAll('_',' ')}</td><td>{item.detail}</td><td><span className="mono">{new Date(item.happened_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span></td></tr>;}):<tr><td colSpan={5} className="muted">No attempts recorded.</td></tr>}</tbody></table></div>
+        <p className="support-footnote"><ShieldCheck size={14}/>Every queue, process, retry and cancel is recorded in the case audit trail. In-app delivery is recorded when processed; email/SMS/voice report simulated until a gateway is configured.</p>
+      </>}
     </section>
   );
 }

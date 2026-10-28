@@ -11,6 +11,11 @@ import requirementsJson from './requirements.json';
 import documentHashesJson from './document-hashes.json';
 import samplePdfsJson from './sample-pdfs.json';
 import {expiryState} from '../domain/expiry';
+import {EVC_REQUIRED_SEATS,EVC_SEATS,canStaff,seatEligibility,validateComposition} from '../domain/evc';
+import type {EVCSeat} from '../domain/evc';
+import {demoEvcExperts,type DemoEVCExpert} from './demoEvc';
+import {overlaps} from '../domain/planning';
+import type {EVCAvailabilityResult,EVCMember,EVCOfficialAvailability,EVCVisit} from '../domain/model';
 import type { Advisory,Application, AuditEvent, DocumentRecord, Identity, Notification, Repository, Role, Status, Template, Transition, Workspace } from '../domain/model';
 import type { AccessAssignment, AgentRecord, AuditEventLike, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from '../domain/integrity';
 import { canonicalAuditPayload, sha256Bytes, sha256Hex, verifyAuditChain } from '../domain/integrity';
@@ -39,6 +44,9 @@ export const demoIdentities: Identity[] = [
   {id:'demo-scrutiny',name:'Kavya Rao',email:'scrutiny@demo.invalid',roles:[{role:'scrutiny_officer',region:'South'}]},
   {id:'demo-evc',name:'Ishaan Sen',email:'evc@demo.invalid',roles:[{role:'evc_coordinator',region:'South'}]},
   {id:'demo-regional',name:'Ananya Das',email:'regional@demo.invalid',roles:[{role:'regional_officer',region:'South'}]},
+  {id:'demo-evc-member-1',name:'Ravi Sharma',email:'ravi.sharma@demo.invalid',roles:[{role:'evc_member',region:'South'}]},
+  {id:'demo-evc-member-2',name:'Priya Nair',email:'priya.nair@demo.invalid',roles:[{role:'evc_member',region:'South'}]},
+  {id:'demo-evc-member-3',name:'Suresh Kumar',email:'suresh.kumar@demo.invalid',roles:[{role:'evc_member',region:'South'}]},
 ];
 const iso = (days=0) => new Date(Date.now()+days*86400000).toISOString();
 function documentHash(id:string){const hash=documentHashes[id];if(!hash)throw new Error('Missing document hash fixture: '+id);return hash;}
@@ -64,7 +72,7 @@ export async function chainAuditEvent(event:AuditEvent,prior:{sequence:number;ha
 }
 export function seed(): Workspace {
   const institutions = ['Cedar Technical Institute','Meridian College of Engineering','Sunrise School of Technology','Eastern Polytechnic','Horizon Institute','Northbridge College'].map((name,i)=>({id:`demo-inst-${i}`,owner_id:i===0?'demo-institution':`demo-owner-${i}`,name,aicte_ref:`DEMO-INST-${i+1}`,region:i===0||i===2||i===4?'South':i===1?'West':i===3?'East':'North',state:i===0?'Telangana':'Synthetic state'}));
-  const states: Status[]=['under_scrutiny','deficiency_raised','evc_pending','pending_decision','submitted','approved','resubmitted','evc_scheduled','approved','approved','rejected','draft'];
+  const states: Status[]=['under_scrutiny','deficiency_raised','evc_scheduled','pending_decision','submitted','approved','resubmitted','evc_scheduled','approved','approved','rejected','draft','evc_pending'];
   const applications: Application[]=states.map((status,i)=>{
     const inst=i===9?institutions[0]:institutions[i===3?2:i%institutions.length]; const t=templates[i%3]; const id=`demo-app-${i}`; const closed=['approved','rejected'].includes(status);
     return {id,ref_no:`DEMO-2026-${String(1001+i)}`,title:i===0?'Self-disclosure extension · 2026-27':i===1?'Institution name change':i===2?'New programme · Computer science':t.name,owner_id:i===10?'demo-institution':inst.owner_id,institution_id:inst.id,app_type:t.app_type,status,region:inst.region,version:1,template_version:1,template_snapshot:t.definition,form_data:Object.fromEntries(t.definition.required_fields.map(f=>[f.key,`Synthetic ${f.label.toLowerCase()}`])),evc_required:['evc_pending','evc_scheduled'].includes(status),assigned_officer:status==='under_scrutiny'?'demo-scrutiny':null,sla_due_at:['approved','rejected','draft'].includes(status)?null:iso(i===0?2:i===4?-1:4+i),submitted_at:status==='draft'?null:iso(-6-i),created_at:iso(-8-i),updated_at:iso(-i),decision_reason:closed?(status==='approved'?'Synthetic evidence accepted for demonstration only.':'Synthetic evidence did not meet the demo checklist. Human review recorded.'):null,decision_evidence:closed?`demo-doc-${id}-0`:null,is_demo:true};
@@ -87,7 +95,7 @@ export function seed(): Workspace {
   const claims:Claim[]=requirements.map((requirement,index)=>{const status=claimStatusPlan[index];const verified=status==='verified';return {id:`demo-claim-${index}`,application_id:'demo-app-0',requirement_id:requirement.id,input_fields_snapshot:requirement.input_fields??[],requirement_version_snapshot:requirement.version,is_mandatory_snapshot:requirement.is_mandatory,status,statement_snapshot:requirement.statement,clause_snapshot:requirement.clause,evidence_types_snapshot:requirement.evidence_types,verification_method:requirement.verification_method,system_rule_snapshot:requirement.verification_method==='system_check'?demoRatioRule:null,system_result:requirement.verification_method==='system_check'&&verified?evaluateDemoRatio(app0.form_data):null,system_inputs:requirement.system_fields?.map(key=>{const field=app0?.template_snapshot.required_fields.find(f=>f.key===key);return {field:key,label:field?.label??key,value:app0?.form_data[key]??'Not declared'}}),verified_by:verified?'demo-scrutiny':null,verified_at:verified?iso(-1):null,verification_note:verified?`Synthetic ${requirement.code.toLowerCase().replaceAll('_',' ')} check confirmed against the demo record.`:null,created_at:iso(-6),updated_at:verified?iso(-1):iso(-6)};});
   const linkEvidence=(claimIndex:number,documentId:string):ClaimEvidence=>({claim_id:`demo-claim-${claimIndex}`,document_id:documentId,linked_by:'demo-institution',linked_at:iso(-6),note:null});
   const claimEvidence:ClaimEvidence[]=[linkEvidence(0,'demo-doc-demo-app-0-0'),linkEvidence(1,'demo-doc-demo-app-0-0'),linkEvidence(2,'demo-doc-demo-app-0-0'),linkEvidence(3,'demo-doc-demo-app-0-2'),linkEvidence(4,'demo-doc-demo-app-0-2'),linkEvidence(5,'demo-doc-demo-app-0-3'),linkEvidence(7,'demo-doc-demo-app-0-1'),linkEvidence(8,'demo-doc-demo-app-0-4')];
-  const deficiencies:Deficiency[]=[{id:'demo-def-0',application_id:'demo-app-0',claim_id:'demo-claim-7',clause:'APH safety',observation:'The Fire Safety Certificate expired before the scrutiny date.',remedy:'Upload a Fire Safety Certificate valid on the scrutiny date.',due_at:iso(7),status:'open',raised_by:'demo-scrutiny',raised_at:iso(-1),resolved_by:null,resolved_at:null,resolution_note:null,evidence_id:null,rechecked_by:null,rechecked_at:null,recheck_note:null}];
+  const deficiencies:Deficiency[]=[{id:'demo-def-0',application_id:'demo-app-0',claim_id:'demo-claim-7',clause:'APH 6.17(i)',observation:'The Fire Safety Certificate expired before the scrutiny date.',remedy:'Upload a Fire Safety Certificate valid on the scrutiny date.',due_at:iso(7),status:'open',raised_by:'demo-scrutiny',raised_at:iso(-1),resolved_by:null,resolved_at:null,resolution_note:null,evidence_id:null,rechecked_by:null,rechecked_at:null,recheck_note:null}];
   const signals:IntegritySignal[]=[
     {id:'demo-signal-0',application_id:'demo-app-0',document_id:'demo-doc-demo-app-0-1',signal_type:'expired_document',severity:'warning',fingerprint:'expires:'+expiredFireOn,detail:{expires_on:expiredFireOn,doc_type:'Fire Safety Certificate',issuer:'Synthetic Fire Department',document_number:'FIRE-DEMO-001'},disposition:'open',disposition_reason:null,disposed_by:null,disposed_at:null,created_at:iso(-1)},
     {id:'demo-signal-1',application_id:'demo-app-0',document_id:'demo-doc-demo-app-0-1',signal_type:'duplicate_document',severity:'warning',fingerprint:'sha256:'+documentHash('demo-doc-demo-app-0-1'),detail:{matched_document_id:'demo-doc-demo-app-4-extra-0',matched_application_id:'demo-app-4',doc_type:'Fire Safety Certificate'},disposition:'open',disposition_reason:null,disposed_by:null,disposed_at:null,created_at:iso(-1)},
@@ -130,8 +138,37 @@ export function seed(): Workspace {
     { id: 'demo-notification-3', title: 'Synthetic visit panel recorded', body: 'DEMO-2026-1008 contains a legacy synthetic panel. Use resource planning to record availability, declared conflicts and confirmation.', read_at: null, created_at: iso(-2), application_id: 'demo-app-7', target_stage: 'case/demo-app-7' },
     { id: 'demo-notification-4', title: 'Sample workflow revision published', body: 'Existing sample cases retain their captured route until a compatible policy revision is explicitly reviewed and adopted.', read_at: iso(-3), created_at: iso(-3), application_id: null, target_stage: 'workflows' },
   ];
-  const workspace:Workspace={applications,institutions,templates,documents,events,checklist:[],visits,obligations,notifications,requirements,claims,claim_evidence:claimEvidence,deficiencies,integrity_signals:signals,access_assignments:accessAssignments,agents};
-  seedGovernance(workspace);
+const workspace:Workspace={applications,institutions,templates,documents,events,checklist:[],visits,obligations,notifications,requirements,claims,claim_evidence:claimEvidence,deficiencies,integrity_signals:signals,access_assignments:accessAssignments,agents,evc_visits:[],evc_members:[],evc_unavailability:[],evc_schedule_history:[]};
+// Seed an EVC visit for demo-app-9 (completed renewal follow-up visit)
+const app9=applications.find(a=>a.id==='demo-app-9')!;
+workspace.evc_visits.push({
+  id:'demo-evc-visit-9',application_id:app9.id,institution_id:app9.institution_id,region:app9.region,
+  mode:'PHYSICAL',scheduled_start:iso(-20),scheduled_end:iso(-20)!&&new Date(Date.parse(iso(-20))+3600000).toISOString(),
+  status:'COMPLETED',schedule_version:1,completed_at:iso(-15),
+  report:'Synthetic EVC report: fire safety equipment inspected and found compliant. No major deficiencies.',
+  recommendation:'recommend',coordinator_id:'demo-evc',decision_event_id:null,created_at:iso(-20),updated_at:iso(-15),
+});
+workspace.evc_members.push(
+  {id:'demo-evc-member-assign-9-1',evc_visit_id:'demo-evc-visit-9',user_id:'demo-evc-member-1',seat:'ACADEMICIAN',response_status:'ACCEPTED',response_note:'Fire safety systems verified compliant.',responded_at:iso(-18),active:true,invited_version:1,reserved_period_start:iso(-20),reserved_period_end:new Date(Date.parse(iso(-20))+3600000).toISOString(),created_at:iso(-20),updated_at:iso(-18)},
+  {id:'demo-evc-member-assign-9-2',evc_visit_id:'demo-evc-visit-9',user_id:'demo-evc-member-2',seat:'EXPERT',response_status:'ACCEPTED',response_note:'Building infrastructure review complete.',responded_at:iso(-18),active:true,invited_version:1,reserved_period_start:iso(-20),reserved_period_end:new Date(Date.parse(iso(-20))+3600000).toISOString(),created_at:iso(-20),updated_at:iso(-18)},
+  {id:'demo-evc-member-assign-9-3',evc_visit_id:'demo-evc-visit-9',user_id:'demo-evc-member-3',seat:'ARCHITECT_PLANNING',response_status:'ACCEPTED',response_note:'Campus layout and emergency exits verified.',responded_at:iso(-18),active:true,invited_version:1,reserved_period_start:iso(-20),reserved_period_end:new Date(Date.parse(iso(-20))+3600000).toISOString(),created_at:iso(-20),updated_at:iso(-18)},
+);
+// Seed an upcoming EVC visit for demo-app-2 (scrutiny cleared, pending EVC)
+const app2=applications.find(a=>a.id==='demo-app-2')!;
+const futureStart=new Date(Date.now()+7*86400000);
+const futureEnd=new Date(Date.parse(futureStart.toISOString())+3600000);
+workspace.evc_visits.push({
+  id:'demo-evc-visit-2',application_id:app2.id,institution_id:app2.institution_id,region:app2.region,
+  mode:'PHYSICAL',scheduled_start:futureStart.toISOString(),scheduled_end:futureEnd.toISOString(),
+  status:'SCHEDULED',schedule_version:1,completed_at:null,report:null,recommendation:null,
+  coordinator_id:'demo-evc',decision_event_id:null,created_at:iso(-5),updated_at:iso(-5),
+});
+workspace.evc_members.push(
+  {id:'demo-evc-member-assign-2-1',evc_visit_id:'demo-evc-visit-2',user_id:'demo-evc-member-1',seat:'ACADEMICIAN',response_status:'INVITED',response_note:null,responded_at:null,active:true,invited_version:1,reserved_period_start:futureStart.toISOString(),reserved_period_end:futureEnd.toISOString(),created_at:iso(-5),updated_at:iso(-5)},
+  {id:'demo-evc-member-assign-2-2',evc_visit_id:'demo-evc-visit-2',user_id:'demo-evc-member-2',seat:'EXPERT',response_status:'ACCEPTED',response_note:'Synthetic availability confirmed for the recorded window.',responded_at:iso(-4),active:true,invited_version:1,reserved_period_start:futureStart.toISOString(),reserved_period_end:futureEnd.toISOString(),created_at:iso(-5),updated_at:iso(-4)},
+  {id:'demo-evc-member-assign-2-3',evc_visit_id:'demo-evc-visit-2',user_id:'demo-evc-member-3',seat:'ARCHITECT_PLANNING',response_status:'ACCEPTED',response_note:'Synthetic site-access and drawing review confirmed.',responded_at:iso(-4),active:true,invited_version:1,reserved_period_start:futureStart.toISOString(),reserved_period_end:futureEnd.toISOString(),created_at:iso(-5),updated_at:iso(-4)},
+);
+seedGovernance(workspace);
   seedPlanning(workspace);
   for(const claim of workspace.claims){if(['verified','not_applicable'].includes(claim.status))claim.verification_basis=buildReviewBasis(applications[0],claim,claimEvidence,documents,claim.status as 'verified'|'not_applicable');}
   for(const [index,app] of applications.entries())events.push({id:1000+index,application_id:app.id,actor_id:null,actor_role:'system',action:'review_baseline',from_status:app.status,to_status:app.status,reason:'Synthetic current-state baseline; earlier evidence bases are not reconstructed.',created_at:iso(),payload:{demo:true,coverage:'current_state_only',review_snapshot:captureReviewSnapshot(workspace,app)}});
@@ -174,6 +211,66 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
   function editable(a:Application){if(a.owner_id!==actor.id||!['draft','deficiency_raised'].includes(a.status))throw new Error('This demo case is locked.');}
   for(const claim of state.claims){if(claim.verification_method!=='system_check')continue;claim.system_rule_snapshot??=demoRatioRule;const app=state.applications.find(a=>a.id===claim.application_id);if(claim.status==='verified'&&(!claim.system_result?.passed||!app||!evaluateDemoRatio(app.form_data).passed)){claim.status='unverified';claim.verified_by=null;claim.verified_at=null;claim.system_result=null;}}
   const receipts=new Map<string,string>();
+  const evcManageable=(a:Application)=>actor.roles.some(grant=>grant.role==='national_admin'||(['evc_coordinator','regional_officer'].includes(grant.role)&&grant.region===a.region));
+  const evcExpert=(id:string)=>demoEvcExperts.find(expert=>expert.id===id)??null;
+  const evcWindow=(start:string,end:string)=>{const startMs=Date.parse(start),endMs=Date.parse(end);if(!Number.isFinite(startMs)||!Number.isFinite(endMs)||endMs<=startMs)throw new Error('Choose a valid time window.');return {startMs,endMs};};
+  const evcConflicts=(expertId:string,startMs:number,endMs:number,excludeVisitId?:string)=>{
+    const conflicts:EVCOfficialAvailability['conflicts']=[];
+    const start=new Date(startMs).toISOString(),end=new Date(endMs).toISOString();
+    for(const member of state.evc_members){
+      if(!member.active||member.user_id!==expertId||member.evc_visit_id===excludeVisitId||!member.reserved_period_start||!member.reserved_period_end)continue;
+      if(!overlaps(start,end,member.reserved_period_start,member.reserved_period_end))continue;
+      const visit=state.evc_visits.find(item=>item.id===member.evc_visit_id);
+      if(!visit||['CANCELLED','COMPLETED'].includes(visit.status))continue;
+      const application=state.applications.find(item=>item.id===visit.application_id);
+      conflicts.push({visitId:visit.id,referenceNo:application?.ref_no??null,institution:state.institutions.find(item=>item.id===visit.institution_id)?.name??null,start:visit.scheduled_start,end:visit.scheduled_end??visit.scheduled_start,responseStatus:member.response_status,kind:'ASSIGNMENT'});
+    }
+    for(const window of state.evc_unavailability){
+      if(window.expert_id!==expertId||window.withdrawn_at)continue;
+      if(!overlaps(start,end,window.starts_at,window.ends_at))continue;
+      conflicts.push({visitId:null,referenceNo:null,institution:null,start:window.starts_at,end:window.ends_at,responseStatus:null,kind:'UNAVAILABILITY'});
+    }
+    return conflicts;
+  };
+  const evcDayAssignments=(expertId:string,startMs:number)=>{
+    const dayStart=new Date(startMs);dayStart.setHours(0,0,0,0);const dayEnd=new Date(dayStart);dayEnd.setDate(dayEnd.getDate()+1);
+    const rows:EVCOfficialAvailability['dayAssignments']=[];
+    for(const member of state.evc_members){
+      if(!member.active||member.user_id!==expertId||!member.reserved_period_start||!member.reserved_period_end)continue;
+      if(!overlaps(dayStart.toISOString(),dayEnd.toISOString(),member.reserved_period_start,member.reserved_period_end))continue;
+      const visit=state.evc_visits.find(item=>item.id===member.evc_visit_id);
+      if(!visit||['CANCELLED','COMPLETED'].includes(visit.status))continue;
+      const application=state.applications.find(item=>item.id===visit.application_id);
+      rows.push({visitId:visit.id,referenceNo:application?.ref_no??null,institution:state.institutions.find(item=>item.id===visit.institution_id)?.name??null,start:visit.scheduled_start,end:visit.scheduled_end??visit.scheduled_start,responseStatus:member.response_status});
+    }
+    return rows;
+  };
+  const evcAvailabilityFor=(expert:DemoEVCExpert,startMs:number,endMs:number):EVCOfficialAvailability=>{
+    const eligibility=Object.fromEntries(EVC_SEATS.map(seat=>[seat,seatEligibility(expert,seat)])) as EVCOfficialAvailability['seatEligibility'];
+    const eligibleSeats=EVC_SEATS.filter(seat=>eligibility[seat].outcome==='PASS');
+    const conflicts=evcConflicts(expert.id,startMs,endMs);
+    let status:EVCOfficialAvailability['status']='AVAILABLE';let reason:string|null=null;
+    if(!expert.active){status='INACTIVE';reason='The registry record is inactive.';}
+    else if(expert.verification_status!=='VERIFIED'){status='NOT_VERIFIED';reason='The qualification record is not verified.';}
+    else if(!expert.user_id){status='NO_ACCOUNT';reason='No demo sign-in identity is linked to this registry record.';}
+    else if(conflicts.some(item=>item.kind==='UNAVAILABILITY')){status='UNAVAILABLE';reason='Recorded unavailability overlaps this window.';}
+    else if(conflicts.length){status='BUSY';reason='Another visit or reservation overlaps this window.';}
+    return {id:expert.id,member_code:expert.member_code,user_id:expert.user_id,full_name:expert.full_name,designation_level:expert.designation_level,discipline:expert.discipline,organisation_type:expert.organisation_type,experience_years:expert.experience_years,coa_registration_no:expert.coa_registration_no,panel_status:expert.panel_status,verification_status:expert.verification_status,active:expert.active,status,reason,conflicts,dayAssignments:evcDayAssignments(expert.id,startMs),eligibleSeats,seatEligibility:eligibility};
+  };
+  const validateEvcAssignments=(a:Application,visit:EVCVisit,members:Array<{expertId:string;seat:EVCSeat}>)=>{
+    if(members.length!==EVC_REQUIRED_SEATS.length)throw new Error('Assign exactly one Academician, one Expert, and one Architect-Planning member.');
+    if(new Set(members.map(item=>item.seat)).size!==EVC_REQUIRED_SEATS.length)throw new Error('Duplicate seat assignments are not allowed.');
+    if(new Set(members.map(item=>item.expertId)).size!==EVC_REQUIRED_SEATS.length)throw new Error('One person cannot occupy more than one seat.');
+    if(members.some(item=>!EVC_REQUIRED_SEATS.includes(item.seat)))throw new Error('Choose only the three required EVC seats.');
+    const experts=members.map(item=>{const expert=evcExpert(item.expertId);if(!expert)throw new Error('Choose a member from the EVC registry.');return expert;});
+    if(experts.some(expert=>expert.region!==a.region))throw new Error('Choose members from the panel for this case region.');
+    const composition=validateComposition(experts,members);
+    if(composition.overall==='FAIL')throw new Error(composition.findings.find(item=>item.outcome==='FAIL')?.message??'The proposed committee does not satisfy Annexure 16.5.');
+    if(composition.overall==='HUMAN_REVIEW_REQUIRED')throw new Error('A proposed member needs human verification before the committee can be recorded.');
+    const startMs=Date.parse(visit.scheduled_start),endMs=Date.parse(visit.scheduled_end??visit.scheduled_start);
+    for(const expert of experts){const conflicts=evcConflicts(expert.id,startMs,endMs,visit.id);if(conflicts.length)throw new Error(expert.full_name+' is not available for the full visit window.');}
+    return experts;
+  };
   return {
     ...demoGovernance({state:()=>state,actor,find,persist,log,mutate:reviewMutation}),
     ...demoIntelligence({state:()=>state,actor,find,persist,history:async app=>{const events=state.events.filter(event=>event.application_id===app.id).sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)||a.id-b.id);return {events,through:events.length,head_hash:events.at(-1)?.event_hash??null,complete:true};}}),
@@ -181,7 +278,7 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
     ...demoPolicy({state:()=>state,actor,find,persist,log}),
     ...demoPlanning({state:()=>state,actor,find,persist,log,mutate:reviewMutation}),
     mode:'demo',async identity(){return actor;},subscribeAuth(){return ()=>{};},async signIn(){throw new Error('Use the separate connected workspace for sign-in.');},async signOut(){},
-    async workspace(){const apps=state.applications.filter(visible);const keys=new Set(apps.map(a=>a.id));const claims=state.claims.filter(c=>keys.has(c.application_id));const claimKeys=new Set(claims.map(c=>c.id));const events=await buildAuditChain(state.events.filter(e=>keys.has(e.application_id))); const institutionKeys=new Set(apps.map(app=>app.institution_id));const rosterScope=(expert:{id:string;region:string})=>actor.roles.some(grant=>grant.role==='national_admin'||(['regional_officer','evc_coordinator'].includes(grant.role)&&grant.region===expert.region));const directory=state.inspection_experts??[];return structuredClone({...state,case_reviews:await Promise.all((state.case_reviews??[]).filter(item=>keys.has(item.application_id)).map(async item=>({...item,basis_current:item.basis_hash===await demoReviewContent(state,find(item.application_id))}))),delivery_attempts:state.delivery_attempts?.filter(item=>state.delivery_outbox?.some(outbox=>outbox.id===item.outbox_id&&keys.has(outbox.application_id))),delivery_outbox:state.delivery_outbox?.filter(item=>keys.has(item.application_id)),inspection_experts:directory.filter(expert=>rosterScope(expert)||state.expert_reservations?.some(item=>item.expert_id===expert.id&&keys.has(item.application_id))),expert_availability:state.expert_availability?.filter(item=>directory.some(expert=>expert.id===item.expert_id&&rosterScope(expert))),expert_conflicts:state.expert_conflicts?.filter(item=>directory.some(expert=>expert.id===item.expert_id&&rosterScope(expert))),expert_reservations:state.expert_reservations?.filter(item=>keys.has(item.application_id)),analysis_snapshots:state.analysis_snapshots?.filter(item=>keys.has(item.application_id)),analysis_scenarios:state.analysis_scenarios?.filter(item=>keys.has(item.application_id)),scope_requests:state.scope_requests?.filter(row=>keys.has(row.application_id)),approvals:state.approvals?.filter(row=>institutionKeys.has(row.institution_id)),approval_scope:state.approval_scope?.filter(row=>state.approvals?.some(record=>record.id===row.approval_id&&institutionKeys.has(record.institution_id))),notices:state.notices?.filter(row=>role==='national_admin'||(row.status!=='draft'&&apps.some(app=>app.academic_year_start===row.academic_year_start&&(!row.institution_id||app.institution_id===row.institution_id)&&(!row.application_type||app.app_type===row.application_type)&&(!row.region||app.region===row.region)))),deadlines:state.deadlines?.filter(row=>keys.has(row.application_id)),reminder_intents:state.reminder_intents?.filter(row=>keys.has(row.application_id)),applications:apps,documents:state.documents.filter(d=>keys.has(d.application_id)),events,checklist:state.checklist.filter(c=>keys.has(c.application_id)),visits:state.visits.filter(v=>keys.has(v.application_id)),obligations:state.obligations.filter(o=>keys.has(o.application_id)),claims,claim_evidence:state.claim_evidence.filter(e=>claimKeys.has(e.claim_id)),deficiencies:state.deficiencies.filter(d=>keys.has(d.application_id)),integrity_signals:state.integrity_signals.filter(s=>keys.has(s.application_id))});},
+    async workspace(){const apps=state.applications.filter(visible);const keys=new Set(apps.map(a=>a.id));const claims=state.claims.filter(c=>keys.has(c.application_id));const claimKeys=new Set(claims.map(c=>c.id));const events=await buildAuditChain(state.events.filter(e=>keys.has(e.application_id))); const institutionKeys=new Set(apps.map(app=>app.institution_id));const rosterScope=(expert:{id:string;region:string})=>actor.roles.some(grant=>grant.role==='national_admin'||(['regional_officer','evc_coordinator'].includes(grant.role)&&grant.region===expert.region));const directory=state.inspection_experts??[];return structuredClone({...state,evc_visits:state.evc_visits.filter(item=>keys.has(item.application_id)),evc_members:state.evc_members.filter(item=>state.evc_visits.some(visit=>visit.id===item.evc_visit_id&&keys.has(visit.application_id))),evc_schedule_history:state.evc_schedule_history.filter(item=>state.evc_visits.some(visit=>visit.id===item.evc_visit_id&&keys.has(visit.application_id))),evc_unavailability:state.evc_unavailability.filter(item=>actor.roles.some(grant=>grant.role==='national_admin')||(role==='evc_member'&&item.expert_id===actor.id)||actor.roles.some(grant=>['evc_coordinator','regional_officer'].includes(grant.role)&&grant.region===evcExpert(item.expert_id)?.region)),case_reviews:await Promise.all((state.case_reviews??[]).filter(item=>keys.has(item.application_id)).map(async item=>({...item,basis_current:item.basis_hash===await demoReviewContent(state,find(item.application_id))}))),delivery_attempts:state.delivery_attempts?.filter(item=>state.delivery_outbox?.some(outbox=>outbox.id===item.outbox_id&&keys.has(outbox.application_id))),delivery_outbox:state.delivery_outbox?.filter(item=>keys.has(item.application_id)),inspection_experts:directory.filter(expert=>rosterScope(expert)||state.expert_reservations?.some(item=>item.expert_id===expert.id&&keys.has(item.application_id))),expert_availability:state.expert_availability?.filter(item=>directory.some(expert=>expert.id===item.expert_id&&rosterScope(expert))),expert_conflicts:state.expert_conflicts?.filter(item=>directory.some(expert=>expert.id===item.expert_id&&rosterScope(expert))),expert_reservations:state.expert_reservations?.filter(item=>keys.has(item.application_id)),analysis_snapshots:state.analysis_snapshots?.filter(item=>keys.has(item.application_id)),analysis_scenarios:state.analysis_scenarios?.filter(item=>keys.has(item.application_id)),scope_requests:state.scope_requests?.filter(row=>keys.has(row.application_id)),approvals:state.approvals?.filter(row=>institutionKeys.has(row.institution_id)),approval_scope:state.approval_scope?.filter(row=>state.approvals?.some(record=>record.id===row.approval_id&&institutionKeys.has(record.institution_id))),notices:state.notices?.filter(row=>role==='national_admin'||(row.status!=='draft'&&apps.some(app=>app.academic_year_start===row.academic_year_start&&(!row.institution_id||app.institution_id===row.institution_id)&&(!row.application_type||app.app_type===row.application_type)&&(!row.region||app.region===row.region)))),deadlines:state.deadlines?.filter(row=>keys.has(row.application_id)),reminder_intents:state.reminder_intents?.filter(row=>keys.has(row.application_id)),applications:apps,documents:state.documents.filter(d=>keys.has(d.application_id)),events,checklist:state.checklist.filter(c=>keys.has(c.application_id)),visits:state.visits.filter(v=>keys.has(v.application_id)),obligations:state.obligations.filter(o=>keys.has(o.application_id)),claims,claim_evidence:state.claim_evidence.filter(e=>claimKeys.has(e.claim_id)),deficiencies:state.deficiencies.filter(d=>keys.has(d.application_id)),integrity_signals:state.integrity_signals.filter(s=>keys.has(s.application_id))});},
     async createInstitution(){throw new Error('The demo institution profile is already configured.');},
     async createApplication(type,title,initialForm={}){if(role!=='institution')throw new Error('Institution role required.');const t=state.templates.filter(x=>x.app_type===type&&x.status==='published').sort((a,b)=>b.version-a.version)[0];if(Object.entries(initialForm).some(([key,value])=>typeof value!=='string'||value.length>4000||!t.definition.required_fields.some(field=>field.key===key))||(initialForm.intake!==undefined&&!/^[1-9][0-9]{0,5}$/.test(initialForm.intake)))throw new Error('Use valid configured fields and a positive whole-number intake.');const a:Application={...state.applications[0],id:'demo-'+crypto.randomUUID(),ref_no:'DEMO-2026-'+(1013+state.applications.length),title:titleSchema.parse(title),institution_id:'demo-inst-0',owner_id:actor.id,region:'South',app_type:type,status:'draft',version:1,academic_year_start:null,scope_revision:0,scope_reviewed_revision:null,scope_reviewed_by:null,scope_review_note:null,template_version:t.version,template_snapshot:t.definition,form_data:{...initialForm},evc_required:false,assigned_officer:null,sla_due_at:null,submitted_at:null,created_at:iso(),updated_at:iso(),decision_reason:null,decision_evidence:null};state.applications.unshift(a);for(const requirement of requirements.filter(item=>item.app_type===type))state.claims.push({id:'demo-claim-'+crypto.randomUUID(),application_id:a.id,requirement_id:requirement.id,status:'unverified',statement_snapshot:requirement.statement,clause_snapshot:requirement.clause,evidence_types_snapshot:[...requirement.evidence_types],verification_method:requirement.verification_method,input_fields_snapshot:requirement.input_fields??[],requirement_version_snapshot:requirement.version,is_mandatory_snapshot:requirement.is_mandatory,system_rule_snapshot:requirement.verification_method==='system_check'?demoRatioRule:null,verified_by:null,verified_at:null,verification_note:null,created_at:iso(),updated_at:iso()});log(a,'created',null);persist();return a.id;},
     async saveDraft(application,title,form){const a=find(application.id);editable(a);if(a.version!==application.version)throw new Error('Reload this case before saving.');if(Object.entries(form).some(([key,value])=>typeof value!=='string'||value.length>4000||!a.template_snapshot.required_fields.some(field=>field.key===key)))throw new Error('Unknown field or invalid field value.');a.title=titleSchema.parse(title);a.form_data={...form};a.version++;const affected:string[]=[];for(const claim of state.claims.filter(claim=>claim.application_id===a.id&&['verified','not_applicable'].includes(claim.status))){if(!reviewBasisCurrent(a,claim,state.claim_evidence,state.documents)){claim.status='unverified';affected.push(claim.id);}}if(affected.length)log(a,'review_invalidated',a.status,'Configured review inputs changed',{claim_ids:affected,cause:'declared_inputs'});log(a,'draft_saved',a.status);persist();},
@@ -345,24 +442,211 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
     async markRead(id){const n=state.notifications.find(n=>n.id===id);if(n)n.read_at=iso();persist();},
     async advanceClock(days){const report=planClockAdvance(days,{now:Date.now(),applications:state.applications,obligations:state.obligations,documents:state.documents,holidays:workspaceHolidays()});
               const affected=new Map<string,ClockConsequence[]>();
+      const dispatched={reminders:0,overdue:0,escalations:0,expiries:0};
       for(const row of [...report.reminders,...report.overdue,...report.escalations,...report.expiries]){
         if(!row.application_id)continue;
         const list=affected.get(row.application_id)??[];
         list.push(row);affected.set(row.application_id,list);
+        if(row.kind==='overdue'||row.kind==='escalation'){
+          const obl=state.obligations.find(item=>item.id===row.target);
+          if(obl&&obl.status!=='fulfilled'){
+            obl.escalation_level=row.kind==='escalation'?'escalated_hq':'escalated_ro';
+          }
+        }
+        const anchor=state.applications.find(item=>item.id===row.application_id);
+        if(anchor){
+          try{await dispatchNotification({applicationId:anchor.id,kind:row.kind==='reminder'?'REMINDER':row.kind==='overdue'?'OVERDUE':row.kind==='escalation'?'ESCALATION':'INFO' as const,subject:`${row.kind.charAt(0).toUpperCase()+row.kind.slice(1)}: ${row.title}`,body:row.detail,channel:['in_app']});}catch{}
+          if(row.kind==='reminder')dispatched.reminders++;else if(row.kind==='overdue')dispatched.overdue++;else if(row.kind==='escalation')dispatched.escalations++;else dispatched.expiries++;
+        }
       }
       for(const [applicationId,rows] of affected){const anchor=state.applications.find(item=>item.id===applicationId&&visible(item));if(!anchor)continue;
         const base=new Date(Date.now()).toISOString().slice(0,10);
         const priorHorizon=state.events.filter(ev=>ev.action==='demo_calendar_advanced'&&ev.application_id===applicationId&&typeof ev.payload.horizon_end==='string'&&ev.payload.horizon_end>base).map(ev=>ev.payload.horizon_end as string).sort().pop()??null;
         const catchUp=priorHorizon!==null;
-        const payload:Record<string,unknown>={demo:true,coverage:'derived_horizon',days:report.days,horizon_end:new Date(Date.now()+report.days*86400000).toISOString().slice(0,10),consequences:structuredClone(rows)};
+        const payload:Record<string,unknown>={demo:true,coverage:'derived_horizon',days:report.days,horizon_end:new Date(Date.now()+report.days*86400000).toISOString().slice(0,10),consequences:structuredClone(rows),dispatched};
         if(catchUp&&priorHorizon)payload.catch_up_from=priorHorizon;
-        await log(anchor,'demo_calendar_advanced',null,'Simulated demo calendar advanced by '+report.days+' days; derived consequence of recorded deadlines and validity dates. '+(catchUp&&priorHorizon?'Partial catch-up: consequences through '+priorHorizon+' were already derived by an earlier calendar shift. ':'')+'No notices were dispatched and no review decision was recorded.',payload,{actor_id:null,actor_role:'system'});
+        await dispatchNotification({applicationId:anchor.id,kind:'OVERDUE' as const,subject:'Clock advanced — recorded deadlines crossed',body:`${report.days} day${report.days===1?'':'s'} advanced; ${rows.length} deadline consequence${rows.length===1?'':'s'} derived for this case.`,channel:['in_app']});
+        await log(anchor,'demo_calendar_advanced',null,'Simulated demo calendar advanced by '+report.days+' days; notices dispatched and obligations escalated where overdue. '+(catchUp&&priorHorizon?'Partial catch-up: consequences through '+priorHorizon+' were already derived by an earlier calendar shift. ':''),payload,{actor_id:null,actor_role:'system'});
       }
-      persist();return report;},
+      persist();return {...report,dispatched};},
     async fulfil(id,reason){if(!['national_admin','regional_officer'].includes(role))throw new Error('Decision role required.');const o=state.obligations.find(o=>o.id===id);if(o){if((o.required_evidence??[]).length)throw new Error('Select reviewed evidence with the versioned compliance command.');o.status='fulfilled';await log(find(o.application_id),'obligation_fulfilled',null,reason);}persist();},
     async dispositionSignal(signalId,disposition,reason){if(!['explained','confirmed','dismissed'].includes(disposition))throw new Error('Choose a valid disposition: explained, confirmed, or dismissed.');const trimmed=reason.trim();if(trimmed.length<10||trimmed.length>1000)throw new Error('Explain the disposition in 10 to 1,000 characters.');const signal=state.integrity_signals.find(s=>s.id===signalId);if(!signal)throw new Error('Integrity signal unavailable.');const a=find(signal.application_id);const prior=signal.disposition as Status|null;Object.assign(signal,{disposition,disposition_reason:trimmed,disposed_by:actor.id,disposed_at:iso()});await log(a,'signal_disposition',prior,trimmed,{signal_id:signalId,signal_type:signal.signal_type,disposition});persist();},
     async dispatchNotification(params){const kinds=['REMINDER','OVERDUE','ESCALATION','INFO','RETURN'];if(!kinds.includes(params.kind))throw new Error('Choose a valid notification kind.');const trimmedSubject=params.subject.trim();const trimmedBody=params.body.trim();if(trimmedSubject.length<3||trimmedSubject.length>200)throw new Error('Subject must be 3 to 200 characters.');if(trimmedBody.length<5||trimmedBody.length>2000)throw new Error('Body must be 5 to 2,000 characters.');if(!params.applicationId)throw new Error('Application is required.');const app=find(params.applicationId);const result=await dispatchNotification({...params,applicationId:app.id});const channel=params.channel??['in_app'];const attempt=result.attempts.find(a=>a.channel===channel[0])??result.attempts[0];const notification:Notification={id:result.notificationId,title:trimmedSubject,body:trimmedBody,read_at:null,created_at:iso(),application_id:app.id,channel:channel[0],deliveryStatus:attempt.status,previewUrl:attempt.previewUrl};state.notifications.unshift(notification);await log(app,'notification_dispatched',null,trimmedSubject,{notification_id:notification.id,channel:notification.channel,status:notification.deliveryStatus,kind:params.kind,target_user_id:params.toUserId,target_institution_id:params.toInstitutionId,application_id:app.id,gateway:result.gateway,attempts:result.attempts},{actor_id:actor.id,actor_role:role});persist();return {notificationId:notification.id,channel:notification.channel,status:notification.deliveryStatus,previewUrl:notification.previewUrl,gateway:result.gateway,attempts:result.attempts};},
     async advisory(application,documents){const safe={id:application.id,ref_no:application.ref_no,is_demo:true,status:application.status,version:application.version,form_data:Object.fromEntries(Object.entries(application.form_data).map(([key,value])=>[key,value.trim()?'provided':''])),template_snapshot:{required_fields:application.template_snapshot.required_fields,required_documents:application.template_snapshot.required_documents}};const response=await fetch('/api/advisories/demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({application:safe,documents:documents.map(d=>({doc_type:d.doc_type,scan_status:d.scan_status}))})});if(!response.ok)throw new Error('Start the local advisory service to run the document pre-check.');return response.json() as Promise<Advisory>;},
+    async scheduleEVC(application,input,requestId=crypto.randomUUID()){
+      const a=find(application.id);
+      const institutionProposal=role==='institution'&&a.owner_id===actor.id;
+      if(!institutionProposal&&!evcManageable(a))throw new Error('Institution owner, regional officer, or EVC coordinator required.');
+      if(!a.evc_required)throw new Error('This application route does not require an EVC visit.');
+      const {startMs}=evcWindow(input.scheduledStart,input.scheduledEnd);
+      if(startMs<=Date.now())throw new Error('Schedule a future visit.');
+      if(input.mode!=='ONLINE'&&input.mode!=='PHYSICAL')throw new Error('Choose an online or physical visit.');
+      const note=input.note.trim();if(note.length<10||note.length>1000)throw new Error('Describe the visit purpose in 10 to 1,000 characters.');
+      await reviewMutation(application,requestId,'schedule_evc',{scheduledStart:input.scheduledStart,scheduledEnd:input.scheduledEnd,mode:input.mode,note},async()=>{
+        const ca=find(application.id);
+        if(ca.owner_id!==actor.id&&!evcManageable(ca))throw new Error('Institution owner, regional officer, or EVC coordinator required.');
+        if(!ca.evc_required)throw new Error('This application route does not require an EVC visit.');
+        const existing=state.evc_visits.find(v=>v.application_id===ca.id&&!['CANCELLED','COMPLETED'].includes(v.status));
+        if(existing)throw new Error('An active EVC visit already exists for this application.');
+        const old=ca.status;
+        const visit:EVCVisit={
+          id:'demo-evc-visit-'+crypto.randomUUID(),application_id:ca.id,institution_id:ca.institution_id,region:ca.region,
+          mode:input.mode,scheduled_start:input.scheduledStart,scheduled_end:input.scheduledEnd,
+          status:'SCHEDULED',schedule_version:1,completed_at:null,report:null,recommendation:null,
+          coordinator_id:actor.id,decision_event_id:null,created_at:iso(),updated_at:iso(),
+        };
+        state.evc_visits.push(visit);
+        if(['evc_pending','evc_scheduled'].includes(ca.status))ca.status='evc_scheduled';
+        ca.updated_at=iso();
+        await log(ca,'evc_scheduled',old,note,{visit_id:visit.id,scheduled_start:visit.scheduled_start,scheduled_end:visit.scheduled_end,mode:visit.mode});
+      });
+    },
+    async assignEVCMembers(application:Application,visitId:string,members:{expertId:string;seat:EVCSeat}[],requestId=crypto.randomUUID()){
+      const a=find(application.id);
+      if(!evcManageable(a))throw new Error('Regional officer or EVC coordinator required.');
+      const visit=state.evc_visits.find(item=>item.id===visitId&&item.application_id===a.id);
+      if(!visit||!['SCHEDULED','RESCHEDULING_REQUIRED'].includes(visit.status))throw new Error('An active scheduled EVC visit is required.');
+      await reviewMutation(application,requestId,'assign_evc_members',{visitId,members},async()=>{
+        const ca=find(application.id);
+        if(!evcManageable(ca))throw new Error('Regional officer or EVC coordinator required.');
+        const v=state.evc_visits.find(item=>item.id===visitId&&item.application_id===ca.id);
+        if(!v||!['SCHEDULED','RESCHEDULING_REQUIRED'].includes(v.status))throw new Error('An active scheduled EVC visit is required.');
+        validateEvcAssignments(ca,v,members);
+        const prior=state.evc_members.filter(item=>item.evc_visit_id===visitId&&item.active);
+        const priorBySeat=new Map(prior.map(item=>[item.seat,item]));
+        const nextVersion=Math.max(0,...state.evc_members.filter(item=>item.evc_visit_id===visitId).map(item=>item.invited_version))+1;
+        const created:EVCMember[]=[];
+        for(const item of members){
+          const existing=priorBySeat.get(item.seat);
+          if(existing&&existing.user_id===item.expertId){created.push(existing);continue;}
+          if(existing){existing.active=false;existing.updated_at=iso();}
+          const row:EVCMember={id:'demo-evc-member-assign-'+crypto.randomUUID(),evc_visit_id:visitId,user_id:item.expertId,seat:item.seat,response_status:'INVITED',response_note:null,responded_at:null,active:true,invited_version:nextVersion,reserved_period_start:v.scheduled_start,reserved_period_end:v.scheduled_end,created_at:iso(),updated_at:iso()};
+          state.evc_members.push(row);created.push(row);
+        }
+        for(const member of prior)if(!created.includes(member)){member.active=false;member.updated_at=iso();}
+        const unresolved=state.evc_members.filter(item=>item.evc_visit_id===visitId&&item.active).some(item=>['REJECTED','CONFLICT_REPORTED','WITHDRAWAL_REQUESTED'].includes(item.response_status));
+        if(v.status==='RESCHEDULING_REQUIRED'&&!unresolved)v.status='SCHEDULED';
+        v.updated_at=iso();ca.updated_at=iso();
+        await log(ca,'evc_members_assigned',ca.status,'EVC members recorded for the visit.',{visit_id:visitId,members:members.map(item=>({member_id:item.expertId,seat:item.seat}))});
+      });
+    },
+    async respondToEVC(visitId,response,reason,requestId=crypto.randomUUID()){
+      if(role!=='evc_member')throw new Error('EVC member required.');
+      const visit=state.evc_visits.find(item=>item.id===visitId);
+      if(!visit)throw new Error('EVC visit not found.');
+      const member=state.evc_members.find(item=>item.evc_visit_id===visitId&&item.user_id===actor.id&&item.active);
+      if(!member)throw new Error('You are not assigned to this EVC visit.');
+      if(member.response_status!=='INVITED')throw new Error('You have already responded to this visit invitation.');
+      if(!['ACCEPTED','REJECTED','CONFLICT_REPORTED','WITHDRAWAL_REQUESTED'].includes(response))throw new Error('Choose a valid response.');
+      if(!['SCHEDULED','RESCHEDULING_REQUIRED'].includes(visit.status))throw new Error('This invitation is not open for a response.');
+      const trimmed=reason.trim();if(response!=='ACCEPTED'&&(trimmed.length<10||trimmed.length>1000))throw new Error('Provide a reason (10 to 1,000 characters).');
+      const a=find(visit.application_id);
+      await reviewMutation(a,requestId,'respond_evc',{visitId,response,reason:trimmed},async()=>{
+        const v=state.evc_visits.find(item=>item.id===visitId);
+        if(!v||!['SCHEDULED','RESCHEDULING_REQUIRED'].includes(v.status))throw new Error('This invitation is not open for a response.');
+        const m=state.evc_members.find(item=>item.evc_visit_id===visitId&&item.user_id===actor.id&&item.active);
+        if(!m||m.response_status!=='INVITED')throw new Error('You have already responded to this visit invitation.');
+        Object.assign(m,{response_status:response,response_note:trimmed||null,responded_at:iso(),updated_at:iso()});
+        if(['REJECTED','CONFLICT_REPORTED','WITHDRAWAL_REQUESTED'].includes(response)){v.status='RESCHEDULING_REQUIRED';v.updated_at=iso();}
+        await log(a,'evc_response_recorded',a.status,trimmed||null,{visit_id:visitId,response,member_id:actor.id});
+      });
+    },
+    async confirmEVC(visitId,requestId=crypto.randomUUID()){
+      const visit=state.evc_visits.find(item=>item.id===visitId);
+      if(!visit)throw new Error('EVC visit not found.');
+      const a=find(visit.application_id);
+      if(!evcManageable(a))throw new Error('Regional officer or EVC coordinator required.');
+      await reviewMutation(a,requestId,'confirm_evc',{visitId},async()=>{
+        const ca=find(a.id);
+        if(!evcManageable(ca))throw new Error('Regional officer or EVC coordinator required.');
+        const v=state.evc_visits.find(item=>item.id===visitId&&item.application_id===ca.id);
+        if(!v||v.status!=='SCHEDULED')throw new Error('A scheduled EVC visit is required.');
+        const members=state.evc_members.filter(item=>item.evc_visit_id===visitId&&item.active);
+        if(members.length!==EVC_REQUIRED_SEATS.length)throw new Error('All three seats must be assigned before confirming.');
+        if(!members.every(item=>item.response_status==='ACCEPTED'))throw new Error('All members must accept before confirming.');
+        validateEvcAssignments(ca,v,members.map(item=>({expertId:item.user_id,seat:item.seat})));
+        v.status='CONFIRMED';v.updated_at=iso();ca.updated_at=iso();
+        await log(ca,'evc_confirmed',ca.status,'All EVC members accepted. Visit confirmed.',{visit_id:visitId});
+      });
+    },
+    async cancelEVC(visitId,reason,requestId=crypto.randomUUID()){
+      const visit=state.evc_visits.find(item=>item.id===visitId);
+      if(!visit)throw new Error('EVC visit not found.');
+      const a=find(visit.application_id);
+      if(!evcManageable(a))throw new Error('Regional officer or EVC coordinator required.');
+      const trimmed=reason.trim();if(trimmed.length<10||trimmed.length>1000)throw new Error('Provide a reason (10 to 1,000 characters).');
+      await reviewMutation(a,requestId,'cancel_evc',{visitId,reason:trimmed},async()=>{
+        const ca=find(a.id);
+        if(!evcManageable(ca))throw new Error('Regional officer or EVC coordinator required.');
+        const v=state.evc_visits.find(item=>item.id===visitId&&item.application_id===ca.id);
+        if(!v||['CANCELLED','COMPLETED'].includes(v.status))throw new Error('An active EVC visit is required.');
+        const old=ca.status;
+        v.status='CANCELLED';v.updated_at=iso();
+        for(const member of state.evc_members.filter(item=>item.evc_visit_id===visitId&&item.active)){member.active=false;member.updated_at=iso();}
+        const another=state.evc_visits.some(item=>item.application_id===ca.id&&item.id!==visitId&&!['CANCELLED','COMPLETED'].includes(item.status));
+        if(!another&&['evc_pending','evc_scheduled'].includes(ca.status))ca.status='evc_pending';
+        ca.updated_at=iso();
+        await log(ca,'evc_cancelled',old,trimmed,{visit_id:visitId});
+      });
+    },
+    async rescheduleEVC(visitId,input,requestId=crypto.randomUUID()){
+      const visit=state.evc_visits.find(item=>item.id===visitId);
+      if(!visit)throw new Error('EVC visit not found.');
+      const a=find(visit.application_id);
+      if(!evcManageable(a))throw new Error('Regional officer or EVC coordinator required.');
+      const {startMs,endMs}=evcWindow(input.scheduledStart,input.scheduledEnd);
+      if(startMs<=Date.now())throw new Error('Choose a future visit window.');
+      if(input.mode!=='ONLINE'&&input.mode!=='PHYSICAL')throw new Error('Choose an online or physical visit.');
+      const reason=input.reason.trim();if(reason.length<10||reason.length>1000)throw new Error('Provide a reason (10 to 1,000 characters).');
+      await reviewMutation(a,requestId,'reschedule_evc',{visitId,scheduledStart:input.scheduledStart,scheduledEnd:input.scheduledEnd,mode:input.mode,reason},async()=>{
+        const ca=find(a.id);
+        if(!evcManageable(ca))throw new Error('Regional officer or EVC coordinator required.');
+        const v=state.evc_visits.find(item=>item.id===visitId&&item.application_id===ca.id);
+        if(!v||['CANCELLED','COMPLETED'].includes(v.status))throw new Error('An active EVC visit is required.');
+        const active=state.evc_members.filter(item=>item.evc_visit_id===visitId&&item.active);
+        if(active.length===EVC_REQUIRED_SEATS.length){
+          const experts=active.map(item=>{const expert=evcExpert(item.user_id);if(!expert)throw new Error('A recorded member is missing from the EVC registry.');return expert;});
+          if(experts.some(expert=>expert.region!==ca.region))throw new Error('A recorded member is outside the case region.');
+          for(const expert of experts){const conflicts=evcConflicts(expert.id,startMs,endMs,visitId);if(conflicts.length)throw new Error(expert.full_name+' is not available for the new window.');}
+        }
+        const oldStart=v.scheduled_start,oldEnd=v.scheduled_end;
+        v.scheduled_start=input.scheduledStart;v.scheduled_end=input.scheduledEnd;v.mode=input.mode;v.status='SCHEDULED';v.schedule_version+=1;v.updated_at=iso();
+        for(const member of active){member.response_status='INVITED';member.response_note=null;member.responded_at=null;member.reserved_period_start=input.scheduledStart;member.reserved_period_end=input.scheduledEnd;member.invited_version+=1;member.updated_at=iso();}
+        state.evc_schedule_history.push({id:'demo-evc-history-'+crypto.randomUUID(),evc_visit_id:visitId,old_start:oldStart,old_end:oldEnd,new_start:input.scheduledStart,new_end:input.scheduledEnd,changed_by:actor.id,changed_at:iso(),reason});
+        ca.updated_at=iso();
+        await log(ca,'evc_rescheduled',ca.status,reason,{visit_id:visitId,old_start:oldStart,old_end:oldEnd,new_start:input.scheduledStart,new_end:input.scheduledEnd});
+      });
+    },
+    async getEVCVisits(application){
+      const a=find(application.id);
+      return state.evc_visits.filter(v=>v.application_id===a.id).sort((x,y)=>Date.parse(y.scheduled_start)-Date.parse(x.scheduled_start));
+    },
+    async getEVCAvailability(application:Application,start:string,end:string):Promise<EVCAvailabilityResult>{
+      const a=find(application.id);
+      const {startMs,endMs}=evcWindow(start,end);
+      const officials=demoEvcExperts.filter(expert=>expert.region===a.region).map(expert=>evcAvailabilityFor(expert,startMs,endMs));
+      const candidates=new Map<EVCSeat,string[]>(EVC_REQUIRED_SEATS.map(seat=>[seat,officials.filter(item=>item.status==='AVAILABLE'&&item.seatEligibility[seat].outcome==='PASS').map(item=>item.id)]));
+      const bySeat=Object.fromEntries(EVC_SEATS.map(seat=>[seat,candidates.get(seat)?.length??0])) as Record<EVCSeat,number>;
+      const satisfiable=canStaff(candidates);
+      return {officials,capacity:{satisfiable,bySeat,message:satisfiable?null:'No combination of available, verified members fills all three required seats in this window.',bufferMinutes:0}};
+    },
+    async recordEVCUnavailability(expertId:string,start:string,end:string,reason:string,requestId=crypto.randomUUID()){
+      const expert=evcExpert(expertId);if(!expert)throw new Error('Choose a member from the EVC registry.');
+      const allowed=expert.user_id===actor.id||actor.roles.some(grant=>grant.role==='national_admin'||(['evc_coordinator','regional_officer'].includes(grant.role)&&grant.region===expert.region));
+      if(!allowed)throw new Error('Record unavailability for yourself or a member in your region.');
+      evcWindow(start,end);
+      const trimmed=reason.trim();if(trimmed.length<10||trimmed.length>1000)throw new Error('Describe the unavailability in 10 to 1,000 characters.');
+      const body=JSON.stringify({expertId,start,end,reason:trimmed});
+      if(receipts.has(requestId)){if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');return;}
+      const duplicate=state.evc_unavailability.find(item=>item.expert_id===expertId&&item.starts_at===start&&item.ends_at===end&&!item.withdrawn_at);
+      if(!duplicate)state.evc_unavailability.push({id:'demo-evc-unavail-'+crypto.randomUUID(),expert_id:expertId,starts_at:start,ends_at:end,reason:trimmed,withdrawn_at:null,created_at:iso()});
+      receipts.set(requestId,body);
+      persist();
+    },
   };
 }
 export function resetDemo(){localStorage.removeItem(STORAGE);location.reload();}
+
+
+
+
