@@ -401,6 +401,20 @@ test('demo lab gathers simulation controls outside working navigation',async({pa
   await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
   await expect(page.getByRole('heading',{level:1,name:'Applications requiring attention',exact:true})).toBeVisible();
 });
+test('demo lab rehearses a voice reminder without changing the case',async({page})=>{
+  await openDemoLab(page);
+  const voice=page.getByRole('region',{name:'Voice reminder rehearsal'});
+  await expect(voice).toContainText('SIMULATED · no call placed');
+  await voice.getByRole('button',{name:'Commitment to submit',exact:true}).click();
+  const preview=voice.locator('.demo-lab-result').first();
+  await expect(preview).toContainText('Commitment to submit');
+  await expect(preview).toContainText(/Follow up on \d{4}-\d{2}-\d{2}/);
+  await voice.getByRole('button',{name:'Record simulated follow-up',exact:true}).click();
+  const status=voice.getByRole('status');
+  await expect(status).toContainText('Voice follow-up recorded');
+  await expect(status).toContainText('No call was placed');
+  await expect(status.locator('.document-tag')).toContainText('voice');
+});
 test('dossier is the page header and keeps authority and return path',async({page})=>{
   await openDesk(page,'Applications');
   await page.getByRole('textbox',{name:'Search applications'}).fill('DEMO-2026-1002');

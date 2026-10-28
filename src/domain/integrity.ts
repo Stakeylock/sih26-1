@@ -191,8 +191,13 @@ export function canonicalAuditPayload(event: AuditEventLike): string {
 }
 
 export async function sha256Hex(value: string): Promise<string> {
+  return sha256Bytes(new TextEncoder().encode(value));
+}
+
+export async function sha256Bytes(value: ArrayBuffer | ArrayBufferView | Blob): Promise<string> {
   if (!globalThis.crypto?.subtle) throw new Error('Web Crypto is unavailable in this environment.');
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  const bytes = typeof Blob !== 'undefined' && value instanceof Blob ? await value.arrayBuffer() : value;
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes as BufferSource);
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
 }
 

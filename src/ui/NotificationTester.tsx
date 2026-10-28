@@ -11,7 +11,7 @@ const KINDS: {kind:'REMINDER'|'OVERDUE'|'ESCALATION'|'INFO'|'RETURN';label:strin
   {kind:'INFO',label:'Information'},
   {kind:'RETURN',label:'Return / correction'},
 ];
-const CHANNELS: NotificationChannel[]=['in_app','email','sms'];
+const CHANNELS: NotificationChannel[]=['in_app','email','sms','voice'];
 
 export function NotificationTester({repo}:{repo:Repository}){
   const [gateway, setGateway] = useState<GatewayStatus|null>(null);
@@ -65,7 +65,7 @@ export function NotificationTester({repo}:{repo:Repository}){
           <h2>Live notification dispatcher</h2>
           <p>Dispatch a synthetic test notification through each channel and observe the honest delivery state. Nothing is sent to a real channel unless a gateway is explicitly configured.</p>
         </div>
-        <span className="quiet-label"><ShieldCheck size={14}/>{gateway?.emailConfigured?'Email configured · ':'Email not configured · '}{gateway?.smsConfigured?'SMS configured':'SMS not configured'}</span>
+        <span className="quiet-label"><ShieldCheck size={14}/>{gateway?.emailConfigured?'Email configured · ':'Email not configured · '}{gateway?.smsConfigured?'SMS configured':'SMS not configured'} · Voice simulated</span>
       </div>
       <div className="demo-notification-gateway">
         <span className="demo-notification-gateway-label">Gateway state</span>
@@ -75,7 +75,10 @@ export function NotificationTester({repo}:{repo:Repository}){
         <span className={`demo-notification-gateway-chip ${gateway?.smsConfigured?'demo-notification-gateway-configured':'demo-notification-gateway-unconfigured'}`}>
           SMS: {gateway?.smsGateway??'—'}
         </span>
-        {!gateway?.emailConfigured&&!gateway?.smsConfigured&&<span className="demo-notification-gateway-note">All channels will report simulated until a gateway is configured.</span>}
+        <span className="demo-notification-gateway-chip demo-notification-gateway-unconfigured">
+          Voice: {gateway?.voiceGateway??'—'}
+        </span>
+        {!gateway?.emailConfigured&&!gateway?.smsConfigured&&<span className="demo-notification-gateway-note">Email and SMS will report simulated until a gateway is configured. Voice is always simulated.</span>}
       </div>
       <form onSubmit={handleSubmit} className="demo-notification-form">
         <div className="form-grid">
@@ -118,7 +121,7 @@ export function NotificationTester({repo}:{repo:Repository}){
       {result&&(
         <section className="demo-notification-result" aria-label="Dispatch result">
           <h3>Dispatch result</h3>
-          <p><strong>Notification id:</strong> {result.notificationId}<span className="demo-notification-gateway-note"> · Gateway: {result.gateway.emailGateway} / {result.gateway.smsGateway}</span></p>
+          <p><strong>Notification id:</strong> {result.notificationId}<span className="demo-notification-gateway-note"> · Gateway: {result.gateway.emailGateway} / {result.gateway.smsGateway} / {result.gateway.voiceGateway}</span></p>
           <ul className="demo-notification-attempts">
             {result.attempts.map((a,index)=>(
               <li key={index} className="demo-notification-attempt">

@@ -40,6 +40,7 @@ export interface Database {
       fp_capture_analysis:Fn<{_application:string;_expected_version:number;_request_id:string},AnalysisSnapshot>;
       fp_save_analysis:Fn<{_snapshot:string;_parameters:Record<string,unknown>;_request_id:string},SavedScenario>;
       fp_governance_command:Fn<{_kind:string;_id:string|null;_payload:Record<string,unknown>;_expected_version:number|null;_request_id:string},Record<string,unknown>>;
+      fp_renewal_submit:Fn<{_expired:string;_document:string|null;_note:string;_expected_version:number;_request_id:string},{application_id:string;obligation_id:string;document_id:string|null;version:number}>;
       fp_notice_preview:Fn<{_id:string},NoticeImpact>;
       fp_create_institution: Fn<{_name: string; _ref: string; _region: string; _state: string}, undefined>;
       fp_create_application_draft: Fn<{_type:string;_title:string;_form:Record<string,string>},string>;

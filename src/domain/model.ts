@@ -79,6 +79,7 @@ export function nextAuthority(status: Status) {
 export type Action = 'submit' | 'resubmit' | 'start_scrutiny' | 'raise_deficiency' | 'pass_scrutiny' | 'schedule_evc' | 'submit_evc_report' | 'approve' | 'reject' | 'request_shc';
 export const actionLabels: Record<Action, string> = { submit: 'Submit application', resubmit: 'Resubmit application', start_scrutiny: 'Start scrutiny', raise_deficiency: 'Return for deficiency', pass_scrutiny: 'Accept scrutiny', schedule_evc: 'Schedule visit', submit_evc_report: 'Submit visit report', approve: 'Record demo approval', reject: 'Record demo rejection', request_shc: 'File SHC appeal' };
 export interface Transition { application: Application; action: Action; reason: string; payload: Record<string, unknown>; requestId: string }
+export interface RenewalInput { file?: File; documentId?: string; note: string }
 export interface Advisory {engine:string;advisoryOnly:boolean;model:string;summary:string;warnings:string[];trace:string[];disclaimer:string;automation:{id:string;state:string}}
 export interface Repository {
   applicationPage?(query:import('./register').RegisterQuery):Promise<import('./register').ApplicationPage>;
@@ -94,6 +95,7 @@ export interface Repository {
   saveScope(application:Application,year:number,items:ScopeInput[],requestId?:string):Promise<void>;
   reviewScope(application:Application,note:string,requestId?:string):Promise<void>;
   reviewDocumentValidity(application:Application,document:DocumentRecord,input:ValidityInput,requestId?:string):Promise<void>;
+  submitRenewal(application:Application,expired:DocumentRecord,input:RenewalInput,requestId?:string):Promise<void>;
   createNotice(input:NoticeInput,requestId?:string):Promise<void>;
   reviewNotice(notice:DeadlineNotice,note:string,requestId?:string):Promise<void>;
   previewNotice(notice:DeadlineNotice):Promise<NoticeImpact>;

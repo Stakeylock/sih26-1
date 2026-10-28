@@ -13,7 +13,7 @@ import samplePdfsJson from './sample-pdfs.json';
 import {expiryState} from '../domain/expiry';
 import type { Advisory,Application, AuditEvent, DocumentRecord, Identity, Notification, Repository, Role, Status, Template, Transition, Workspace } from '../domain/model';
 import type { AccessAssignment, AgentRecord, AuditEventLike, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from '../domain/integrity';
-import { canonicalAuditPayload, sha256Hex, verifyAuditChain } from '../domain/integrity';
+import { canonicalAuditPayload, sha256Bytes, sha256Hex, verifyAuditChain } from '../domain/integrity';
 import { allowedActions, missingInputs } from '../domain/model';
 import { dispatchNotification } from '../domain/notification';
 import { workingDaysUntil } from '../domain/clock';
@@ -66,13 +66,13 @@ export function seed(): Workspace {
   const institutions = ['Cedar Technical Institute','Meridian College of Engineering','Sunrise School of Technology','Eastern Polytechnic','Horizon Institute','Northbridge College'].map((name,i)=>({id:`demo-inst-${i}`,owner_id:i===0?'demo-institution':`demo-owner-${i}`,name,aicte_ref:`DEMO-INST-${i+1}`,region:i===0||i===2||i===4?'South':i===1?'West':i===3?'East':'North',state:i===0?'Telangana':'Synthetic state'}));
   const states: Status[]=['under_scrutiny','deficiency_raised','evc_pending','pending_decision','submitted','approved','resubmitted','evc_scheduled','approved','approved','rejected','draft'];
   const applications: Application[]=states.map((status,i)=>{
-    const inst=institutions[i===3?2:i%institutions.length]; const t=templates[i%3]; const id=`demo-app-${i}`; const closed=['approved','rejected'].includes(status);
+    const inst=i===9?institutions[0]:institutions[i===3?2:i%institutions.length]; const t=templates[i%3]; const id=`demo-app-${i}`; const closed=['approved','rejected'].includes(status);
     return {id,ref_no:`DEMO-2026-${String(1001+i)}`,title:i===0?'Self-disclosure extension · 2026-27':i===1?'Institution name change':i===2?'New programme · Computer science':t.name,owner_id:i===10?'demo-institution':inst.owner_id,institution_id:inst.id,app_type:t.app_type,status,region:inst.region,version:1,template_version:1,template_snapshot:t.definition,form_data:Object.fromEntries(t.definition.required_fields.map(f=>[f.key,`Synthetic ${f.label.toLowerCase()}`])),evc_required:['evc_pending','evc_scheduled'].includes(status),assigned_officer:status==='under_scrutiny'?'demo-scrutiny':null,sla_due_at:['approved','rejected','draft'].includes(status)?null:iso(i===0?2:i===4?-1:4+i),submitted_at:status==='draft'?null:iso(-6-i),created_at:iso(-8-i),updated_at:iso(-i),decision_reason:closed?(status==='approved'?'Synthetic evidence accepted for demonstration only.':'Synthetic evidence did not meet the demo checklist. Human review recorded.'):null,decision_evidence:closed?`demo-doc-${id}-0`:null,is_demo:true};
   });
   // Fixed dates shared with scripts/generate-sample-pdfs.mjs so the sample PDF and the record agree.
   const expiredFireOn='2026-10-15';
   const validFireOn='2027-08-23';
-  const documents=applications.flatMap(a=>a.template_snapshot.required_documents.map((type,i):DocumentRecord=>{const id=`demo-doc-${a.id}-${i}`;const doc:DocumentRecord={id,application_id:a.id,doc_type:type,file_name:type.toLowerCase().replaceAll(' ','_')+'.pdf',...sampleFields(id),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash(id),uploaded_at:a.created_at};if(id==='demo-doc-demo-app-0-1'){doc.expires_on=expiredFireOn;doc.issuer='Synthetic Fire Department';doc.document_number='FIRE-DEMO-001';}return doc;}));
+  const documents=applications.flatMap(a=>a.template_snapshot.required_documents.map((type,i):DocumentRecord=>{const id=`demo-doc-${a.id}-${i}`;const doc:DocumentRecord={id,application_id:a.id,doc_type:type,file_name:type.toLowerCase().replaceAll(' ','_')+'.pdf',...sampleFields(id),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash(id),uploaded_at:a.created_at};if(id==='demo-doc-demo-app-0-1'||id==='demo-doc-demo-app-9-1'){doc.expires_on=expiredFireOn;doc.issuer='Synthetic Fire Department';doc.document_number=id==='demo-doc-demo-app-0-1'?'FIRE-DEMO-001':'FIRE-DEMO-009';}return doc;}));
   documents.push(
     {id:'demo-doc-demo-app-0-2',application_id:'demo-app-0',doc_type:'Faculty List',file_name:'faculty_list.pdf',...sampleFields('demo-doc-demo-app-0-2'),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-2'),uploaded_at:iso(-6),extracted:{faculty_count:'10'}},
     {id:'demo-doc-demo-app-0-3',application_id:'demo-app-0',doc_type:'Land Document',file_name:'land_document.pdf',...sampleFields('demo-doc-demo-app-0-3'),mime_type:'application/pdf',scan_status:'clean',sha256:documentHash('demo-doc-demo-app-0-3'),uploaded_at:iso(-6)},
@@ -292,7 +292,38 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
     async history(application){find(application.id);const events=(await buildAuditChain(state.events.filter(event=>event.application_id===application.id))).sort((a,b)=>a.sequence-b.sequence);return {events,through:events.length,head_hash:events.at(-1)?.event_hash??null,complete:true,message:'Synthetic browser history; hashes are simulated on read.'};},
     async verifyAudit(application):Promise<AuditVerification>{const a=find(application.id);return verifyAuditChain(await buildAuditChain(state.events.filter(e=>e.application_id===a.id)));},
     async tamperReplay(application):Promise<AuditVerification>{const a=find(application.id);if(a.owner_id===actor.id||!['scrutiny_officer','regional_officer','national_admin'].includes(role))throw new Error('Review or decision authority required.');const events=await buildAuditChain(state.events.filter(e=>e.application_id===a.id));if(!events.length)return verifyAuditChain(events);const target=Math.max(1,Math.ceil(events.length/2));return verifyAuditChain(events.map((event,index)=>index===target-1?{...event,reason:`${event.reason??'Synthetic event'} [tamper replay on copy]`}:event));},
-    async upload(application,type,file){validateFile(file);const a=find(application.id);if(!canUploadEvidence(a,actor,state.claims,state.deficiencies,type,state.obligations))throw new Error('Application is locked for this evidence type.');        state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id});await log(a,'document_reserved',a.status,'Demo metadata only; bytes never leave this browser.');persist();},
+    async upload(application,type,file){validateFile(file);const a=find(application.id);if(!canUploadEvidence(a,actor,state.claims,state.deficiencies,type,state.obligations,state.documents))throw new Error('Application is locked for this evidence type.');        state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id});await log(a,'document_reserved',a.status,'Demo metadata only; bytes never leave this browser.');persist();},
+    async submitRenewal(application,expired,input,requestId=crypto.randomUUID()){
+      if(role!=='institution'||application.owner_id!==actor.id)throw new Error('The owning institution must submit its renewal.');
+      const note=input.note.trim();
+      if(note.length<10||note.length>1000)throw new Error('Describe the replacement in 10 to 1,000 characters.');
+      if(Boolean(input.file)===Boolean(input.documentId))throw new Error('Choose one replacement file or one clean uploaded document.');
+      if(input.file)validateFile(input.file);
+      const hash=input.file?await sha256Bytes(input.file):null;
+      await reviewMutation(application,requestId,'renewal_submit',{expired:expired.id,document:input.documentId??null,note,sha256:hash},async()=>{
+        const a=find(application.id);
+        if(a.owner_id!==actor.id||role!=='institution'||a.status!=='approved')throw new Error('Only the owning institution can renew an approved case.');
+        const parent=state.documents.find(item=>item.id===expired.id&&item.application_id===a.id);
+        if(!parent||!parent.expires_on||parent.scan_status!=='clean'||!parent.sha256||expiryState(parent.expires_on)!=='expired'||!a.template_snapshot.required_documents.includes(parent.doc_type))throw new Error('Choose an expired, clean required document.');
+        let replacement:DocumentRecord;
+        if(input.file){
+          replacement={id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:parent.doc_type,file_name:input.file.name,file_path:'demo-only',size_bytes:input.file.size,mime_type:input.file.type,scan_status:'clean',sha256:hash,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id,supersedes_document_id:parent.id};
+          state.documents.unshift(replacement);
+        }else{
+          const selected=state.documents.find(item=>item.id===input.documentId&&item.application_id===a.id);
+          if(!selected||selected.id===parent.id||selected.doc_type!==parent.doc_type||selected.scan_status!=='clean'||!selected.sha256||selected.subject_institution_id!==a.institution_id||expiryState(selected.expires_on)==='expired'||(selected.supersedes_document_id&&selected.supersedes_document_id!==parent.id))throw new Error('Choose a clean replacement of the same document type.');
+          selected.supersedes_document_id=parent.id;
+          replacement=selected;
+        }
+        const existing=state.obligations.find(item=>item.application_id===a.id&&item.kind==='renewal');
+        if(existing&&!['open','escalated'].includes(existing.status.toLowerCase()))throw new Error('A renewal has already been submitted for this case.');
+        const fields={document_id:parent.id,document_expiry_on:parent.expires_on,due_date:parent.expires_on!,deadline_source:'document_validity',required_evidence:[parent.doc_type],status:'submitted',title:`Renewal required - ${parent.doc_type}`};
+        let obligationId:string;
+        if(existing){Object.assign(existing,fields,{deadline_revision:(existing.deadline_revision??1)+1});obligationId=existing.id;}
+        else{const row={id:'demo-obl-'+crypto.randomUUID(),application_id:a.id,institution_id:a.institution_id,region:a.region,kind:'renewal',deadline_revision:1,...fields};state.obligations.push(row);obligationId=row.id;}
+        await log(a,'renewal_submitted',a.status,note,{obligation_id:obligationId,document_id:replacement.id,replaces_document_id:parent.id,sha256:replacement.sha256});
+      });
+    },
     async download(record){
       if(record.scan_status!=='clean')throw new Error('Quarantined documents are not downloadable.');
       if(expiryState(record.expires_on)==='expired')throw new Error('Expired documents stay on file for review history and are not downloadable.');

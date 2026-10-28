@@ -1,6 +1,7 @@
 import {documentEligible} from './approvals';
 import type {Application,DocumentRecord,Identity,Obligation} from './model';
 import {stableJson,type Claim,type Deficiency,type ReviewBasis} from './integrity';
+import {expiryState} from './expiry';
 export const demoRatioRule={id:'demo-student-faculty-ratio',version:1,max_ratio:20,source:'demo_rule'} as const;
 export function evaluateDemoRatio(form:Record<string,string>,rule:{id:string;version:number;max_ratio:number;source:string}=demoRatioRule){
   const inputs=[{field:'intake',label:'Sanctioned intake',value:form.intake??''},{field:'faculty_count',label:'Faculty count',value:form.faculty_count??''}];
@@ -25,9 +26,10 @@ export function reviewBasisCurrent(app:Application,claim:Claim,links:{claim_id:s
   return stableJson(expected)===stableJson(claim.verification_basis);
 }
 export function currentClaimEvidence(claim:Claim,document:DocumentRecord,today=reviewToday()){return documentEligible(document,today)&&claim.evidence_types_snapshot.includes(document.doc_type);}
-export function canUploadEvidence(app:Application,identity:Identity,claims:Claim[],deficiencies:Deficiency[],kind:string,obligations:Obligation[]=[]){
+export function canUploadEvidence(app:Application,identity:Identity,claims:Claim[],deficiencies:Deficiency[],kind:string,obligations:Obligation[]=[],documents:DocumentRecord[]=[]){
   if(app.owner_id!==identity.id||!identity.roles.some(r=>r.role==='institution'))return false;
   if(obligations.some(item=>item.application_id===app.id&&item.status!=='fulfilled'&&item.required_evidence?.includes(kind)))return true;
+  if(app.status==='approved'&&documents.some(item=>item.application_id===app.id&&item.doc_type===kind&&item.scan_status==='clean'&&expiryState(item.expires_on)==='expired'))return true;
   if(['draft','deficiency_raised'].includes(app.status))return app.template_snapshot.required_documents.includes(kind)||claims.some(c=>c.application_id===app.id&&c.evidence_types_snapshot.includes(kind));
   return app.status==='under_scrutiny'&&deficiencies.some(d=>d.application_id===app.id&&['open','escalated'].includes(d.status)&&claims.some(c=>c.id===d.claim_id&&c.evidence_types_snapshot.includes(kind)));
 }

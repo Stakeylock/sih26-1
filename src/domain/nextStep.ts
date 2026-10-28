@@ -18,6 +18,7 @@ export interface CaseNextStep {
   source:string;
   detail:string|null;
   obligationId?:string;
+  documentId?:string;
 }
 
 const inactiveObligationStatuses=new Set(['fulfilled','accepted','waived','closed','cancelled']);
@@ -36,7 +37,7 @@ function openDeficiency(app:Application,context:NextStepContext){
 
 function openObligation(app:Application,context:NextStepContext){
   return context.obligations
-    .filter(item=>item.application_id===app.id&&!inactiveObligationStatuses.has(item.status.toLowerCase()))
+    .filter(item=>item.application_id===app.id&&item.kind!=='renewal'&&!inactiveObligationStatuses.has(item.status.toLowerCase()))
     .sort((left,right)=>dateValue(left.due_date)-dateValue(right.due_date))[0]??null;
 }
 
@@ -148,15 +149,16 @@ export function nextStep(app:Application,context:NextStepContext):CaseNextStep {
     };
   }
 
-  const expired=renewalDocument(app,context);
+  const expired=app.status==='approved'?renewalDocument(app,context):null;
   if(expired){
     return {
       kind:'renewal',
       owner:roleLabels.institution,
-      action:`Renew the expired ${expired.doc_type}. The recorded decision is unchanged; this closed dossier is read-only and does not accept replacement evidence.`,
+      action:`Renew the expired ${expired.doc_type}. Submit one replacement for reviewer verification; the recorded decision is unchanged.`,
       due:null,
       source:'Recorded document validity',
       detail:`Expired on ${expired.expires_on}. No renewal deadline is recorded.`,
+      documentId:expired.id,
     };
   }
 

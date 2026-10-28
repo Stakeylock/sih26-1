@@ -1,9 +1,10 @@
-export type NotificationChannel='in_app'|'email'|'sms';
+export type NotificationChannel='in_app'|'email'|'sms'|'voice';
 export type DeliveryStatus='queued'|'delivered'|'sent_sandbox'|'simulated'|'failed';
 
 export interface GatewayStatus {
   emailGateway:'RESEND_LIVE'|'SMTP_LIVE'|'ETHEREAL_SANDBOX'|'SIMULATED';
   smsGateway:'FAST2SMS_LIVE'|'TWILIO_LIVE'|'SIMULATED';
+  voiceGateway:'SIMULATED';
   emailConfigured:boolean;
   smsConfigured:boolean;
 }
@@ -52,6 +53,7 @@ export function getGatewayStatus():GatewayStatus{
   return {
     emailGateway:resendKey?'RESEND_LIVE':smtpHost?'SMTP_LIVE':'ETHEREAL_SANDBOX',
     smsGateway:fast2smsKey?'FAST2SMS_LIVE':twilioSid?'TWILIO_LIVE':'SIMULATED',
+    voiceGateway:'SIMULATED',
     emailConfigured:Boolean(resendKey||smtpHost),
     smsConfigured:Boolean(fast2smsKey||twilioSid),
   };
@@ -140,6 +142,8 @@ export async function dispatchNotification(params:DispatchNotificationParams):Pr
       attempts.push(await dispatchEmail(params.toInstitutionId?`${params.toInstitutionId}@example.invalid`:'',params.subject,params.body,params.kind));
     }else if(channel==='sms'){
       attempts.push(await dispatchSMS('',params.subject,params.body));
+    }else if(channel==='voice'){
+      attempts.push({channel:'voice',status:'simulated',detail:'Voice reminders are rehearsed in the demo lab; no telephony gateway is configured.'});
     }else{
       attempts.push({channel:'in_app',status:'delivered',detail:'In-app notification recorded.'});
     }

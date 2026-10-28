@@ -1,6 +1,6 @@
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it} from 'vitest';
-import {demoIdentities,seed} from '../src/data/demo';
+import {createDemoRepository,demoIdentities,seed} from '../src/data/demo';
 import type {DocumentRecord,Repository} from '../src/domain/model';
 import type {Run} from '../src/ui/Applications';
 import {CaseWorkspace} from '../src/ui/CaseWorkspace';
@@ -26,5 +26,32 @@ describe('case renewal guidance',()=>{
     expect(html).toContain('An expired document needs renewal; the dossier remains read-only.');
     expect(html).toContain('This decision is recorded. An expired document needs renewal');
     expect(html).not.toContain('>YOUR ACCESS<');
+  });
+
+  it('renders the owner renewal form only for the owning institution',async()=>{
+    const repo=await createDemoRepository('institution');
+    const data=await repo.workspace();
+    const application=data.applications.find(item=>item.id==='demo-app-9');
+    const identity=demoIdentities.find(item=>item.roles[0]?.role==='institution');
+    if(!application||!identity)throw new Error('Missing demo renewal fixture.');
+    const run:Run=async()=>true;
+    const html=renderToStaticMarkup(<CaseWorkspace app={application} data={data} identity={identity} repo={repo} run={run} busy={false} back={()=>{}} openPlanner={()=>{}}/>);
+    expect(html).toContain('Decision recorded; renewal needed');
+    expect(html).toContain('Submit renewal for reviewer verification');
+    expect(html).toContain('The institution does not approve its own renewal.');
+  });
+
+  it('shows reviewer-owned renewal guidance for a non-owner',async()=>{
+    const repo=await createDemoRepository('national_admin');
+    const data=await repo.workspace();
+    const application=data.applications.find(item=>item.id==='demo-app-9');
+    const identity=demoIdentities.find(item=>item.roles[0]?.role==='national_admin');
+    if(!application||!identity)throw new Error('Missing demo renewal fixture.');
+    const run:Run=async()=>true;
+    const html=renderToStaticMarkup(<CaseWorkspace app={application} data={data} identity={identity} repo={repo} run={run} busy={false} back={()=>{}} openPlanner={()=>{}}/>);
+    expect(html).toContain('Decision recorded; renewal needed');
+    expect(html).not.toContain('Submit renewal for reviewer verification');
+    expect(html).toContain('Institution submits the renewal.');
+    expect(html).toContain('the recorded decision is unchanged');
   });
 });

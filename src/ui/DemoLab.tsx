@@ -6,6 +6,7 @@ import {formatDateTime} from './DisplayPreferences';
 import {guideSteps} from './demoGuide';
 import {advanceDemoClock,DEMO_CLOCK_EVENT,demoClockOffset,resetDemoClock} from '../domain/virtualClock';
 import {NotificationTester} from './NotificationTester';
+import {VoiceCallRehearsal} from './VoiceCallRehearsal';
 import type {ClockReport} from '../domain/consequences';
 import type {Repository,Role,Workspace} from '../domain/model';
 
@@ -113,6 +114,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         <NotificationTester repo={repo}/>
       </section>
     </div>
+    <VoiceCallRehearsal repo={repo} data={data}/>
     <section className="support-surface demo-lab-guide">
       <div className="support-surface-heading"><div><h2>Judge proof route</h2><p>Four proof questions show what this prototype can demonstrate. Each item is derived from the live synthetic records; the guided steps below open the exact role and work surface.</p></div><span className="quiet-label">{steps.filter(step=>step.armed).length} of {steps.length} guided steps armed</span></div>
       <div className="demo-proof-route" aria-label="Judge proof route">

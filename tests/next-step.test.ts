@@ -101,13 +101,19 @@ describe('next step',()=>{
     const application=app('demo-app-8');
     const expired=documentFor(application,{id:'test-expired',doc_type:'Fire Safety Certificate',file_name:'expired.pdf',expires_on:'2020-01-01',scan_status:'clean'});
     const result=nextStep(application,context(application,{documents:[expired]}));
-    expect(result).toMatchObject({kind:'renewal',owner:'Institution',due:null,source:'Recorded document validity'});
+    expect(result).toMatchObject({kind:'renewal',owner:'Institution',due:null,source:'Recorded document validity',documentId:'test-expired'});
     expect(result.obligationId).toBeUndefined();
     expect(result.action).toContain('Renew the expired Fire Safety Certificate');
     expect(result.action).toContain('decision is unchanged');
-    expect(result.action).toContain('does not accept replacement evidence');
+    expect(result.action).toContain('Submit one replacement for reviewer verification');
     expect(result.detail).toContain('2020-01-01');
     expect(result.detail).toContain('No renewal deadline is recorded');
+  });
+
+  it('does not offer renewal for a rejected case',()=>{
+    const application=app('demo-app-10');
+    const expired=documentFor(application,{id:'test-expired',doc_type:'Fire Safety Certificate',file_name:'expired.pdf',expires_on:'2020-01-01',scan_status:'clean'});
+    expect(nextStep(application,context(application,{documents:[expired]})).kind).toBe('closed');
   });
 
   it('leaves renewal guidance behind an open continuing obligation',()=>{
