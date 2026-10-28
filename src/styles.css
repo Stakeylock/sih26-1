@@ -1512,3 +1512,29 @@ body{font-variant-numeric:tabular-nums}
 :root:not([data-contrast="high"]) .document-tag.demo{background:var(--teal-light);color:var(--route)}
 :root[data-theme="dark"]:not([data-contrast="high"]) .document-tag.demo{background:var(--teal-light);color:var(--route)}
 @media(max-width:760px){.alert-grammar{grid-template-columns:1fr 1fr;gap:10px}.alert-grammar>div:first-child{grid-column:1/-1}}
+
+/* Obligations & renewal register (adopted from example obligations register concept) */
+.obligations-register .register-summary{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.obligations-register .register-summary strong{font-size:calc(13px*var(--text-scale,1));color:var(--ink)}
+.obligations-register .quiet-label{color:var(--muted);font-size:calc(11px*var(--text-scale,1))}
+.obligations-register .register-section{grid-column:1/-1;font-size:calc(11px*var(--text-scale,1));text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 6px;border-bottom:1px solid var(--rule);padding-bottom:4px}
+.obligations-register .obligation-row{display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--surface)}
+.obligations-register .obligation-row.kind-renewal{border-left:3px solid var(--attention)}
+.obligations-register .obligation-row.submitted{background:var(--warning-soft)}
+.obligations-register .obligation-head{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.obligations-register .kind-tag{font-size:calc(10px*var(--text-scale,1));padding:1px 7px;border-radius:6px;border:1px solid var(--rule);color:var(--mixed-ink,var(--ink));background:var(--surface-muted)}
+.obligations-register .kind-tag.renewal{background:var(--danger-soft);border-color:var(--danger-border);color:var(--danger-text)}
+.obligations-register .risk-chip{font-size:calc(10px*var(--text-scale,1));padding:1px 7px;border-radius:6px}
+.obligations-register .risk-chip.risk-overdue,.obligations-register .risk-chip.risk-critical{background:var(--danger-soft);color:var(--danger-text)}
+.obligations-register .risk-chip.risk-urgent,.obligations-register .risk-chip.risk-watch{background:var(--warning-soft);color:var(--warning-text)}
+.obligations-register .risk-chip.risk-low{background:var(--info-soft);color:var(--info-text)}
+.obligations-register .risk-chip.risk-resolved{background:#eef3f5;color:var(--mixed-ink,var(--muted))}
+.obligations-register .obligation-body{display:flex;flex-direction:column;gap:6px}
+.obligations-register .obligation-body strong{font-size:calc(12px*var(--text-scale,1));color:var(--ink)}
+.obligations-register .obligation-body p{margin:0 0 4px;font-size:calc(11px*var(--text-scale,1));color:var(--muted)}
+.obligations-register .obligation-facts{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:0}
+.obligations-register .obligation-fact dt{font-size:calc(10px*var(--text-scale,1));color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 1px}
+.obligations-register .obligation-fact dd{font-size:calc(11px*var(--text-scale,1));color:var(--ink);margin:0}
+.obligations-register .obligation-fact dd .badge{font-size:calc(10px*var(--text-scale,1))}
+.obligations-register .register-note{font-size:calc(11px*var(--text-scale,1));line-height:1.45}
+@media(max-width:640px){.obligations-register .form-grid{grid-template-columns:1fr}}

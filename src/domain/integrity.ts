@@ -143,6 +143,8 @@ export interface AuditEventLike {
   created_at: string;
   prev_hash: string | null;
   event_hash: string | null;
+  resource_type?: string | null;
+  resource_id?: string | null;
 }
 
 export interface AuditVerification {
@@ -186,6 +188,8 @@ export function canonicalAuditPayload(event: AuditEventLike): string {
     event.to_status ?? '',
     event.reason ?? '',
     event.payload,
+    event.resource_type ?? '',
+    event.resource_id ?? '',
     auditTimestamp(event.created_at),
   ]);
 }

@@ -13,6 +13,7 @@ import {actionLabels,allowedActions,missingInputs,nextAuthority,roleLabels,route
 import {nextStep} from '../domain/nextStep';
 import {Badge,Dialog,Due,Panel,Timeline,WorkflowRail} from './common';
 import {CaseCustody} from './CaseCustody';
+import {ObligationsRegister} from './ObligationsRegister';
 import {ClaimLedger} from './ClaimLedger';
 import {EvidencePassport} from './EvidencePassport';
 import {PersonaController} from './PersonaController';
@@ -114,6 +115,9 @@ export function CaseWorkspace({app,data,identity,repo,run,busy,back,openReceipt,
           {caseNextStep.detail&&<small>{renewal?caseNextStep.detail:`Evidence requested: ${caseNextStep.detail}`}</small>}
           <small>{caseNextStep.source}</small>
         </div>
+      )}
+      {data.obligations.filter(item=>item.application_id===app.id).length>0&&(
+        <ObligationsRegister app={app} data={{obligations:data.obligations,documents:documents}} identity={identity}/>
       )}
       {ownerRenewal&&renewalDoc&&(
         <div className="callout dossier-alert" style={{marginTop:'10px',borderColor:'var(--rule,#e2e8f0)'}}>
