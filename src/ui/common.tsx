@@ -19,8 +19,9 @@ export function Due({app,data}:{app:Application;data?:DeadlineContext}){
   const derivation=explainDeadline(app,data);
   const remaining=days===null?null:days<0?`${-days} working day${-days===1?'':'s'} overdue`:days===0?'0 working days remaining (due today)':`${days} working day${days===1?'':'s'} remaining`;
   const source=derivation.source;
+  const dueTone=days===null?'muted':days<0?'critical':days<=3?'attention':'ready';
   return <details className="due-explain">
-    <summary className={days!==null&&days<=3?'due urgent':'due'}><Clock3 size={13} aria-hidden="true"/>{text}<span className="sr-only">{aria===text?'. ':`. ${aria}. `}Open how this target was derived.</span><ChevronDown size={11} aria-hidden="true" className="due-explain-caret"/></summary>
+    <summary className={days!==null&&days<=3?'due urgent':'due'}><Clock3 size={13} aria-hidden="true"/><span className={`traffic-dot ${dueTone}`} aria-hidden="true"></span>{text}<span className="sr-only">{aria===text?'. ':`. ${aria}. `}Open how this target was derived.</span><ChevronDown size={11} aria-hidden="true" className="due-explain-caret"/></summary>
     <div className="due-explain-panel">
       <strong>Deadline derivation</strong>
       <dl>

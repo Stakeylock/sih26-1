@@ -58,7 +58,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
       <div className="dispatch-header-side">
         <div className="dispatch-header-actions">
           {canCreate&&<button className="button" onClick={()=>navigate('new')}><Plus size={16}/>New application</button>}
-          <div className="scope-selector"><label className="field">Scope</label>{[{key:'active',label:'Active'},{key:'closed',label:'Closed'},{key:'all',label:'All'}].map(item=><button key={item.key} className={scope===item.key?'active':''} aria-pressed={scope===item.key} onClick={()=>setScope(item.key as 'active'|'closed'|'all')}>{item.label}</button>)}</div>
+          <div className="scope-selector"><label className="field">Scope</label>{[{key:'active',label:'Active'},{key:'closed',label:'Closed'},{key:'all',label:'All'}].map(item=><button key={item.key} className={`scope-chip${scope===item.key?' selected':''}`} type="button" aria-pressed={scope===item.key} onClick={()=>setScope(item.key as 'active'|'closed'|'all')}>{item.label}</button>)}</div>
         </div>
         <div className="dispatch-context">
           <span>Visible scope · Academic Year 2026–27</span>
@@ -217,7 +217,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
                   <td><span className="mono">{regApps.length}</span></td>
                   <td>{scrutinyCount}</td>
                   <td>{evcCount}</td>
-                  <td><span className={regOverdue?'document-tag pending':'document-tag clean'}>{regOverdue} overdue</span></td>
+                  <td><span className={`traffic-chip ${regOverdue===0?'ready':regOverdue<=2?'attention':'critical'}`}><span className={`traffic-dot ${regOverdue===0?'ready':regOverdue<=2?'attention':'critical'}`}></span>{regOverdue===0?'On time':regOverdue===1?'1 overdue':`${regOverdue} overdue`}</span></td>
                   <td><strong>{rate===null?'N/A':`${rate}%`}</strong></td>
                 </tr>;
               })}
