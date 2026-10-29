@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDemoRepository, seed } from '../src/data/demo';
 import requirementsJson from '../src/data/requirements.json';
@@ -19,6 +21,26 @@ describe('self-disclosure requirements', () => {
     expect(requirements.every(requirement => requirement.app_type === 'extension_self_disclosure')).toBe(true);
     expect(requirements.every(requirement => requirement.version === 1)).toBe(true);
     expect(requirements.every(requirement => requirement.active && requirement.is_mandatory)).toBe(true);
+  });
+
+  it('cites handbook text that docs/reference/APH_2024-27.txt actually prints', () => {
+    const handbook = readFileSync(resolve(__dirname, '../docs/reference/APH_2024-27.txt'), 'utf8');
+    const anchors: Record<string, string> = {
+      'APH Affidavit 2': 'AFFIDAVIT-2',
+      'APH Definitions 27': 'to an Institution for that Academic Year',
+      'APH 2.25(b)': 'The same shall be notified on the Web-Portal',
+      'APH 6.14': '6.14 The Technical Institutions shall follow Norms for Faculty requirements and Cadre ratio',
+      'APH 6.14 + Annexure-5': 'ANNEXURE-5',
+      'APH 6.17(a)': 'Land required shall be with clear title in the name of the trust',
+      'APH 6.17': '6.17 The Technical Institutions shall follow Norms for Built-up requirements',
+      'APH 6.17(i)': 'A valid Fire Safety Certificate shall be obtained from the Competent Authority.',
+      'APH Annexure-10': 'ANNEXURE-10',
+    };
+    expect(requirements.map(requirement => requirement.clause).sort()).toEqual(Object.keys(anchors).sort());
+    for (const requirement of requirements) {
+      const anchor = anchors[requirement.clause];
+      expect(handbook.includes(anchor), `${requirement.code} cites ${requirement.clause}, whose anchor "${anchor}" is not printed in the handbook`).toBe(true);
+    }
   });
 });
 
@@ -90,7 +112,7 @@ describe('evidence fixtures', () => {
 describe('deficiency seed', () => {
   it('raises one open deficiency against the fire safety claim', () => {
     const deficiency = workspace.deficiencies.find(item => item.id === 'demo-def-0')!;
-    expect(deficiency).toMatchObject({ application_id: 'demo-app-0', claim_id: 'demo-claim-7', clause: 'APH safety', status: 'open', raised_by: 'demo-scrutiny' });
+    expect(deficiency).toMatchObject({ application_id: 'demo-app-0', claim_id: 'demo-claim-7', clause: 'APH 6.17(i)', status: 'open', raised_by: 'demo-scrutiny' });
   });
 });
 

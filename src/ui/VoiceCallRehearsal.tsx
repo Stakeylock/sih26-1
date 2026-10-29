@@ -34,10 +34,12 @@ export function VoiceCallRehearsal({repo,data,run}:{repo:Repository;data:Workspa
     try{
       const file=new File([transcript],`voice-transcript-${application.ref_no}.txt`,{type:'text/plain'});
       const runFn=run??(async(operation:()=>Promise<void>)=>{await operation();});
-      await runFn(async()=>{
+      const ok=await runFn(async()=>{
         await repo.upload(application,'Voice Transcript',file);
       },'Voice transcript uploaded as a case document.');
-      const doc=data.documents.find(item=>item.file_name===`voice-transcript-${application.ref_no}.txt`);
+      if(ok===false)return;
+      const fresh=await repo.workspace();
+      const doc=fresh.documents.find(item=>item.file_name===`voice-transcript-${application.ref_no}.txt`);
       setUploadedDocumentId(doc?.id??null);
       const out=await repo.dispatchNotification({
         applicationId:application.id,

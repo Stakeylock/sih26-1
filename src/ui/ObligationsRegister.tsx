@@ -3,7 +3,7 @@ import {Panel,Badge,Empty} from './common';
 import {ShieldCheck} from 'lucide-react';
 import {type Application,type DocumentRecord,type Identity,type Obligation} from '../domain/model';
 import {delayRiskAdvisory} from '../domain/expiry';
-import {aphClauseForDocument,APH_EDITION} from '../domain/aph';
+import {aphClauseForDocument,APH_EDITION,APH_TITLE} from '../domain/aph';
 import {expiryState} from '../domain/expiry';
 
 function riskChip(risk:string){
@@ -78,7 +78,7 @@ export function ObligationsRegister({app,data}:{app:Application;data:{obligation
           </div>
         )}
       </Panel>
-      <p className="quiet-label" style={{fontSize:'11px',marginTop:'6px'}}>APH references are synthetic demonstration citations from {APH_EDITION}; they are not official AICTE determinations.</p>
+      <p className="quiet-label" style={{fontSize:'11px',marginTop:'6px'}}>APH clause text verified against the {APH_TITLE} held in docs/reference. The document-to-clause mapping is ours, and these are not official AICTE determinations.</p>
     </section>
   );
 }

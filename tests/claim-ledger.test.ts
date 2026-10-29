@@ -29,7 +29,7 @@ describe('claim ledger schema', () => {
     expect(row.rows[0]).toEqual({
       code: 'INSTITUTION_IDENTITY',
       statement_snapshot: 'Institution name and reference match the trust record',
-      clause_snapshot: 'APH identity',
+      clause_snapshot: 'APH Affidavit 2',
       verification_method: 'cross_check',
     });
   });

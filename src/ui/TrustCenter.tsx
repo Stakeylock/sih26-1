@@ -39,7 +39,7 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
       <Panel className="trust-panel" title="Record integrity" subtitle="Hash-chain verification for a submitted dossier." action={<Fingerprint size={19}/>}>
         <div className="trust-reference">
           <div><span className="quiet-label">REFERENCE RECORD</span><strong>{reference?.ref_no??'No visible record'}</strong><small>{reference?.title??'A submitted record is required for verification.'}</small></div>
-          <button className="button outline" disabled={!reference||busy} onClick={verify}><ShieldCheck size={15}/>{busy?'Checking...':'Verify chain'}</button>
+          <button className="button outline button-small" disabled={!reference||busy} onClick={verify}><ShieldCheck size={15}/>{busy?'Checking...':'Verify chain'}</button>
         </div>
         <div className={`trust-chain-status ${verification?(chainOk?'ok':'broken'):'idle'}`} role="status">
           {verification?verification.intact?<CheckCircle2 size={22}/>:<ShieldX size={22}/>:<Fingerprint size={22}/>}
@@ -97,7 +97,7 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
       </Panel>
 
        <Panel className="trust-panel" title="All visible chains" subtitle="One report across the cases loaded for this workspace." action={<ShieldCheck size={19}/>}>
-         <div className="trust-replay-body"><div><strong>{aggregate?`${aggregate.filter(item=>item.result.intact).length} of ${aggregate.length} chains intact.`:'Verify every visible case in one pass.'}</strong><p>{aggregate?aggregate.filter(item=>!item.result.intact).map(item=>`${item.ref} breaks at event ${item.result.broken_at??'unknown'}`).join(' · ')||'No broken visible chains found.':'This checks the same stored event links as the single-record action; connected scope and pagination still apply.'}</p></div><button className="button outline" disabled={busy} onClick={verifyAll}><ShieldCheck size={15}/>{busy?'Checking...':'Verify all visible chains'}</button></div>
+         <div className="trust-replay-body"><div><strong>{aggregate?`${aggregate.filter(item=>item.result.intact).length} of ${aggregate.length} chains intact.`:'Verify every visible case in one pass.'}</strong><p>{aggregate?aggregate.filter(item=>!item.result.intact).map(item=>`${item.ref} breaks at event ${item.result.broken_at??'unknown'}`).join(' · ')||'No broken visible chains found.':'This checks the same stored event links as the single-record action; connected scope and pagination still apply.'}</p></div><button className="button outline button-small" disabled={busy} onClick={verifyAll}><ShieldCheck size={15}/>{busy?'Checking...':'Verify all visible chains'}</button></div>
        </Panel>
        <Panel className="trust-panel trust-replay" title="Tamper replay" subtitle="Demonstration only. Runs on a copy and never mutates the workspace." action={<Play size={19}/>}>
         <div className="trust-replay-body">
@@ -105,7 +105,7 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
             <strong>{repo.mode==='demo'?'Test the verifier against a deliberately altered event.':'Tamper replay is available in the synthetic demo workspace.'}</strong>
             <p>{replayResult?(replayResult.intact?'Replay returned an intact chain. That is unexpected for a tampered copy.':`Replay detected the alteration at event ${replayResult.broken_at}. The live record was not changed.`):'The verifier must fail closed when history is edited. Replay proves the check can fail, not just pass.'}</p>
           </div>
-          <button className="button outline" disabled={!reference||busy||!canReplay} onClick={replay}><ShieldX size={15}/>{busy?'Replaying...':'Run tamper replay'}</button>
+          <button className="button outline button-small" disabled={!reference||busy||!canReplay} onClick={replay}><ShieldX size={15}/>{busy?'Replaying...':'Run tamper replay'}</button>
         </div>
         {!canReplay&&<p className="trust-empty">{repo.mode==='demo'?'Sign in with a reviewer role to run replay.':'Switch to the demo workspace to run this check.'}</p>}
       </Panel>

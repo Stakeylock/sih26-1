@@ -66,7 +66,7 @@ export function buildHtmlEmail(subject:string,body:string,kind:string):string{
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0dfd5; border-radius: 12px; overflow: hidden; background: #ffffff;">
       <div style="background: #183227; padding: 20px 24px; color: #fbfbf9;">
-        <span style="font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #a3b899; font-weight: 700;">AICTE Flow Regulatory Alert</span>
+        <p style="margin: 0; font-size: 12px; color: #a3b899;">Clauseway synthetic prototype</p>
         <h2 style="margin: 6px 0 0; font-size: 20px; font-weight: 700; color: #ffffff;">${subject}</h2>
       </div>
       <div style="padding: 24px; color: #222525; line-height: 1.6; font-size: 14px;">
@@ -76,7 +76,7 @@ export function buildHtmlEmail(subject:string,body:string,kind:string):string{
         <p style="margin: 0 0 16px;">${body}</p>
         <hr style="border: 0; border-top: 1px solid #e0dfd5; margin: 24px 0;" />
         <p style="margin: 0; font-size: 12px; color: #667069;">
-          This is an official compliance notification dispatched from the AICTE Flow Approval &amp; Monitoring Engine.
+          Clauseway is a synthetic prototype. This message was generated from demonstration data and is not an official AICTE communication.
         </p>
       </div>
     </div>
@@ -93,7 +93,7 @@ async function dispatchEmail(toEmail:string,subject:string,body:string,kind:stri
       const res=await withTimeout(fetch('https://api.resend.com/emails',{
         method:'POST',
         headers:{Authorization:`Bearer ${import.meta.env.VITE_RESEND_API_KEY}`,'Content-Type':'application/json'},
-        body:JSON.stringify({from:import.meta.env.VITE_EMAIL_FROM||'AICTE Flow <onboarding@resend.dev>',to:toEmail,subject:`[AICTE Alert] ${subject}`,text:body,html:buildHtmlEmail(subject,body,kind)}),
+        body:JSON.stringify({from:import.meta.env.VITE_EMAIL_FROM||'Clauseway <onboarding@resend.dev>',to:toEmail,subject:`[Clauseway prototype] ${subject}`,text:body,html:buildHtmlEmail(subject,body,kind)}),
       }),EMAIL_TIMEOUT_MS);
       if(res.ok){return {channel:'email',status:'delivered',detail:'Delivered via Resend.'};}
       return {channel:'email',status:'failed',detail:`Resend returned ${res.status}.`};
@@ -118,7 +118,7 @@ async function dispatchSMS(phone:string,subject:string,body:string):Promise<Disp
       const res=await withTimeout(fetch('https://www.fast2sms.com/dev/bulkV2',{
         method:'POST',
         headers:{authorization:import.meta.env.VITE_FAST2SMS_API_KEY,'Content-Type':'application/json'},
-        body:JSON.stringify({route:'q',message:`[AICTE Alert] ${subject}: ${body.slice(0,100)}`,language:'english',flash:0,numbers:cleanPhone.replace('+91','').trim()}),
+        body:JSON.stringify({route:'q',message:`[Clauseway prototype] ${subject}: ${body.slice(0,100)}`,language:'english',flash:0,numbers:cleanPhone.replace('+91','').trim()}),
       }),SMS_TIMEOUT_MS);
       const data=await res.json();
       if(data.return){return {channel:'sms',status:'delivered',detail:'Delivered via Fast2SMS.'};}

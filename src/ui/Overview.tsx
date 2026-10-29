@@ -126,8 +126,8 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
             <div className="hero-metric-value" style={{color:chainBroken?'var(--critical)':chain.state==='done'?'var(--verified)':undefined,fontSize:'34px'}} role="status" aria-live="polite">{chainValue}</div>
             <span className="hero-metric-note">{chainNote}</span>
             <div className="chain-proof-actions">
-              <button type="button" className="text-button small" disabled={chain.state==='checking'||!scoped.length} onClick={verifyVisible}>{chain.state==='done'&&chain.scope==='all'?<><RefreshCw size={12}/>Re-verify</>:<><ShieldCheck size={12}/>Verify all {scoped.length}</>}</button>
-              <button type="button" className="text-button small" onClick={()=>navigate('trust')}>Trust Center <ArrowRight size={12}/></button>
+              <button type="button" className="text-button small button-small" disabled={chain.state==='checking'||!scoped.length} onClick={verifyVisible}>{chain.state==='done'&&chain.scope==='all'?<><RefreshCw size={12}/>Re-verify</>:<><ShieldCheck size={12}/>Verify all {scoped.length}</>}</button>
+              <button type="button" className="text-button small button-small" onClick={()=>navigate('trust')}>Trust Center <ArrowRight size={12}/></button>
             </div>
           </div>
         </section>
@@ -228,7 +228,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
     </section>
     <div className="overview-record-link">
       <span><ShieldCheck size={14}/> Evidence provenance, record checks, and automation permissions.</span>
-      <button className="text-button small" onClick={()=>navigate('trust')}>Open Trust Center <ArrowRight size={13}/></button>
+      <button className="text-button small button-small" onClick={()=>navigate('trust')}>Open Trust Center <ArrowRight size={13}/></button>
     </div>
 
   </>;

@@ -104,7 +104,9 @@ body{font-size:calc(14px * var(--text-scale,1))}.sidebar{width:220px;background:
 .overview-bottom .quiet-label,.metric>small,.timeline small,.timeline time,.document small,.checklist-row small,.settings-list dt{color:var(--muted)}
 .workflow-node.complete .node-index,.workflow-node.active .node-index,.workflow-node.overdue .node-index,.workflow-node.blocked .node-index{color:var(--muted)}
 .workflow-node.pending{color:var(--muted)}
-.tabs button{color:var(--muted)}
+.tabs button{color:var(--muted);padding:7px 12px;border:1px solid var(--rule);border-radius:7px;background:transparent;font-size:calc(10px * var(--text-scale,1));font-weight:500;cursor:pointer}
+.tabs button.active{background:var(--paper);color:var(--ink);border-color:var(--rule);font-weight:600}
+.tabs button:hover:not(.active){color:var(--ink)}
 .panel-footnote{color:var(--muted)}
 .step-index,.template-stages p,.template-stages small{color:var(--muted)}
 .notice .text-button{color:#0a6b5f}
@@ -1562,3 +1564,12 @@ body{font-variant-numeric:tabular-nums}
 .obligations-register .obligation-fact dd .badge{font-size:calc(10px*var(--text-scale,1))}
 .obligations-register .register-note{font-size:calc(11px*var(--text-scale,1));line-height:1.45}
 @media(max-width:640px){.obligations-register .form-grid{grid-template-columns:1fr}}
+/* Compact table rows: gentle hover accent for the dispatch register. */
+.table-wrap tbody tr:hover{background:var(--surface-muted,#f8fafb)}
+.table-wrap tbody tr:hover td{border-color:#b9c4ce}
+.applications-table tbody tr:hover{background:var(--surface-muted,#f8fafb)}
+.applications-table tbody tr:hover td{border-color:#b9c4ce}
+/* Empty state polish. */
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:26px 20px;color:var(--muted);text-align:center}
+.empty svg{color:var(--rule)}
+.empty h3{font-size:calc(13px * var(--text-scale,1));color:var(--ink);margin:0}

@@ -3,7 +3,7 @@
   "environment": "synthetic demo only",
   "blockers": [
     "n8n dependency vulnerabilities; runtime disabled",
-    "A production malware-scanning provider has not been integrated or validated.",
+    "Malware scanning is validated against self-hosted ClamAV on a loopback stack only (ClamAV 1.5.4/28167, signatures dated 28 Oct 2026, recorded 29 Oct 2026 in docs/reliability-integration-results.json). No managed provider is used and no production-topology scan has been run.",
     "Backup restore, formal accessibility review, and regulatory sign-off are unverified."
   ]
 }

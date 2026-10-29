@@ -154,7 +154,7 @@ export function DemoLab({data,repo,run,onStartTour,onOpenPrototype,onOpenFlow,on
             {scenarioStep===index&&scenarioBusy&&<span className="mono"> · running…</span>}
           </button>
         ))}
-        {scenarioStep===scenarioSteps.length&&<button className="button text small" type="button" onClick={resetScenario}><RotateCcw size={12}/>Reset scenario</button>}
+        {scenarioStep===scenarioSteps.length&&<button className="button text small button-small" type="button" onClick={resetScenario}><RotateCcw size={12}/>Reset scenario</button>}
       </div>
       {scenarioError&&<p className="callout">{scenarioError}</p>}
       {scenarioResults.length>0&&(
@@ -199,7 +199,7 @@ export function DemoLab({data,repo,run,onStartTour,onOpenPrototype,onOpenFlow,on
         {steps.map((step,index)=><li key={step.id} className={step.armed?'armed':'unmet'}>
           <span className="demo-lab-guide-index"><strong>{String(index+1).padStart(2,'0')}</strong></span>
           <div className="demo-lab-guide-copy"><strong>{step.title}</strong><p>{step.armedBecause??step.unmetNote}</p><small>{step.roleLabel} · {step.routeLabel}</small></div>
-          <button className="button small" type="button" disabled={!step.armed} aria-label={`Open as ${step.roleLabel}`} onClick={()=>onSwitch(step.role,step.route)}>{step.armed?'Open as '+step.roleLabel:'Step unmet'}</button>
+          <button className="button small button-small" type="button" disabled={!step.armed} aria-label={`Open as ${step.roleLabel}`} onClick={()=>onSwitch(step.role,step.route)}>{step.armed?'Open as '+step.roleLabel:'Step unmet'}</button>
         </li>)}
       </ol>
       <p className="support-footnote">Arming reads only the loaded workspace. Review actions are yours to record back in the opened surface.</p>
@@ -210,7 +210,7 @@ export function DemoLab({data,repo,run,onStartTour,onOpenPrototype,onOpenFlow,on
         <div><h2>Deadline escalation rehearsal</h2><p>Step through the synthetic escalation ladder used in this demo. It does not dispatch notices or change an obligation.</p></div>
         <div className="demo-lab-rehearsal-actions">
           <span className="quiet-label"><FastForward size={14}/>Simulation only</span>
-          {rehearsalStep!==null&&<button className="button small outline" type="button" onClick={()=>setRehearsalStep(null)}><RotateCcw size={12}/>Reset rehearsal</button>}
+          {rehearsalStep!==null&&<button className="button small outline button-small" type="button" onClick={()=>setRehearsalStep(null)}><RotateCcw size={12}/>Reset rehearsal</button>}
         </div>
       </div>
       <div className="demo-lab-rehearsal-body">

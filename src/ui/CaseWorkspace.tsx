@@ -98,12 +98,12 @@ const handleDragLeaveGroup=()=>setDragTarget(null);
         </div>
         <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
           {openClaimDeficiencies>0&&(
-            <button className="button small secondary" onClick={()=>setShowNotice(true)} style={{fontSize:'11px'}}>
+            <button className="button small secondary button-small" onClick={()=>setShowNotice(true)} style={{fontSize:'11px'}}>
               <FileText size={13}/>Correction summary
             </button>
           )}
           {!closed&&(
-            <button type="button" className="button small outline" style={{fontSize:'11px',display:'inline-flex',alignItems:'center',gap:'5px'}} onClick={focusUnresolved}>
+            <button type="button" className="button small outline button-small" style={{fontSize:'11px',display:'inline-flex',alignItems:'center',gap:'5px'}} onClick={focusUnresolved}>
               Inspect unresolved items <ArrowRight size={13}/>
             </button>
           )}
@@ -189,7 +189,7 @@ const handleDragLeaveGroup=()=>setDragTarget(null);
         <p><strong>Demo due date:</strong> {new Date(item.due_at).toLocaleDateString('en-IN')}</p>
         <small>Recorded by {item.raised_by} · {item.clause}</small>
       </article>)}</div>
-      <div className="form-actions"><button className="button outline" type="button" onClick={()=>window.print()}><Printer size={13}/>Print demo summary</button><button className="button" type="button" onClick={()=>setShowNotice(false)}>Close summary</button></div>
+      <div className="form-actions"><button className="button outline button-small" type="button" onClick={()=>window.print()}><Printer size={13}/>Print demo summary</button><button className="button" type="button" onClick={()=>setShowNotice(false)}>Close summary</button></div>
     </Dialog>}
     {passport&&<EvidencePassport document={passport} app={app} data={data} identity={identity} repo={repo} run={run} busy={busy} openCase={openCase} close={()=>setPassport(null)}/>}
     {action&&<ActionDialog key={action} action={action} app={app} data={data} claims={claims.filter(c=>!claimDeficiencies.some(d=>d.claim_id===c.id&&['open','escalated'].includes(d.status)))} documents={documents} run={run} repo={repo} busy={busy} close={()=>setAction(null)}/>}</>;
@@ -209,6 +209,6 @@ function ActionDialog({action,app,data,claims,documents,repo,run,busy,close}:{ac
     {action==='schedule_evc'&&<label className="field">Visit date and time (your local time)<input type="datetime-local" value={scheduled} required onChange={e=>setScheduled(e.target.value)}/></label>}
     {action==='submit_evc_report'&&<label className="field">Recommendation<select value={recommendation} onChange={e=>setRecommendation(e.target.value)}><option value="recommend">Recommend</option><option value="conditional">Conditional</option><option value="not_recommend">Do not recommend</option></select></label>}
     {action==='submit'&&<div className="callout"><strong>Ready for human scrutiny</strong><p>Submission locks your draft. The backend checks all required fields and clean evidence again.</p></div>}
-    <div className="form-actions"><button className="button secondary" type="button" onClick={close} disabled={busy}>Cancel</button><button className="button" disabled={busy}>{busy?'Saving…':`Confirm ${actionLabels[action].toLowerCase()}`}</button></div>
+    <div className="form-actions"><button className="button secondary button-small" type="button" onClick={close} disabled={busy}>Cancel</button><button className="button" disabled={busy}>{busy?'Saving…':`Confirm ${actionLabels[action].toLowerCase()}`}</button></div>
   </form></Dialog>;
 }

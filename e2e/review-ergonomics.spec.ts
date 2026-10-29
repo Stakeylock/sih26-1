@@ -25,7 +25,7 @@ test('officers start the deficiency from an editable claim-grounded template',as
 test('dossier evidence carries the recorded APH norm and honest expiry tiers',async({page})=>{
   await openCaseAsScrutiny(page,'DEMO-2026-1001');
   await page.getByRole('tab',{name:'Evidence'}).click();
-  await expect(page.locator('.nav-norm',{hasText:'APH faculty'}).first()).toBeVisible();
+  await expect(page.locator('.nav-norm',{hasText:'APH 6.14'}).first()).toBeVisible();
   await page.locator('.document-expired').getByRole('button',{name:/View document record/}).click();
   const passport=page.getByRole('dialog');
   await expect(passport.getByText('Recorded norm')).toBeVisible();

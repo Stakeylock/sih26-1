@@ -15,6 +15,10 @@ Clauseway is a synthetic SIH 2026 prototype, not an official AICTE integration. 
 | Policy / approval assumptions | [Approval scope and notices](approval-scope-and-notices.md) |
 | Diagram source | [Architecture diagram](architecture-diagram-source.md) |
 | Third-party use | [Attribution](third-party-notices.md) |
+| Domain source of truth for handbook clauses | [APH reference](reference/README.md) |
+| Unverified values and decisions in flight | [Open questions](open questions) |
+| Screen wording rules | [UI copy guide](UI_COPY_GUIDE.md) |
+| Roles, jurisdictions and write gates | [RBAC](RBAC.md) |
 
 ## Recorded evidence
 

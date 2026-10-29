@@ -154,7 +154,7 @@ export function AdvisoryPanel({ snapshot, app, repo, busy }: { snapshot: Analysi
             </table>
           </div>
           <div className="form-actions">
-            <button type="button" className="button secondary small" onClick={() => setShowAll(value => !value)}>{showAll ? 'Show top 8 features' : `Show all ${explanation.contributions.length} features`}</button>
+            <button type="button" className="button secondary small button-small" onClick={() => setShowAll(value => !value)}>{showAll ? 'Show top 8 features' : `Show all ${explanation.contributions.length} features`}</button>
           </div>
         </>
       )}

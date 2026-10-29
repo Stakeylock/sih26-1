@@ -34,7 +34,7 @@ export function PrototypeFlow({ app, data, openCase }: Props) {
     <div className="prototype-flow-shell" data-prototype="flow">
       <header className="prototype-dossier-header">
         <div className="prototype-dossier-header-top">
-          <button className="text-button" onClick={() => openCase(app.id)}>
+          <button className="text-button button-small" onClick={() => openCase(app.id)}>
             <ArrowLeft size={15} />
             Full dossier
           </button>

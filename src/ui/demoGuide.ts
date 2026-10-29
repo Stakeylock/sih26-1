@@ -17,6 +17,7 @@ const roleText: Record<Role, string> = {
   institution: 'Institution',
   scrutiny_officer: 'Scrutiny officer',
   evc_coordinator: 'EVC coordinator',
+  evc_member: 'EVC member',
   regional_officer: 'Regional officer',
   national_admin: 'National administrator',
 };

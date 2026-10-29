@@ -68,7 +68,7 @@ test('overview prioritises current cases and prototype attention reflects review
   await expect(board).not.toContainText('DEMO-2026-1011');
   await openDemoLab(page);await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
   const preview=page.getByRole('complementary',{name:'Selected case preview'});
-   await expect(preview).toContainText('APH safety: The Fire Safety Certificate expired before the scrutiny date.');
+   await expect(preview).toContainText('APH 6.17(i): The Fire Safety Certificate expired before the scrutiny date.');
   await expect(preview).toContainText('2 of 9 claims awaiting verification.');
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
@@ -118,7 +118,7 @@ test('evidence passport surfaces duplicate use and linked claims',async({page})=
   await expect(passport).toContainText('75600d1d');
   await expect(passport).toContainText(/Expired \d/);
   await expect(passport).toContainText('DEMO-2026-1005');
-  await expect(passport).toContainText('APH safety');
+  await expect(passport).toContainText('APH 6.17(i)');
   await expect(passport).toContainText('duplicate document');
   await passport.getByRole('button',{name:'Open the other case'}).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -247,7 +247,7 @@ test('behavioral: replacement certificate clears the fire claim while missing in
   await page.getByRole('button',{name:'Record verification'}).click();
   await expect(page.getByRole('status',{name:'Workspace notification'})).toContainText('Claim verified');
   await expect(page.locator('.claim-summary')).toContainText('8 of 9 verified or not applicable');
-  await expect(page.locator('.preflight-panel')).toContainText('Evidence missing · APH infrastructure');
+  await expect(page.locator('.preflight-panel')).toContainText('Evidence missing · APH 6.17');
   await expect(page.locator('.readiness-status')).toContainText('Claims 8 of 9');
   await page.getByRole('tab',{name:'History'}).click();
   await expect(page.locator('.timeline')).toContainText('deficiency resolved');
@@ -404,16 +404,17 @@ test('demo lab gathers simulation controls outside working navigation',async({pa
 test('demo lab rehearses a voice reminder without changing the case',async({page})=>{
   await openDemoLab(page);
   const voice=page.getByRole('region',{name:'Voice reminder rehearsal'});
-  await expect(voice).toContainText('SIMULATED · no call placed');
+  await expect(voice).toContainText('Simulation only. No call was placed');
   await voice.getByRole('button',{name:'Commitment to submit',exact:true}).click();
   const preview=voice.locator('.demo-lab-result').first();
   await expect(preview).toContainText('Commitment to submit');
   await expect(preview).toContainText(/Follow up on \d{4}-\d{2}-\d{2}/);
-  await voice.getByRole('button',{name:'Record simulated follow-up',exact:true}).click();
-  const status=voice.getByRole('status');
-  await expect(status).toContainText('Voice follow-up recorded');
-  await expect(status).toContainText('No call was placed');
-  await expect(status.locator('.document-tag')).toContainText('voice');
+  await voice.getByRole('button',{name:'Upload transcript & notify',exact:true}).click();
+  const transcriptStatus=voice.getByRole('status').filter({hasText:'Transcript uploaded'});
+  await expect(transcriptStatus).toContainText('voice-transcript-DEMO-2026-1001.txt');
+  const dispatchStatus=voice.getByRole('status').filter({hasText:'Voice notification dispatched'});
+  await expect(dispatchStatus).toContainText('No call was placed');
+  await expect(dispatchStatus.locator('.document-tag')).toContainText('voice');
 });
 test('dossier is the page header and keeps authority and return path',async({page})=>{
   await openDesk(page,'Applications');

@@ -18,7 +18,7 @@ export function Receipt({app,data,repo,run,busy,back,openCase}:{app:Application;
   const receiptId=`RCPT-${app.ref_no.replace('DEMO-','')}-${String(app.version).padStart(2,'0')}`;
   const verify=()=>void run(async()=>{setVerification(await repo.verifyAudit(app));setVerifiedAt(new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}));},'Receipt chain verified.');
   return <div className="receipt-page">
-    <header className="receipt-page-head"><button className="text-button" onClick={back}><ArrowLeft size={15}/>Back</button><span>DECISION RECEIPT / SYNTHETIC RECORD</span><button className="button outline" onClick={()=>window.print()}><Printer size={15}/>Print</button></header>
+    <header className="receipt-page-head"><button className="text-button button-small" onClick={back}><ArrowLeft size={15}/>Back</button><span>DECISION RECEIPT / SYNTHETIC RECORD</span><button className="button outline" onClick={()=>window.print()}><Printer size={15}/>Print</button></header>
     <article className="receipt-paper">
       <div className="receipt-paper-top"><div><span className="receipt-kicker">CLAUSEWAY / Institutional Review APPROVAL OPERATIONS</span><h1>Decision receipt</h1><p className="mono">{receiptId}</p></div><div className={`receipt-seal ${approved?'approved':'rejected'}`}>{approved?<CheckCircle2 size={30}/>:<XCircle size={30}/>}<strong>{approved?'Approved':'Rejected'}</strong><span>Human decision</span></div></div>
       <div className="receipt-rule"/>
@@ -39,7 +39,7 @@ export function Receipt({app,data,repo,run,busy,back,openCase}:{app:Application;
         <div><span className="quiet-label">RECORD INTEGRITY</span><strong>{verification?verification.intact?'Chain verified. Event history intact.':`Integrity mismatch detected at event ${verification.broken_at??'?'}`:'Not verified'}</strong><p>{verification?`${verification.checked} events checked · head ${verification.head??'not available'}${verifiedAt?` · ${verifiedAt}`:''}`:'Verify the stored hash-linked chain for this decision record.'}</p></div>
         <button className="button outline" onClick={verify} disabled={busy}>{verification?'Verify again':'Verify record'}</button>
       </section>
-      <div className="receipt-actions"><button className="button" onClick={openCase}>Open the dossier <ArrowRight size={15}/></button><button className="text-button" onClick={back}>Back to workspace</button></div>
+      <div className="receipt-actions"><button className="button" onClick={openCase}>Open the dossier <ArrowRight size={15}/></button><button className="text-button button-small" onClick={back}>Back to workspace</button></div>
       <p className="receipt-disclaimer"><ShieldCheck size={15}/>Synthetic demonstration receipt. Not an Institutional Review approval, certificate, or regulatory decision.</p>
       <span className="receipt-watermark" aria-hidden="true"><ReceiptText size={120}/></span>
     </article>

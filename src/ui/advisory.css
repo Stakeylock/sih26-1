@@ -1,0 +1,20 @@
+.advisory-panel h3{margin:26px 0 8px}
+.advisory-heading{align-items:flex-start;flex-wrap:wrap}
+.advisory-heading>div{max-width:760px}
+.advisory-chip{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:999px;background:var(--surface-muted);color:var(--muted);font-family:var(--font-record);font-size:calc(9px * var(--text-scale,1));letter-spacing:.08em;padding:5px 9px;text-transform:uppercase;white-space:nowrap}
+.advisory-summary{margin:20px 0 4px}
+.advisory-summary progress{width:100%;height:8px;margin-top:14px;accent-color:var(--route)}
+.advisory-summary progress::-webkit-progress-bar{background:var(--surface-muted);border-radius:999px}
+.advisory-summary progress::-webkit-progress-value{background:var(--route);border-radius:999px}
+.advisory-panel td small{max-width:460px}
+.advisory-positive{color:var(--critical);font-family:var(--font-record);font-variant-numeric:tabular-nums;white-space:nowrap}
+.advisory-negative{color:var(--verified);font-family:var(--font-record);font-variant-numeric:tabular-nums;white-space:nowrap}
+.advisory-citations{padding-left:18px}
+.advisory-citations li{margin-bottom:14px}
+.advisory-citations p{margin:5px 0}
+.advisory-panel .field{margin-top:16px}
+.advisory-panel textarea{font-family:var(--font-record);font-size:calc(11px * var(--text-scale,1));line-height:1.7;resize:vertical}
+.advisory-panel .form-actions{margin-top:14px}
+.advisory-panel details{margin-top:18px}
+.advisory-panel details ul{padding-left:20px}
+@media(max-width:700px){.advisory-heading{flex-direction:column}.advisory-summary{grid-template-columns:1fr}}

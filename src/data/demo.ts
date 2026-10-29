@@ -23,7 +23,7 @@ import { canonicalAuditPayload, sha256Bytes, sha256Hex, verifyAuditChain } from 
 import { allowedActions, missingInputs } from '../domain/model';
 import { dispatchNotification } from '../domain/notification';
 import { workingDaysUntil } from '../domain/clock';
-import { titleSchema, validateFile } from '../domain/validation';
+import { MAX_FILE_BYTES, titleSchema, validateFile } from '../domain/validation';
 import {captureReviewSnapshot} from '../domain/review';
 import {planClockAdvance} from '../domain/consequences';
 import {workspaceHolidays} from '../domain/calendar';
@@ -180,7 +180,7 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
   let state=await seed();
   const heads=new Map<string,{sequence:number;hash:string}>();
   for(const event of state.events){const current=heads.get(event.application_id);const seq=event.sequence??0;const hash=typeof event.event_hash==='string'?event.event_hash:'';if(!current||seq>current.sequence)heads.set(event.application_id,{sequence:seq,hash:hash});}
-  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===12 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) {state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],agents:saved.workspace.agents??[]};
+  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===12 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) {state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],agents:saved.workspace.agents??[],events:saved.workspace.events??[],documents:saved.workspace.documents??[],checklist:saved.workspace.checklist??[],visits:saved.workspace.visits??[],obligations:saved.workspace.obligations??[],evc_visits:saved.workspace.evc_visits??[],evc_members:saved.workspace.evc_members??[],evc_schedule_history:saved.workspace.evc_schedule_history??[],evc_unavailability:saved.workspace.evc_unavailability??[]};
     } } catch { /* Corrupt demo storage is discarded. */ }
   state=neutralDemoLabels(state);
   if(!state.inspection_experts)seedPlanning(state);
@@ -390,7 +390,21 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
     async history(application){find(application.id);const events=(await buildAuditChain(state.events.filter(event=>event.application_id===application.id))).sort((a,b)=>a.sequence-b.sequence);return {events,through:events.length,head_hash:events.at(-1)?.event_hash??null,complete:true,message:'Synthetic browser history; hashes are simulated on read.'};},
     async verifyAudit(application):Promise<AuditVerification>{const a=find(application.id);return verifyAuditChain(await buildAuditChain(state.events.filter(e=>e.application_id===a.id)));},
     async tamperReplay(application):Promise<AuditVerification>{const a=find(application.id);if(a.owner_id===actor.id||!['scrutiny_officer','regional_officer','national_admin'].includes(role))throw new Error('Review or decision authority required.');const events=await buildAuditChain(state.events.filter(e=>e.application_id===a.id));if(!events.length)return verifyAuditChain(events);const target=Math.max(1,Math.ceil(events.length/2));return verifyAuditChain(events.map((event,index)=>index===target-1?{...event,reason:`${event.reason??'Synthetic event'} [tamper replay on copy]`}:event));},
-    async upload(application,type,file){validateFile(file);const a=find(application.id);if(!canUploadEvidence(a,actor,state.claims,state.deficiencies,type,state.obligations,state.documents))throw new Error('Application is locked for this evidence type.');        state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id});await log(a,'document_reserved',a.status,'Demo metadata only; bytes never leave this browser.');persist();},
+    async upload(application,type,file){
+      const a=find(application.id);
+      if(type==='Voice Transcript'){
+        if(file.type!=='text/plain'||file.size<=0||file.size>MAX_FILE_BYTES||file.name.length>180||/[\x00-\x1f/\\]/.test(file.name))throw new Error('Voice transcripts must be non-empty text files no larger than 10 MB.');
+        state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id});
+        await log(a,'document_reserved',a.status,'Demo-lab voice transcript recorded as a case document.');
+        persist();
+        return;
+      }
+      validateFile(file);
+      if(!canUploadEvidence(a,actor,state.claims,state.deficiencies,type,state.obligations,state.documents))throw new Error('Application is locked for this evidence type.');
+      state.documents.unshift({id:'demo-doc-'+crypto.randomUUID(),application_id:a.id,doc_type:type,file_name:file.name,file_path:'demo-only',size_bytes:file.size,mime_type:file.type,scan_status:'pending',sha256:null,uploaded_at:iso(),validity_mode:'unknown',subject_institution_id:a.institution_id});
+      await log(a,'document_reserved',a.status,'Demo metadata only; bytes never leave this browser.');
+      persist();
+    },
     async submitRenewal(application,expired,input,requestId=crypto.randomUUID()){
       if(role!=='institution'||application.owner_id!==actor.id)throw new Error('The owning institution must submit its renewal.');
       const note=input.note.trim();
