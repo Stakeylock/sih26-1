@@ -1569,6 +1569,15 @@ body{font-variant-numeric:tabular-nums}
 .document-reading blockquote { margin: .5rem 0; padding: .5rem; border-left: 2px solid var(--teal); }
 .reading-source { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 22rem; overflow: auto; }
 .reading-hash { overflow-wrap: anywhere; }
+.document-reading .inline { flex-wrap: wrap; align-items: flex-end; }
+.document-reading .field { flex: 1 1 16rem; min-width: 0; }
+.document-reading input[type="file"] { max-width: 100%; min-width: 0; }
+.document-review .field { display: flex; flex-direction: column; gap: .5rem; min-width: 0; margin-bottom: 1rem; }
+.document-review .field input,.document-review .field select,.document-review .field textarea { width: 100%; min-width: 0; max-width: 100%; }
+.document-review-form { padding: 1.25rem; }
+.document-review-form fieldset { min-width: 0; border: 0; padding: 0; margin: 0 0 1rem; }
+.document-review-form legend { font-weight: 600; margin-bottom: 1rem; }
+.document-review-form .checkbox-field { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 1rem; font-size: .8rem; }
 /* Compact table rows: gentle hover accent for the dispatch register. */
 .table-wrap tbody tr:hover{background:var(--surface-muted,#f8fafb)}
 .table-wrap tbody tr:hover td{border-color:#b9c4ce}

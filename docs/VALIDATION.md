@@ -64,3 +64,11 @@ Demo and connected builds passed. 389 unit/SQL tests and 112 browser tests passe
 ## 29 October 2026 — combined main and document-reading merge
 Merged origin/main a72e78d with feature/local-document-reading cd0ff87. Demo and connected builds passed; 398 unit/SQL tests passed. Full browser run: 117 passed and one stale advisory-copy assertion failed. The revised advisory non-mutation test then passed, alongside six focused reader/live-feature checks. Actual PDF and OCR processing passed again with production CSP. No remote migrations or connected production integration were performed.
 
+## 29 October 2026 — reason contract, current EVC dates and shared review reader
+
+Built on `71ae43b82860d1ec75ceeb0614a519d4e78c7e94` after pulling current main. Both demo and connected builds passed. **404 unit/SQL tests in 59 files and all 121 demo browser tests passed**. The browser suite was rerun after the mobile file-picker and review-form layout repair. Actual PDF extraction and image OCR passed against the built demo with production CSP and same-origin workers/model assets; desktop and 390px document review were visually checked, with no page-level overflow or browser errors in that journey.
+
+The new repository regressions verify top-level reason persistence in signal and audit, invalid/nested-only reason rejection without mutation, conflicting nested-reason replacement and rejection of a document from another case. Due Work regressions verify the actual reschedule/cancel commands, current date/version, matching explicit report deadlines and unrelated legacy fallback. Browser checks assert a real document finding and audit event after reload, advisory recording, current EVC dates after reload, source-switch cancellation, unrelated-file write blocking and mobile review layout.
+
+No dependency or database-schema change was made. Connected services, hosted RLS/Storage, production scanning and remote migrations were not exercised in this slice; connected document-finding writes remain unavailable. These local results do not replace the separate release gates above or establish production readiness.
+

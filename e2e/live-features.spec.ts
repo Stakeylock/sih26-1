@@ -6,29 +6,30 @@ test.beforeEach(async({page})=>{
   await page.reload();
 });
 
-test('document review extracts fields from PDF and records integrity signal',async({page})=>{
+test('document review reads real PDF bytes and persists a source-bound finding and audit event',async({page})=>{
   await page.goto('/#document-review');
-  await expect(page.getByRole('heading',{name:'Document review'})).toBeVisible();
-
-  const docSelect=page.getByLabel('Source document');
-  await expect(docSelect).toBeVisible();
-  await docSelect.selectOption({index: 0});
-
-  await page.waitForTimeout(1000);
-  await expect(page.getByText('Extracted text')).toBeVisible();
-
-  await page.getByLabel('Issuer').fill('Synthetic Fire Department');
-  await page.getByLabel('Document number').fill('FIRE-DEMO-001');
-  await page.getByLabel('Expiry date').fill('2026-10-15');
-  const checkboxes=page.getByLabel('Field confirmed',{exact:true});
-  await expect(checkboxes).toHaveCount(3);
-  for (const cb of await checkboxes.all()) {
-    await cb.click();
-  }
-
-  await page.getByLabel('Disposition').selectOption('confirmed');
-  await page.getByRole('button',{name:'Record reviewer finding'}).click();
-  await expect(page.getByText('Recorded findings')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Document review',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Recorded findings',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Read watermarked sample',exact:true}).click();
+  await expect(page.getByRole('table',{name:'Suggested document fields for human review'})).toBeVisible();
+  await expect(page.getByLabel('Document number',{exact:true})).toHaveValue('SYN-affidavit-2026');
+  await page.getByRole('button',{name:'Page 1',exact:true}).first().click();
+  await expect(page).toHaveURL(/#document-review$/);
+  await expect(page.locator('.reading-source')).toBeVisible();
+  await page.getByLabel('Issuer',{exact:true}).fill('Synthetic Review Office');
+  const checkboxes=page.getByRole('checkbox',{name:/^Confirm /});
+  await expect(checkboxes).toHaveCount(4);for(const cb of await checkboxes.all())await cb.check();
+  await page.getByLabel('Disposition',{exact:true}).selectOption('corrected');
+  await page.getByLabel('Reviewer note',{exact:true}).fill('Synthetic source and fields checked before recording this finding.');
+  await page.getByRole('button',{name:'Record reviewer finding',exact:true}).click();
+  const table=page.getByRole('table',{name:'Recorded document findings',exact:true});
+  await expect(table.locator('tbody tr')).toHaveCount(1);
+  await expect(table).toContainText('Synthetic source and fields checked');
+  await expect(table.locator('.reading-hash')).toHaveText(/^[a-f0-9]{64}$/);
+  await page.reload();await expect(table.locator('tbody tr')).toHaveCount(1);
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  await page.goto('/#audit');await expect(page.locator('main')).toContainText('Document review of affidavit.pdf: corrected.');
 });
 
 test('voice call rehearsal uploads transcript as case document',async({page})=>{
