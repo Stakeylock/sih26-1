@@ -141,7 +141,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
       <div className="support-surface-heading">
         <div>
           <h2>End-to-end EVC + escalation demo</h2>
-          <p>Walk a complete case through the system: schedule an EVC visit, assign the three required members, advance the demo clock 30 days, and watch obligations turn overdue with notifications dispatched.</p>
+          <p>Walk a complete case through the system: schedule an EVC visit, assign the three required members, advance the demo clock 30 days, and inspect projected overdue consequences. No external notice is dispatched.</p>
         </div>
         <span className="quiet-label"><ShieldCheck size={14}/>National administrator · demo mode</span>
       </div>

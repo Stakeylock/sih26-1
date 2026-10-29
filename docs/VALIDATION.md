@@ -56,3 +56,7 @@ With an intentionally provisioned local Supabase/worker stack, use `npm run test
 ## Historical records
 
 Earlier 22–24 October partial integration runs, Docker-unavailable incidents and initial schema validation remain available in the repository's Git history and dated implementation notes. They must not override the newer 25 October local evidence or the 27 October CI outcome.
+
+## 29 October 2026 — local reading and Due Work
+Demo and connected builds passed. 389 unit/SQL tests and 112 browser tests passed. The built artifact passed actual PDF extraction and pretrained English image OCR under production CSP; mobile Due Work passed. Production dependency audit: zero findings. Connected service integration was not rerun; no remote migrations applied. See document-reading.md and change notes.
+

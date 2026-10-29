@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useState} from 'react';
 import {Send,ShieldCheck,TimerReset} from 'lucide-react';
 import {getGatewayStatus,type DispatchNotificationParams,type NotificationChannel} from '../domain/notification';
 import {type Identity,type Repository,type Workspace} from '../domain/model';
@@ -25,8 +25,7 @@ export function NotificationTester({data,identity,repo,run,busy}:{data:Workspace
   const [subject,setSubject]=useState('Synthetic test notification');
   const [body,setBody]=useState('This is a test notification dispatched from the demo workspace.');
   const [reason,setReason]=useState('');
-  const [gateway,setGateway]=useState<ReturnType<typeof getGatewayStatus>|null>(null);
-  useMemo(()=>{setGateway(getGatewayStatus());},[]);
+  const gateway=getGatewayStatus();
   const app=data.applications.find(item=>item.id===appId);
   const canManage=Boolean(app&&app.owner_id!==identityVal.id&&identityVal.roles.some(role=>role.role==='national_admin'||(role.role==='regional_officer'&&role.region===app.region)));
   const isAdmin=identityVal.roles.some(role=>role.role==='national_admin');

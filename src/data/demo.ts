@@ -447,17 +447,6 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
         if(!row.application_id)continue;
         const list=affected.get(row.application_id)??[];
         list.push(row);affected.set(row.application_id,list);
-        if(row.kind==='overdue'||row.kind==='escalation'){
-          const obl=state.obligations.find(item=>item.id===row.target);
-          if(obl&&obl.status!=='fulfilled'){
-            obl.escalation_level=row.kind==='escalation'?'escalated_hq':'escalated_ro';
-          }
-        }
-        const anchor=state.applications.find(item=>item.id===row.application_id);
-        if(anchor){
-          try{await dispatchNotification({applicationId:anchor.id,kind:row.kind==='reminder'?'REMINDER':row.kind==='overdue'?'OVERDUE':row.kind==='escalation'?'ESCALATION':'INFO' as const,subject:`${row.kind.charAt(0).toUpperCase()+row.kind.slice(1)}: ${row.title}`,body:row.detail,channel:['in_app']});}catch{}
-          if(row.kind==='reminder')dispatched.reminders++;else if(row.kind==='overdue')dispatched.overdue++;else if(row.kind==='escalation')dispatched.escalations++;else dispatched.expiries++;
-        }
       }
       for(const [applicationId,rows] of affected){const anchor=state.applications.find(item=>item.id===applicationId&&visible(item));if(!anchor)continue;
         const base=new Date(Date.now()).toISOString().slice(0,10);
@@ -465,8 +454,7 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
         const catchUp=priorHorizon!==null;
         const payload:Record<string,unknown>={demo:true,coverage:'derived_horizon',days:report.days,horizon_end:new Date(Date.now()+report.days*86400000).toISOString().slice(0,10),consequences:structuredClone(rows),dispatched};
         if(catchUp&&priorHorizon)payload.catch_up_from=priorHorizon;
-        await dispatchNotification({applicationId:anchor.id,kind:'OVERDUE' as const,subject:'Clock advanced — recorded deadlines crossed',body:`${report.days} day${report.days===1?'':'s'} advanced; ${rows.length} deadline consequence${rows.length===1?'':'s'} derived for this case.`,channel:['in_app']});
-        await log(anchor,'demo_calendar_advanced',null,'Simulated demo calendar advanced by '+report.days+' days; notices dispatched and obligations escalated where overdue. '+(catchUp&&priorHorizon?'Partial catch-up: consequences through '+priorHorizon+' were already derived by an earlier calendar shift. ':''),payload,{actor_id:null,actor_role:'system'});
+        await log(anchor,'demo_calendar_advanced',null,'Simulated demo calendar advanced by '+report.days+' days; derived consequences only. No notices were dispatched and no review decision was recorded. '+(catchUp&&priorHorizon?'Partial catch-up: consequences through '+priorHorizon+' were already derived by an earlier calendar shift. ':''),payload,{actor_id:null,actor_role:'system'});
       }
       persist();return {...report,dispatched};},
     async fulfil(id,reason){if(!['national_admin','regional_officer'].includes(role))throw new Error('Decision role required.');const o=state.obligations.find(o=>o.id===id);if(o){if((o.required_evidence??[]).length)throw new Error('Select reviewed evidence with the versioned compliance command.');o.status='fulfilled';await log(find(o.application_id),'obligation_fulfilled',null,reason);}persist();},

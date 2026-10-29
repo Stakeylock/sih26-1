@@ -1,0 +1,6 @@
+// @vitest-environment happy-dom
+import {expect,it} from 'vitest';
+import {createDemoRepository} from '../src/data/demo';
+import {dueItems,filterDue,isDuePast} from '../src/domain/dueWork';
+it('includes visit dates, assigns stage ownership and keeps completed work out of the open filter',async()=>{localStorage.clear();const repo=await createDemoRepository();const data=await repo.workspace();const items=dueItems(data,Date.now());expect(items.some(i=>i.type==='Expert visit')).toBe(true);const caseTarget=items.find(i=>i.id==='sla-demo-app-0')!;expect(caseTarget.owner).toContain('Scrutiny officer');expect(filterDue(items,'','all','open',Date.now()).every(i=>i.status==='open')).toBe(true);expect(filterDue(items,'DEMO-2026-1001','all','all',Date.now()).every(i=>i.ref==='DEMO-2026-1001')).toBe(true);});
+it('treats a date-only due date as end of day in IST and never marks completed work overdue',()=>{const i={id:'a',applicationId:'b',ref:'c',title:'d',owner:'e',type:'Renewal',due:'2026-10-29',source:'recorded',tier:'none',status:'open' as const};expect(isDuePast(i,Date.parse('2026-10-29T17:00:00Z'))).toBe(false);expect(isDuePast(i,Date.parse('2026-10-29T19:00:00Z'))).toBe(true);expect(isDuePast({...i,status:'complete'},Date.parse('2026-10-30'))).toBe(false);});

@@ -105,7 +105,7 @@ function payload(): {
     verification_note: null,
   };
 
-  const data: Workspace = {
+  const data: Workspace = {evc_visits:[],evc_members:[],evc_unavailability:[],evc_schedule_history:[],
     applications: [],
     institutions,
     templates,

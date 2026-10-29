@@ -12,7 +12,7 @@ function beginVisit(identityId:string){
     const stored=window.localStorage.getItem(VISIT_KEY+identityId);
     if(stored&&Number.isFinite(Date.parse(stored)))since=stored;
   }catch{}
-  try{window.localStorage.setItem(VISIT_KEY+identityId,new Date().toISOString());}catch{}
+  if(!since){since=new Date().toISOString();try{window.localStorage.setItem(VISIT_KEY+identityId,since);}catch{}}
   return {since};
 }
 
@@ -47,3 +47,4 @@ export function PolicyChangesBanner({data,identity,navigate}:{data:Workspace;ide
     </div>
   </section>;
 }
+

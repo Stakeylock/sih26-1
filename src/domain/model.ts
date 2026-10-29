@@ -1,3 +1,8 @@
+import type {EVCVisit,EVCMember,EVCAvailabilityResult,EVCVisitMode,EVCResponseStatus,EVCUnavailability,EVCScheduleHistory} from './evcTypes';
+import type {EVCSeat} from './evc';
+export type {EVCVisit,EVCMember,EVCOfficialAvailability,EVCAvailabilityResult,EVCVisitMode,EVCResponseStatus} from './evcTypes';
+export {EVC_REQUIRED_SEATS} from './evc';
+export type {EVCSeat} from './evc';
 import type {CaseReview,Delivery,DeliveryAttempt,WorkerHealth,Candidate,Readiness,PolicyRevision} from './operations';
 import type {AnalysisCalendar} from './intelligence';
 import type {InspectionExpert,ExpertAvailability,ExpertConflict,ExpertReservation,PanelSnapshot} from './planning';
@@ -10,7 +15,7 @@ import {demoNow} from './virtualClock';
 import type {ClockReport} from './consequences';
 
 export type { Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
-export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'regional_officer', 'national_admin'] as const;
+export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'regional_officer', 'national_admin', 'evc_member'] as const;
 export type Role = typeof roles[number];
 export const regions = ['North', 'South', 'East', 'West', 'Central', 'North-East'] as const;
 export const statusLabels = {
@@ -21,7 +26,7 @@ export const statusLabels = {
 export type Status = keyof typeof statusLabels;
 export const typeLabels = { extension_self_disclosure: 'Self-disclosure extension', name_change: 'Institution name change', new_programme: 'New programme' } as const;
 export type AppType = keyof typeof typeLabels;
-export const roleLabels: Record<Role, string> = { institution: 'Institution', scrutiny_officer: 'Scrutiny officer', evc_coordinator: 'EVC coordinator', regional_officer: 'Regional officer', national_admin: 'National administrator' };
+export const roleLabels: Record<Role, string> = { institution: 'Institution', scrutiny_officer: 'Scrutiny officer', evc_coordinator: 'EVC coordinator', regional_officer: 'Regional officer', national_admin: 'National administrator', evc_member:'EVC member (demo)' };
 export interface Identity { id: string; name: string; email: string; roles: { role: Role; region: string | null }[] }
 export interface TemplateDefinition {
   calendar?:AnalysisCalendar;inspection_planning_required?:boolean;
@@ -140,4 +145,13 @@ export function daysUntil(date: string | null, now = demoNow()) { return date ? 
 export function missingInputs(app: Application, documents: DocumentRecord[]) {
   return [...app.template_snapshot.required_fields.filter(f => !app.form_data[f.key]?.trim()).map(f => f.label),
     ...app.template_snapshot.required_documents.filter(type => !documents.some(d => d.application_id === app.id && d.doc_type === type && d.scan_status === 'clean')).map(d => `${d} (clean scan required)`)];
+}
+
+export interface Workspace {evc_visits:EVCVisit[];evc_members:EVCMember[];evc_unavailability:EVCUnavailability[];evc_schedule_history:EVCScheduleHistory[]}
+export interface Repository {
+getEVCVisits(application:Application):Promise<EVCVisit[]>;getEVCAvailability(application:Application,start:string,end:string):Promise<EVCAvailabilityResult>;
+scheduleEVC(application:Application,input:{scheduledStart:string;scheduledEnd:string;mode:EVCVisitMode;note:string},requestId?:string):Promise<void>;
+assignEVCMembers(application:Application,visitId:string,members:{expertId:string;seat:EVCSeat}[],requestId?:string):Promise<void>;
+respondToEVC(visitId:string,response:EVCResponseStatus,reason:string,requestId?:string):Promise<void>;confirmEVC(visitId:string,requestId?:string):Promise<void>;cancelEVC(visitId:string,reason:string,requestId?:string):Promise<void>;
+rescheduleEVC(visitId:string,input:{scheduledStart:string;scheduledEnd:string;mode:EVCVisitMode;reason:string},requestId?:string):Promise<void>;recordEVCUnavailability(expertId:string,start:string,end:string,reason:string,requestId?:string):Promise<void>;
 }

@@ -28,3 +28,6 @@ Thumbs.db
 # New visual-review captures belong outside version control.
 # Historical tracked QA screenshots are retained for provenance.
 review-captures/
+/public/ocr/
+/.runtime-*.txt
+/.runtime-*.json

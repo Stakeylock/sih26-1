@@ -77,8 +77,8 @@ test('landing exposes the judge proof route',async({page})=>{
   await expect(page.getByRole('heading',{name:'Judge proof route',exact:true})).toBeVisible();
 });
 test('the landing dataset line states only what the demo seed contains',async({page})=>{
-  await expect(page.getByRole('note')).toContainText('12 synthetic dossiers');
-  await expect(page.getByRole('note')).toContainText('39 recorded events');
+  await expect(page.getByRole('note')).toContainText('13 synthetic dossiers');
+  await expect(page.getByRole('note')).toContainText('42 recorded events');
 });
 test('the landing headline follows the stored Hindi preference',async({page})=>{
   await page.evaluate(()=>localStorage.setItem('workspace-display-v1',JSON.stringify({scale:1,contrast:false,locale:'hi-IN'})));

@@ -20,7 +20,7 @@ describe('overview attention reasons', () => {
   it('reports the open deficiency and claims awaiting verification', () => {
     const app = workspace.applications.find(application => application.id === 'demo-app-0')!;
     const reasons = attentionReasons(app, attached(app.id), workspace.claims, workspace.deficiencies);
-    expect(reasons).toContain('APH safety: The Fire Safety Certificate expired before the scrutiny date.');
+    expect(reasons).toContain('APH 6.17(i): The Fire Safety Certificate expired before the scrutiny date.');
     expect(reasons).toContain('2 of 9 claims awaiting verification.');
   });
 

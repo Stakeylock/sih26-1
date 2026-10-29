@@ -1,3 +1,4 @@
+import {EvidenceRelationships} from './EvidenceRelationships';
 import {neutralCopy} from '../domain/presentation';
 import {useState} from 'react';
 import {Activity,AlertTriangle,CheckCircle2,Clock3,FileCheck2,Fingerprint,LockKeyhole,Play,ShieldCheck,ShieldX} from 'lucide-react';
@@ -110,5 +111,6 @@ export function TrustCenter({data,identity,repo,run,busy}:{data:Workspace;identi
         {!canReplay&&<p className="trust-empty">{repo.mode==='demo'?'Sign in with a reviewer role to run replay.':'Switch to the demo workspace to run this check.'}</p>}
       </Panel>
     </div>
+    <EvidenceRelationships data={data}/>
   </>;
 }

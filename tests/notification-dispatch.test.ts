@@ -30,7 +30,7 @@ describe('notification dispatch', () => {
     const repo = await createDemoRepository('scrutiny_officer');
     const result = await dispatch(repo);
     expect(result.notificationId).toBeDefined();
-    expect(result.gateway.emailGateway).toBe('ETHEREAL_SANDBOX');
+    expect(result.gateway.emailGateway).toBe('SIMULATED');
     expect(result.gateway.smsGateway).toBe('SIMULATED');
     const attempt = result.attempts.find(a => a.channel === 'in_app');
     expect(attempt?.status).toBe('delivered');

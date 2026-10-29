@@ -19,6 +19,7 @@ const roleText: Record<Role, string> = {
   evc_coordinator: 'EVC coordinator',
   regional_officer: 'Regional officer',
   national_admin: 'National administrator',
+  evc_member:'EVC member (demo)',
 };
 
 const routeLabelText: Record<DemoGuideStep['id'], string> = {

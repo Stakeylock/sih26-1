@@ -1,0 +1,19 @@
+import type {Worker} from 'tesseract.js';
+import type {ReadPage,ReadingResult} from './documentReading';
+import {suggestFields} from './documentReading';
+export async function readDocument(file:Blob,filename:string,signal:AbortSignal,progress:(label:string)=>void):Promise<ReadingResult>{
+ if(file.size>10*1024*1024||file.size===0)throw new Error('Choose a non-empty PDF, PNG or JPEG up to 10 MB.');
+ const bytes=new Uint8Array(await file.arrayBuffer());const pdf=String.fromCharCode(...bytes.slice(0,5))==='%PDF-';const png=bytes[0]===137&&bytes[1]===80&&bytes[2]===78&&bytes[3]===71;const jpg=bytes[0]===255&&bytes[1]===216&&bytes[2]===255;
+ if(!pdf&&!png&&!jpg)throw new Error('The file bytes must be PDF, PNG or JPEG.');
+ let worker:Worker|undefined;let task:{destroy:()=>Promise<void>}|undefined;
+ const cancelled=()=>{if(signal.aborted)throw new DOMException('Reading cancelled.','AbortError');};
+ const stop=()=>{void worker?.terminate();void task?.destroy();};signal.addEventListener('abort',stop,{once:true});
+ const pages:ReadPage[]=[];let totalPages=1;
+ async function ocr(canvas:HTMLCanvasElement,page:number){cancelled();progress(`Reading page ${page} with local English OCR…`);if(!worker){const {createWorker}=await import('tesseract.js');cancelled();worker=await createWorker('eng',1,{workerPath:'/ocr/worker.min.js',corePath:'/ocr',langPath:'/ocr',workerBlobURL:false,cacheMethod:'none',logger:m=>{if(!signal.aborted&&m.status==='recognizing text')progress(`Reading page ${page}: ${Math.round(m.progress*100)}%`);}});cancelled();}const {data}=await worker.recognize(canvas);cancelled();pages.push({page,text:data.text.slice(0,50000),method:'ocr',confidence:data.confidence});}
+ try{cancelled();if(pdf){const lib=await import('pdfjs-dist');lib.GlobalWorkerOptions.workerSrc='/ocr/pdf.worker.min.mjs';cancelled();const load=lib.getDocument({data:bytes.slice(),useSystemFonts:true,stopAtErrors:true});task=load;const document=await load.promise;totalPages=document.numPages;
+  for(let n=1;n<=Math.min(3,totalPages);n++){cancelled();progress(`Reading page ${n}…`);const page=await document.getPage(n);const content=await page.getTextContent();let text='';for(const item of content.items){if('str' in item)text+=item.str+(item.hasEOL?'\n':' ');}if(text.trim().length>40){pages.push({page:n,text:text.slice(0,50000),method:'pdf_text',confidence:null});}else{const raw=page.getViewport({scale:1});const scale=Math.min(2,2000/Math.max(raw.width,raw.height));const viewport=page.getViewport({scale});const canvas=documentCanvas(viewport.width,viewport.height);await page.render({canvas,viewport}).promise;await ocr(canvas,n);canvas.width=canvas.height=0;}}
+ }else{cancelled();const bitmap=await createImageBitmap(file);try{const scale=Math.min(1,2000/Math.max(bitmap.width,bitmap.height));const canvas=documentCanvas(bitmap.width*scale,bitmap.height*scale);canvas.getContext('2d')!.drawImage(bitmap,0,0,canvas.width,canvas.height);await ocr(canvas,1);canvas.width=canvas.height=0;}finally{bitmap.close();}}
+ cancelled();const hash=await crypto.subtle.digest('SHA-256',bytes);const sha256=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');const result=suggestFields(pages);if(totalPages>3)result.warnings.push(`Only the first 3 of ${totalPages} pages were read.`);if(!result.fields.length)result.warnings.push('No supported labelled fields found. Read the source text and enter metadata manually.');return {...result,pages,sha256,filename,totalPages};
+ }finally{signal.removeEventListener('abort',stop);await worker?.terminate();await task?.destroy();}
+}
+function documentCanvas(width:number,height:number){if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)throw new Error('Invalid page dimensions.');const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.ceil(width));canvas.height=Math.max(1,Math.ceil(height));return canvas;}

@@ -2,9 +2,9 @@ import {test,expect} from '@playwright/test';
 test.beforeEach(async({page})=>{await page.goto('/#overview');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{name:'Approval operations',exact:true})).toBeVisible();});
 test('active dossier metric excludes closed cases and follows the selected role',async({page})=>{
   const count=page.getByRole('region',{name:'Active Dossiers',exact:true}).locator('.hero-metric-value');
-  await expect(count).toHaveText('07');
+  await expect(count).toHaveText('08');
   await page.getByRole('combobox',{name:'Demo role'}).selectOption('institution');
-  await expect(count).toHaveText('02');
+  await expect(count).toHaveText('03');
 });
 test('landing illustration advances and stops for reduced motion',async({page})=>{
   await page.clock.install();await page.emulateMedia({reducedMotion:'no-preference'});await page.goto('/');

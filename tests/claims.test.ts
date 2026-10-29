@@ -90,7 +90,7 @@ describe('evidence fixtures', () => {
 describe('deficiency seed', () => {
   it('raises one open deficiency against the fire safety claim', () => {
     const deficiency = workspace.deficiencies.find(item => item.id === 'demo-def-0')!;
-    expect(deficiency).toMatchObject({ application_id: 'demo-app-0', claim_id: 'demo-claim-7', clause: 'APH safety', status: 'open', raised_by: 'demo-scrutiny' });
+    expect(deficiency).toMatchObject({ application_id: 'demo-app-0', claim_id: 'demo-claim-7', clause: 'APH 6.17(i)', status: 'open', raised_by: 'demo-scrutiny' });
   });
 });
 

@@ -19,3 +19,5 @@ if (bundles.some(bundle=>bundle.text.includes('Set VITE_APP_MODE to demo or conn
 }
 
 console.log(`Demo build verified across ${assets.length} chunks: ${demo.asset}`);
+
+if (bundles.some(bundle=>/api\.resend\.com|fast2sms\.com|VITE_RESEND_API_KEY|VITE_FAST2SMS_API_KEY/.test(bundle.text))) throw new Error('Browser provider-secret/transport path detected.');

@@ -58,7 +58,7 @@ test('overview uses calculated metrics, search opens a case, all views render',a
 test('trust metrics remain scoped after merging the UI branch',async({page})=>{
   await openDesk(page,'Trust Center');
   const metrics=page.locator('.trust-metric');
-  for(const [index,count] of [2,1,0,2].entries())await expect(metrics.nth(index)).toContainText(String(count));
+  for(const [index,count] of [3,1,0,2].entries())await expect(metrics.nth(index)).toContainText(String(count));
 });
 test('overview prioritises current cases and prototype attention reflects review state',async({page})=>{
   const board=page.getByRole('region',{name:'Approval dispatch board'});
@@ -68,7 +68,7 @@ test('overview prioritises current cases and prototype attention reflects review
   await expect(board).not.toContainText('DEMO-2026-1011');
   await openDemoLab(page);await page.getByRole('button',{name:'Open prototype worklist',exact:true}).click();
   const preview=page.getByRole('complementary',{name:'Selected case preview'});
-   await expect(preview).toContainText('APH safety: The Fire Safety Certificate expired before the scrutiny date.');
+   await expect(preview).toContainText('APH 6.17(i): The Fire Safety Certificate expired before the scrutiny date.');
   await expect(preview).toContainText('2 of 9 claims awaiting verification.');
 });
 test('institution creates and saves a synthetic draft; unsafe upload is rejected',async({page})=>{
@@ -494,8 +494,8 @@ test('mobile overview orders header, priority, and stage workload without the du
 });
 test('application register matches region, stage, and status columns',async({page})=>{
   await openDesk(page,'Applications');
-  await expect(page.getByRole('button',{name:'Active 7'})).toHaveAttribute('aria-pressed','true');
-  await expect(page.getByRole('button',{name:'All 11'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Active 8'})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('button',{name:'All 12'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Closed 4'})).toBeVisible();
   const headers=await page.locator('.applications-table thead th').allTextContents();
   expect(headers.slice(0,5)).toEqual(['Application / institution','Region','Current stage','Status','Next deadline']);
@@ -538,9 +538,9 @@ test('mobile applications use case cards and the dossier route stays inside the 
 });
 test('overview keeps the full active scope visible and reports follow the selected scope',async({page})=>{
   await expect(page.getByRole('heading',{name:'Work by stage',exact:true})).toBeVisible();
-  await expect(page.locator('.dispatch-header')).toContainText('07 active dossiers');
+  await expect(page.locator('.dispatch-header')).toContainText('08 active dossiers');
   await openDesk(page,'Applications');
-  await expect(page.locator('.applications-table tbody tr')).toHaveCount(7);
+  await expect(page.locator('.applications-table tbody tr')).toHaveCount(8);
   await openDesk(page,'Reports');
   await expect(page.getByRole('button',{name:'Active',exact:true})).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'Closed',exact:true}).click();
@@ -588,7 +588,7 @@ test('trust center derives boundaries from the workspace and tamper replay fails
   await openDesk(page,'Trust Center');
   await expect(page.getByRole('heading',{level:1,name:'Trust Center',exact:true})).toBeVisible();
   const metrics=page.locator('.trust-metric');
-  await expect(metrics.nth(0)).toContainText('2');
+  await expect(metrics.nth(0)).toContainText('3');
   await expect(metrics.nth(1)).toContainText('1');
   await expect(metrics.nth(2)).toContainText('0');
   await expect(metrics.nth(3)).toContainText('2');
