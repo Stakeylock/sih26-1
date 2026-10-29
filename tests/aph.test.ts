@@ -1,4 +1,6 @@
 import {describe,expect,it} from 'vitest';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {APH_CLAUSES,APH_EDITION,aphClauseForDocument} from '../src/domain/aph';
 import {delayRiskAdvisory} from '../src/domain/expiry';
 
@@ -13,11 +15,42 @@ describe('APH clause seed',()=>{
     }
   });
 
-  it('maps Fire Safety Certificate to clause 1.7.3',()=>{
+  it('maps Fire Safety Certificate to clause 6.17(i)',()=>{
     const clause=aphClauseForDocument('Fire Safety Certificate');
     expect(clause).toBeTruthy();
-    expect(clause?.clause_number).toBe('1.7.3');
+    expect(clause?.clause_number).toBe('6.17(i)');
     expect(clause?.norm_category).toBe('SAFETY_COMPLIANCE');
+  });
+
+  it('cites only clause numbers that exist in the reference handbook',()=>{
+    const handbook=readFileSync(resolve(__dirname,'../docs/reference/APH_2024-27.txt'),'utf8');
+    for(const clause of APH_CLAUSES){
+      const number=clause.clause_number;
+      const annexure=/^Annexure-(\d+) §\d+\.\d+$/.exec(number);
+      const withSubItem=/^(\d+\.\d+)\(\w\)$/.exec(number);
+      const plain=/^\d+\.\d+$/.test(number);
+      expect(annexure||withSubItem||plain,`unparsable clause number: ${number}`).toBeTruthy();
+      const pattern=annexure
+        ? new RegExp(`^ANNEXURE-${annexure![1]}\\s*$`,'m')
+        : new RegExp(`^\\s*${(withSubItem?withSubItem[1]:number).replace(/\./g,'\\.')}\\s+[A-Z]`,'m');
+      expect(pattern.test(handbook),`${number} (${clause.clause_title}) has no matching heading in APH_2024-27.txt`).toBe(true);
+    }
+  });
+
+  it('would reject a clause number the handbook does not print',()=>{
+    const handbook=readFileSync(resolve(__dirname,'../docs/reference/APH_2024-27.txt'),'utf8');
+    for(const withdrawn of ['1.7.3','2.4.2','3.4.1','4.1.1']){
+      expect(new RegExp(`^\\s*${withdrawn.replace(/\./g,'\\.')}\\s+[A-Z]`,'m').test(handbook)).toBe(false);
+    }
+  });
+
+  it('does not carry chapter titles that the handbook assigns to a different chapter',()=>{
+    const wrongTitles=[
+      'Grant of Approval through Scrutiny & Expert Visit Committee',
+      'Norms and Standards for Technical Institutions',
+      'Document Verification and Authenticity',
+    ];
+    for(const clause of APH_CLAUSES)expect(wrongTitles).not.toContain(clause.chapter_title);
   });
 
   it('maps Faculty List to faculty strength',()=>{

@@ -1,8 +1,8 @@
 {
-  "at": "2026-10-25T15:06:02.013Z",
+  "at": "2026-10-29T01:23:13.972Z",
   "environment": "loopback Supabase and real ClamAV container",
   "passed": true,
-  "scanner_engine": "ClamAV 1.5.4/28164/Sun Oct 25 06:24:12 2026",
+  "scanner_engine": "ClamAV 1.5.4/28167/Wed Oct 28 06:24:17 2026",
   "clean_documents": 3,
   "malware_test_rejected": true,
   "mime_mismatch_rejected": true,

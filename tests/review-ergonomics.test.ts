@@ -6,7 +6,7 @@ import type {Claim, Requirement} from '../src/domain/integrity';
 
 const claim = {
   id: 'claim-1', requirement_id: 'req-1', statement_snapshot: 'Fire safety certificate is valid on the scrutiny date',
-  clause_snapshot: 'APH safety', evidence_types_snapshot: ['Fire Safety Certificate', 'Land Document'],
+  clause_snapshot: 'APH 6.17(i)', evidence_types_snapshot: ['Fire Safety Certificate', 'Land Document'],
 } as unknown as Claim;
 
 describe('deficiencyTemplates', () => {
@@ -33,8 +33,8 @@ describe('deficiencyTemplates', () => {
 });
 
 const requirements = [
-  {id: 'req-1', code: 'FIRE_SAFETY', clause: 'APH safety', statement: 'Fire safety certificate is valid on the scrutiny date', evidence_types: ['Fire Safety Certificate'], version: 1},
-  {id: 'req-2', code: 'LAND_OWNERSHIP', clause: 'APH land', statement: 'Land ownership or lease is valid for the academic year', evidence_types: ['Land Document'], version: 1},
+  {id: 'req-1', code: 'FIRE_SAFETY', clause: 'APH 6.17(i)', statement: 'Fire safety certificate is valid on the scrutiny date', evidence_types: ['Fire Safety Certificate'], version: 1},
+  {id: 'req-2', code: 'LAND_OWNERSHIP', clause: 'APH 6.17(a)', statement: 'Land ownership or lease is valid for the academic year', evidence_types: ['Land Document'], version: 1},
   {id: 'req-3', code: 'OTHER', clause: 'other clause', statement: 'Not part of this case', evidence_types: ['Visa Document'], version: 1},
 ] as unknown as Requirement[];
 
@@ -48,7 +48,7 @@ describe('evidenceNorms', () => {
     ] as unknown as Claim[];
     const norms = evidenceNorms(claims, requirements);
     expect(norms.map(norm => norm.docType)).toEqual(['Fire Safety Certificate', 'Land Document', 'Visa Document']);
-    expect(norms.find(norm => norm.docType === 'Land Document')?.clause).toBe('APH land');
+    expect(norms.find(norm => norm.docType === 'Land Document')?.clause).toBe('APH 6.17(a)');
     expect(norms.find(norm => norm.docType === 'Fire Safety Certificate')?.statement).toBe('Fire safety certificate is valid on the scrutiny date');
   });
 

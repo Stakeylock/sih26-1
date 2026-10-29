@@ -42,7 +42,7 @@ export function PolicyChangesBanner({data,identity,navigate}:{data:Workspace;ide
       <p><span className="mono">{subject} {codes}{more}</span> changed {caseCount} visible case deadline{caseCount===1?'':'s'}. Review the adopted source before relying on the new dates.</p>
     </div>
     <div className="policy-changes-actions">
-      <button type="button" className="button small" onClick={see}>Review policy notices <ArrowRight size={13}/></button>
+      <button type="button" className="button small button-small" onClick={see}>Review policy notices <ArrowRight size={13}/></button>
       <button type="button" className="policy-changes-dismiss" aria-label="Dismiss policy changes notice" onClick={dismiss}><X size={13}/></button>
     </div>
   </section>;

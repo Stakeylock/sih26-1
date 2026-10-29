@@ -60,3 +60,7 @@ Earlier 22–24 October partial integration runs, Docker-unavailable incidents a
 ## 29 October 2026 — local reading and Due Work
 Demo and connected builds passed. 389 unit/SQL tests and 112 browser tests passed. The built artifact passed actual PDF extraction and pretrained English image OCR under production CSP; mobile Due Work passed. Production dependency audit: zero findings. Connected service integration was not rerun; no remote migrations applied. See document-reading.md and change notes.
 
+
+## 29 October 2026 — combined main and document-reading merge
+Merged origin/main a72e78d with feature/local-document-reading cd0ff87. Demo and connected builds passed; 398 unit/SQL tests passed. Full browser run: 117 passed and one stale advisory-copy assertion failed. The revised advisory non-mutation test then passed, alongside six focused reader/live-feature checks. Actual PDF and OCR processing passed again with production CSP. No remote migrations or connected production integration were performed.
+

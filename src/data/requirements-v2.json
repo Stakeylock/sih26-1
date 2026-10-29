@@ -4,7 +4,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "INSTITUTION_IDENTITY",
-    "clause": "APH identity",
+    "clause": "APH Affidavit 2",
     "statement": "Institution name and reference match the trust record",
     "evidence_types": [
       "Affidavit"
@@ -20,7 +20,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "SANCTIONED_INTAKE",
-    "clause": "APH intake",
+    "clause": "APH 2.25(b)",
     "statement": "Sanctioned intake matches the previous approval",
     "evidence_types": [
       "Affidavit"
@@ -38,7 +38,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "FACULTY_STRENGTH",
-    "clause": "APH faculty",
+    "clause": "APH 6.14",
     "statement": "Faculty count and 1:15 cadre ratio meet the declared norm",
     "evidence_types": [
       "Faculty List"
@@ -56,7 +56,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "STUDENT_FACULTY_RATIO",
-    "clause": "APH ratio",
+    "clause": "APH 6.14 + Annexure-5",
     "statement": "Student-faculty ratio is within the declared norm",
     "evidence_types": [
       "Faculty List"
@@ -79,7 +79,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "LAND_OWNERSHIP",
-    "clause": "APH land",
+    "clause": "APH 6.17(a)",
     "statement": "Land ownership or lease is valid for the academic year",
     "evidence_types": [
       "Land Document"
@@ -95,7 +95,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "BUILT_UP_AREA",
-    "clause": "APH infrastructure",
+    "clause": "APH 6.17",
     "statement": "Built-up and instructional area meet the declared norm",
     "evidence_types": [
       "Building Plan"
@@ -111,7 +111,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "FIRE_SAFETY",
-    "clause": "APH safety",
+    "clause": "APH 6.17(i)",
     "statement": "Fire safety certificate is valid on the scrutiny date",
     "evidence_types": [
       "Fire Safety Certificate",
@@ -128,7 +128,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "UNDERTAKING",
-    "clause": "APH undertaking",
+    "clause": "APH Annexure-10",
     "statement": "Institution accepts the post-approval undertakings",
     "evidence_types": [
       "Undertaking"
@@ -146,7 +146,7 @@
     "app_type": "extension_self_disclosure",
     "version": 2,
     "code": "ACCREDITATION",
-    "clause": "APH accreditation",
+    "clause": "APH 6.53(e)",
     "statement": "Current NBA or NAAC accreditation evidence is on file",
     "evidence_types": [
       "Accreditation Certificate"

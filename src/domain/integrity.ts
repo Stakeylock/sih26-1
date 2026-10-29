@@ -7,7 +7,7 @@ export type VerificationMethod = typeof verificationMethods[number];
 export const deficiencyStatuses = ['open', 'resolved', 'waived', 'escalated'] as const;
 export type DeficiencyStatus = typeof deficiencyStatuses[number];
 
-export const signalTypes = ['duplicate_document', 'expired_document', 'name_mismatch', 'faculty_overlap', 'submission_velocity', 'access_anomaly'] as const;
+export const signalTypes = ['duplicate_document', 'expired_document', 'name_mismatch', 'faculty_overlap', 'submission_velocity', 'access_anomaly', 'risk_score', 'document_review'] as const;
 export type SignalType = typeof signalTypes[number];
 
 export const signalDispositions = ['open', 'explained', 'confirmed', 'dismissed'] as const;
@@ -105,6 +105,16 @@ export interface IntegritySignal {
   disposed_by: string | null;
   disposed_at: string | null;
   created_at: string;
+}
+
+export interface RecordIntegritySignalInput {
+  application_id: string;
+  document_id: string | null;
+  signal_type: SignalType;
+  severity: IntegritySignal['severity'];
+  fingerprint: string;
+  detail: Record<string, unknown>;
+  reason: string;
 }
 
 export interface AccessAssignment {

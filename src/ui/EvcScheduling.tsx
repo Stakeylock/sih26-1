@@ -66,6 +66,7 @@ export function EvcScheduling({data,identity,repo,run,busy,initialApplicationId}
   const respond=(event:FormEvent)=>{event.preventDefault();if(!visit||!demo)return;void run(()=>repo.respondToEVC(visit.id,response,responseNote.trim()),'EVC response recorded.');};
   const reschedule=(event:FormEvent)=>{event.preventDefault();if(!visit||!demo)return;void run(()=>repo.rescheduleEVC(visit.id,{scheduledStart:iso(rescheduleStart),scheduledEnd:iso(rescheduleEnd),mode:rescheduleMode,reason:rescheduleNote.trim()}),'EVC visit rescheduled. Members must accept the new invitation.');};
   const cancel=(event:FormEvent)=>{event.preventDefault();if(!visit||!demo)return;void run(()=>repo.cancelEVC(visit.id,cancelNote.trim()),'EVC visit cancelled.');};
+  const confirm=()=>{if(!visit||!demo)return;void run(()=>repo.confirmEVC(visit.id),'EVC visit confirmed. All three required seats accepted.');};
   const available=availability?.officials??[];
   const assignedIds=new Set(members.map(item=>item.user_id));
   return <>

@@ -1,21 +1,19 @@
-import type {EVCVisit,EVCMember,EVCAvailabilityResult,EVCVisitMode,EVCResponseStatus,EVCUnavailability,EVCScheduleHistory} from './evcTypes';
-import type {EVCSeat} from './evc';
-export type {EVCVisit,EVCMember,EVCOfficialAvailability,EVCAvailabilityResult,EVCVisitMode,EVCResponseStatus} from './evcTypes';
-export {EVC_REQUIRED_SEATS} from './evc';
-export type {EVCSeat} from './evc';
 import type {CaseReview,Delivery,DeliveryAttempt,WorkerHealth,Candidate,Readiness,PolicyRevision} from './operations';
 import type {AnalysisCalendar} from './intelligence';
 import type {InspectionExpert,ExpertAvailability,ExpertConflict,ExpertReservation,PanelSnapshot} from './planning';
 import type {AnalysisSnapshot,SavedScenario,ScenarioParameters} from './intelligence';
-import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement, SignalDisposition } from './integrity';
+import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, RecordIntegritySignalInput, Requirement, SignalDisposition } from './integrity';
 import type { DispatchNotificationParams, DispatchNotificationResult, DeliveryStatus, NotificationChannel } from './notification';
 import type {CaseHistory} from './review';
 import type {ApprovalRecord,ApprovalScopeItem,DeadlineNotice,DeadlineRevision,NoticeImpact,NoticeInput,ReminderIntent,ScopeInput,ScopeRequest,ValidityInput,ValidityMode} from './approvals';
 import {demoNow} from './virtualClock';
+import type {EVCOutcome,EVCSeat} from './evc';
+export {EVC_SEATS,EVC_REQUIRED_SEATS} from './evc';
+export type {EVCSeat} from './evc';
 import type {ClockReport} from './consequences';
 
 export type { Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from './integrity';
-export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'regional_officer', 'national_admin', 'evc_member'] as const;
+export const roles = ['institution', 'scrutiny_officer', 'evc_coordinator', 'evc_member', 'regional_officer', 'national_admin'] as const;
 export type Role = typeof roles[number];
 export const regions = ['North', 'South', 'East', 'West', 'Central', 'North-East'] as const;
 export const statusLabels = {
@@ -26,11 +24,11 @@ export const statusLabels = {
 export type Status = keyof typeof statusLabels;
 export const typeLabels = { extension_self_disclosure: 'Self-disclosure extension', name_change: 'Institution name change', new_programme: 'New programme' } as const;
 export type AppType = keyof typeof typeLabels;
-export const roleLabels: Record<Role, string> = { institution: 'Institution', scrutiny_officer: 'Scrutiny officer', evc_coordinator: 'EVC coordinator', regional_officer: 'Regional officer', national_admin: 'National administrator', evc_member:'EVC member (demo)' };
+export const roleLabels: Record<Role, string> = { institution: 'Institution', scrutiny_officer: 'Scrutiny officer', evc_coordinator: 'EVC coordinator', evc_member: 'EVC member', regional_officer: 'Regional officer', national_admin: 'National administrator' };
 export interface Identity { id: string; name: string; email: string; roles: { role: Role; region: string | null }[] }
 export interface TemplateDefinition {
   calendar?:AnalysisCalendar;inspection_planning_required?:boolean;
-  evc_mode: 'none' | 'conditional' | 'required'; disclaimer: string;
+  evc_mode: 'none' | 'conditional' | 'required'; disclaimer: string; evc_required?: boolean;
   stages: { key: string; label: string; role: Role; sla_days: number }[];
   required_fields: { key: string; label: string }[]; required_documents: string[]; checklist: string[]; undertakings: string[];
 }
@@ -57,7 +55,39 @@ export interface ExpertMember {
 export interface Visit { ends_at?:string|null;visit_mode?:'physical'|'online'|'hybrid'|null;planning_state?:'legacy'|'tentative'|'confirmed'|'completed'|'cancelled';resource_planned?:boolean;version?:number;panel_snapshot?:PanelSnapshot[];planning_note?:string|null;report_due_at?:string|null;report_basis?:Record<string,unknown>|null; id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null; committee?: ExpertMember[] }
 export interface Obligation { kind?:string;approval_id?:string|null;document_id?:string|null;document_expiry_on?:string|null;deadline_revision?:number; id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string; escalation_level?: 'normal' | 't_minus_30' | 't_minus_0' | 'escalated_ro' | 'escalated_hq'; statutory_norm?: string; lease_years_remaining?: number; required_evidence?: string[]; delay_risk_advisory?: string | null }
 export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null; channel?: NotificationChannel; deliveryStatus?: DeliveryStatus; previewUrl?: string }
-export interface Workspace { case_reviews?:CaseReview[];delivery_outbox?:Delivery[];delivery_attempts?:DeliveryAttempt[];worker_health?:WorkerHealth[]; inspection_experts?:InspectionExpert[];expert_availability?:ExpertAvailability[];expert_conflicts?:ExpertConflict[];expert_reservations?:ExpertReservation[]; analysis_snapshots?:AnalysisSnapshot[];analysis_scenarios?:SavedScenario[]; scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[] }
+/** EVC (Expert Visiting Committee) types — APH 2026-27 Annexure 16.5 committee composition. */
+export type EVCVisitMode = 'ONLINE' | 'PHYSICAL';
+export type EVCResponseStatus = 'INVITED' | 'ACCEPTED' | 'REJECTED' | 'CONFLICT_REPORTED' | 'WITHDRAWAL_REQUESTED';
+export type EVCVisitStatus = 'QUEUED' | 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULING_REQUIRED';
+export interface EVCVisit {
+  id: string; application_id: string; institution_id: string; region: string; mode: EVCVisitMode;
+  scheduled_start: string; scheduled_end: string | null; status: EVCVisitStatus;
+  schedule_version: number; completed_at: string | null; report: string | null;
+  recommendation: string | null; coordinator_id: string; decision_event_id: string | null;
+  created_at: string; updated_at: string;
+}
+export interface EVCMember {
+  id: string; evc_visit_id: string; user_id: string; seat: EVCSeat;
+  response_status: EVCResponseStatus; response_note: string | null; responded_at: string | null;
+  active: boolean; invited_version: number; reserved_period_start: string | null; reserved_period_end: string | null;
+  created_at: string; updated_at: string;
+}
+export interface EVCUnavailability {
+  id: string; expert_id: string; starts_at: string; ends_at: string; reason: string | null;
+  withdrawn_at: string | null; created_at: string;
+}
+export interface EVCScheduleHistory {
+  id: string; evc_visit_id: string; old_start: string | null; old_end: string | null;
+  new_start: string; new_end: string | null; changed_by: string; changed_at: string;
+  reason: string | null;
+}
+export interface EVCConflict { visitId:string|null;referenceNo:string|null;institution:string|null;start:string;end:string;responseStatus:string|null;kind:string }
+export interface EVCDayAssignment { visitId:string|null;referenceNo:string|null;institution:string|null;start:string;end:string;responseStatus:string|null }
+export interface EVCOfficialAvailability { id:string;member_code:string;user_id:string|null;full_name:string;designation_level:string;discipline:string;organisation_type:string;experience_years:number|string|null;coa_registration_no:string|null;panel_status:string;verification_status:string;active:boolean;status:'AVAILABLE'|'BUSY'|'UNAVAILABLE'|'INACTIVE'|'NOT_VERIFIED'|'NO_ACCOUNT';reason:string|null;conflicts:EVCConflict[];dayAssignments:EVCDayAssignment[];eligibleSeats:EVCSeat[];seatEligibility:Record<EVCSeat,{outcome:EVCOutcome;reasons:string[]}> }
+export interface EVCAvailabilityCapacity { satisfiable:boolean;bySeat:Record<EVCSeat,number>;message:string|null;bufferMinutes:number }
+export interface EVCAvailabilityResult { officials:EVCOfficialAvailability[];capacity:EVCAvailabilityCapacity }
+export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null; channel?: NotificationChannel; deliveryStatus?: DeliveryStatus; previewUrl?: string }
+export interface Workspace { case_reviews?:CaseReview[];delivery_outbox?:Delivery[];delivery_attempts?:DeliveryAttempt[];worker_health?:WorkerHealth[]; inspection_experts?:InspectionExpert[];expert_availability?:ExpertAvailability[];expert_conflicts?:ExpertConflict[];expert_reservations?:ExpertReservation[]; analysis_snapshots?:AnalysisSnapshot[];analysis_scenarios?:SavedScenario[]; scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[]; evc_visits:EVCVisit[];evc_members:EVCMember[];evc_unavailability:EVCUnavailability[];evc_schedule_history:EVCScheduleHistory[] }
 export const routeStages = [
   { key: 'submission', label: 'Submission', statuses: ['draft'] },
   { key: 'scrutiny', label: 'Scrutiny', statuses: ['submitted', 'resubmitted', 'under_scrutiny', 'deficiency_raised'] },
@@ -101,6 +131,15 @@ export interface Repository {
   reviewScope(application:Application,note:string,requestId?:string):Promise<void>;
   reviewDocumentValidity(application:Application,document:DocumentRecord,input:ValidityInput,requestId?:string):Promise<void>;
   submitRenewal(application:Application,expired:DocumentRecord,input:RenewalInput,requestId?:string):Promise<void>;
+  scheduleEVC(application:Application,input:{scheduledStart:string;scheduledEnd:string;mode:'ONLINE'|'PHYSICAL';note:string},requestId?:string):Promise<void>;
+  assignEVCMembers(application:Application,visitId:string,members:{expertId:string;seat:EVCSeat}[],requestId?:string):Promise<void>;
+  respondToEVC(visitId:string,response:EVCResponseStatus,reason:string,requestId?:string):Promise<void>;
+  confirmEVC(visitId:string,requestId?:string):Promise<void>;
+  cancelEVC(visitId:string,reason:string,requestId?:string):Promise<void>;
+  rescheduleEVC(visitId:string,input:{scheduledStart:string;scheduledEnd:string;mode:EVCVisitMode;reason:string},requestId?:string):Promise<void>;
+  getEVCVisits(application:Application):Promise<EVCVisit[]>;
+  getEVCAvailability(application:Application,start:string,end:string):Promise<EVCAvailabilityResult>;
+  recordEVCUnavailability(expertId:string,start:string,end:string,reason:string,requestId?:string):Promise<void>;
   createNotice(input:NoticeInput,requestId?:string):Promise<void>;
   reviewNotice(notice:DeadlineNotice,note:string,requestId?:string):Promise<void>;
   previewNotice(notice:DeadlineNotice):Promise<NoticeImpact>;
@@ -121,7 +160,7 @@ export interface Repository {
   history(application: Application): Promise<CaseHistory>;
   tamperReplay(application: Application): Promise<AuditVerification>;
   upload(application: Application, type: string, file: File): Promise<void>; download(document: DocumentRecord): Promise<void>;
-  markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>; dispositionSignal(signalId: string, disposition: SignalDisposition, reason: string, requestId?: string): Promise<void>; dispatchNotification(params: DispatchNotificationParams): Promise<DispatchNotificationResult>;
+  markRead(id: string): Promise<void>; fulfil(id: string, reason: string): Promise<void>; dispositionSignal(signalId: string, disposition: SignalDisposition, reason: string, requestId?: string): Promise<void>; recordIntegritySignal(signal: RecordIntegritySignalInput): Promise<IntegritySignal>; dispatchNotification(params: DispatchNotificationParams): Promise<DispatchNotificationResult>;
   advanceClock?(days: number): Promise<ClockReport>;
   advisory(application:Application,documents:DocumentRecord[]):Promise<Advisory>;
 }
@@ -145,13 +184,4 @@ export function daysUntil(date: string | null, now = demoNow()) { return date ? 
 export function missingInputs(app: Application, documents: DocumentRecord[]) {
   return [...app.template_snapshot.required_fields.filter(f => !app.form_data[f.key]?.trim()).map(f => f.label),
     ...app.template_snapshot.required_documents.filter(type => !documents.some(d => d.application_id === app.id && d.doc_type === type && d.scan_status === 'clean')).map(d => `${d} (clean scan required)`)];
-}
-
-export interface Workspace {evc_visits:EVCVisit[];evc_members:EVCMember[];evc_unavailability:EVCUnavailability[];evc_schedule_history:EVCScheduleHistory[]}
-export interface Repository {
-getEVCVisits(application:Application):Promise<EVCVisit[]>;getEVCAvailability(application:Application,start:string,end:string):Promise<EVCAvailabilityResult>;
-scheduleEVC(application:Application,input:{scheduledStart:string;scheduledEnd:string;mode:EVCVisitMode;note:string},requestId?:string):Promise<void>;
-assignEVCMembers(application:Application,visitId:string,members:{expertId:string;seat:EVCSeat}[],requestId?:string):Promise<void>;
-respondToEVC(visitId:string,response:EVCResponseStatus,reason:string,requestId?:string):Promise<void>;confirmEVC(visitId:string,requestId?:string):Promise<void>;cancelEVC(visitId:string,reason:string,requestId?:string):Promise<void>;
-rescheduleEVC(visitId:string,input:{scheduledStart:string;scheduledEnd:string;mode:EVCVisitMode;reason:string},requestId?:string):Promise<void>;recordEVCUnavailability(expertId:string,start:string,end:string,reason:string,requestId?:string):Promise<void>;
 }

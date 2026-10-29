@@ -41,7 +41,7 @@ describe('evidence integrity', () => {
 
     await as(db, ids.scrutiny);
     const linkedPassport = await scalar<string>(db, 'select public.fp_document_passport($1)::text', [docs.Affidavit]);
-    expect(linkedPassport).toContain('APH identity');
+    expect(linkedPassport).toContain('APH Affidavit 2');
   });
 
   it('keeps the passport unavailable to an unrelated institution', async () => {

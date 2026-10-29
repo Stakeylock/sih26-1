@@ -105,7 +105,7 @@ function payload(): {
     verification_note: null,
   };
 
-  const data: Workspace = {evc_visits:[],evc_members:[],evc_unavailability:[],evc_schedule_history:[],
+  const data: Workspace = {
     applications: [],
     institutions,
     templates,
@@ -154,6 +154,10 @@ function payload(): {
     integrity_signals: [],
     access_assignments: [],
     agents: [],
+    evc_visits: [],
+    evc_members: [],
+    evc_unavailability: [],
+    evc_schedule_history: [],
   };
 
   const identity: Identity = {

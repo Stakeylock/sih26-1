@@ -9,6 +9,7 @@ import {NotificationTester} from './NotificationTester';
 import {VoiceCallRehearsal} from './VoiceCallRehearsal';
 import type {ClockReport} from '../domain/consequences';
 import {EVC_REQUIRED_SEATS,type Repository,type Role,type Workspace} from '../domain/model';
+import type {Run} from './Applications';
 
 const scenarioSteps=[
   {id:'schedule',label:'Schedule EVC visit'},
@@ -26,7 +27,7 @@ const rehearsalStages=[
 
 const kindLabels={reminder:'Reminder',overdue:'Overdue',escalation:'Escalation',expiry:'Validity lapse'} as const;
 
-export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwitch,onRefresh}:{data:Workspace;repo:Repository;onStartTour:()=>void;onOpenPrototype:()=>void;onOpenFlow:()=>void;onSwitch:(role:Role,route:string)=>void;onRefresh:()=>void}){
+export function DemoLab({data,repo,run,onStartTour,onOpenPrototype,onOpenFlow,onSwitch,onRefresh}:{data:Workspace;repo:Repository;run:Run;onStartTour:()=>void;onOpenPrototype:()=>void;onOpenFlow:()=>void;onSwitch:(role:Role,route:string)=>void;onRefresh:()=>void}){
   const [rehearsalStep,setRehearsalStep]=useState<number|null>(null);
   const [offset,setOffset]=useState(()=>demoClockOffset());
   const [clockBusy,setClockBusy]=useState(false);
@@ -153,7 +154,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
             {scenarioStep===index&&scenarioBusy&&<span className="mono"> · running…</span>}
           </button>
         ))}
-        {scenarioStep===scenarioSteps.length&&<button className="button text small" type="button" onClick={resetScenario}><RotateCcw size={12}/>Reset scenario</button>}
+        {scenarioStep===scenarioSteps.length&&<button className="button text small button-small" type="button" onClick={resetScenario}><RotateCcw size={12}/>Reset scenario</button>}
       </div>
       {scenarioError&&<p className="callout">{scenarioError}</p>}
       {scenarioResults.length>0&&(
@@ -188,7 +189,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         <NotificationTester data={data} repo={repo}/>
       </section>
     </div>
-    <VoiceCallRehearsal repo={repo} data={data}/>
+    <VoiceCallRehearsal repo={repo} data={data} run={run}/>
     <section className="support-surface demo-lab-guide">
       <div className="support-surface-heading"><div><h2>Judge proof route</h2><p>Four proof questions show what this prototype can demonstrate. Each item is derived from the live synthetic records; the guided steps below open the exact role and work surface.</p></div><span className="quiet-label">{steps.filter(step=>step.armed).length} of {steps.length} guided steps armed</span></div>
       <div className="demo-proof-route" aria-label="Judge proof route">
@@ -198,7 +199,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         {steps.map((step,index)=><li key={step.id} className={step.armed?'armed':'unmet'}>
           <span className="demo-lab-guide-index"><strong>{String(index+1).padStart(2,'0')}</strong></span>
           <div className="demo-lab-guide-copy"><strong>{step.title}</strong><p>{step.armedBecause??step.unmetNote}</p><small>{step.roleLabel} · {step.routeLabel}</small></div>
-          <button className="button small" type="button" disabled={!step.armed} aria-label={`Open as ${step.roleLabel}`} onClick={()=>onSwitch(step.role,step.route)}>{step.armed?'Open as '+step.roleLabel:'Step unmet'}</button>
+          <button className="button small button-small" type="button" disabled={!step.armed} aria-label={`Open as ${step.roleLabel}`} onClick={()=>onSwitch(step.role,step.route)}>{step.armed?'Open as '+step.roleLabel:'Step unmet'}</button>
         </li>)}
       </ol>
       <p className="support-footnote">Arming reads only the loaded workspace. Review actions are yours to record back in the opened surface.</p>
@@ -209,7 +210,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         <div><h2>Deadline escalation rehearsal</h2><p>Step through the synthetic escalation ladder used in this demo. It does not dispatch notices or change an obligation.</p></div>
         <div className="demo-lab-rehearsal-actions">
           <span className="quiet-label"><FastForward size={14}/>Simulation only</span>
-          {rehearsalStep!==null&&<button className="button small outline" type="button" onClick={()=>setRehearsalStep(null)}><RotateCcw size={12}/>Reset rehearsal</button>}
+          {rehearsalStep!==null&&<button className="button small outline button-small" type="button" onClick={()=>setRehearsalStep(null)}><RotateCcw size={12}/>Reset rehearsal</button>}
         </div>
       </div>
       <div className="demo-lab-rehearsal-body">

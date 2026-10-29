@@ -32,7 +32,7 @@ export function DocumentPreview({document,claim}:{document:DocumentRecord;claim?
       <object className="doc-preview-object" data={objectUrl} type="application/pdf" tabIndex={0} aria-label={`Watermarked sample PDF of ${neutralCopy(document.file_name)}`}>
         <p>This browser cannot display the sample PDF. {expired?'Download is withheld for expired documents.':<><a href={objectUrl} download={document.file_name}>Download the sample PDF</a> instead.</>}</p>
       </object>
-      {expired?<p className="doc-preview-expired-note">Expired documents stay on file for review history; download is withheld.</p>:<a className="button small doc-preview-download" href={objectUrl} download={document.file_name}>Download sample PDF</a>}
+      {expired?<p className="doc-preview-expired-note">Expired documents stay on file for review history; download is withheld.</p>:<a className="button small doc-preview-download button-small" href={objectUrl} download={document.file_name}>Download sample PDF</a>}
       <span className="doc-preview-file mono">{neutralCopy(document.file_name)}</span>
     </figure>;
   }

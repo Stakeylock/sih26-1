@@ -99,7 +99,7 @@ export function PrototypeOverview({ data, identity, open }: Props) {
         </div>
         <div className="prototype-head-actions">
           {canCreate && (
-            <button className="button" onClick={() => open('new')}>
+            <button className="button button-small" onClick={() => open('new')}>
               <ArrowRight size={15} />
               New application
             </button>
@@ -238,7 +238,7 @@ export function PrototypeOverview({ data, identity, open }: Props) {
                         Read-only for your role. {nextAuthority(app.status)} holds the next action.
                       </p>
                     )}
-                    <button className="button" onClick={() => open(app.id)}>
+                    <button className="button button-small" onClick={() => open(app.id)}>
                       Open dossier <ArrowRight size={15} />
                     </button>
                   </div>
