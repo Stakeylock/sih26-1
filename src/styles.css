@@ -427,6 +427,10 @@ body{font-size:calc(14px * var(--text-scale,1))}.sidebar{width:220px;background:
 .preflight-panel{border-color:#dbe5ef}
 .preflight-mark{width:30px;height:30px;border-radius:50%;background:#eef2f8;color:#53627a;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .preflight-count{display:inline-flex;gap:5px;align-items:center;font-size:calc(9px * var(--text-scale,1));font-weight:600;letter-spacing:.08em;color:#27745b;background:#e8f6ef;border-radius:4px;padding:5px 8px;white-space:nowrap}
+.preflight-clear{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 24px;color:var(--muted);text-align:center}
+.preflight-clear svg{color:var(--rule)}
+.preflight-clear h3{font-family:var(--do-serif);font-size:calc(16px * var(--text-scale,1));color:var(--do-ink);margin:0}
+.preflight-clear p{font-size:calc(12px * var(--text-scale,1));margin:0}
 .preflight-count.attention{background:#fff3df;color:#7a5a24}
 .preflight-list{list-style:none;margin:0;padding:0 20px 8px}
 .preflight-item{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;padding:12px 0;border-top:1px solid #edf1f5}
@@ -1640,4 +1644,69 @@ body{font-variant-numeric:tabular-nums}
   .photo-preview{width:84px}
   .photo-preview-img{width:84px;height:84px}
   .evidence-row{padding:10px 12px}
+}
+
+/* — Dossier Office: AICTE evidence-review institutional aesthetic (cream paper, deep ink, serif headings, rubber stamps, border-left document accents, mono data; no glass/gradients/pills) — */
+:root{--do-ink:#0f172a;--do-paper:#fdfaf5;--do-rule:#b9b4ac;--do-accent:#7f3d1c;--do-accent-soft:#f3e8d7;--do-stamp-red:#7f1d1d;--do-stamp-green:#14532d;--do-stamp-blue:#1e3a8a;--do-radius:0;--do-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;--do-serif:'IBM Plex Serif',Georgia,'Times New Roman',serif}
+.dossier-office{color:var(--do-ink);background:var(--do-paper);font-family:system-ui,-apple-system,sans-serif}
+.dossier-office h1,.dossier-office h2,.dossier-office h3,.dossier-office h4{font-family:var(--do-serif);font-weight:800;letter-spacing:-0.03em}
+.dossier-office .panel,.dossier-office .dossier-paper,.dossier-office .support-surface{background:var(--do-paper);border:1px solid var(--do-rule);border-left:4px solid var(--do-accent);border-radius:var(--do-radius);box-shadow:none}
+.dossier-office .button{background:transparent;border:1px solid var(--do-rule);color:var(--do-ink);border-radius:var(--do-radius);padding:6px 14px;font-family:var(--do-mono);font-size:calc(10px * var(--text-scale,1));font-weight:700;letter-spacing:.06em;cursor:pointer}
+.dossier-office .button:hover:not(:disabled){border-color:var(--do-ink);background:var(--do-ink);color:#fff}
+.dossier-office .button.outline{border-color:var(--do-rule);background:transparent}
+.dossier-office .button.secondary{background:var(--do-paper);border-color:var(--do-rule)}
+.dossier-office .field{color:var(--do-ink);border-bottom:1px solid var(--do-rule);border-left:0;border-right:0;border-top:0;border-radius:0;padding-bottom:6px;background:transparent}
+.dossier-office .field:focus{border-color:var(--do-ink);outline:none;box-shadow:none}
+.dossier-office .field textarea{border:1px solid var(--do-rule);border-radius:var(--do-radius)}
+.dossier-office .stamp{display:inline-flex;align-items:center;gap:6px;border:2px solid;border-radius:var(--do-radius);padding:3px 10px;font-family:var(--do-mono);font-size:calc(9px * var(--text-scale,1));font-weight:800;letter-spacing:.15em;text-transform:uppercase;white-space:nowrap}
+.dossier-office .stamp.red{border-color:var(--do-stamp-red);color:var(--do-stamp-red)}
+.dossier-office .stamp.green{border-color:var(--do-stamp-green);color:var(--do-stamp-green)}
+.dossier-office .stamp.blue{border-color:var(--do-stamp-blue);color:var(--do-stamp-blue)}
+.dossier-office .ruled{background-image:linear-gradient(var(--do-rule) 1px,transparent 1px);background-size:100% 24px;background-position:0 1px;padding-bottom:24px}
+.dossier-office .form-document{border:1px solid var(--do-rule);border-left:4px solid var(--do-accent);border-radius:var(--do-radius);padding:18px 20px;margin-bottom:16px;background:var(--do-paper)}
+.dossier-office .form-document .field{margin-bottom:10px}
+.dossier-office .station-button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--do-rule);border-radius:var(--do-radius);background:var(--do-paper);color:var(--do-ink);padding:6px 12px;font-family:var(--do-mono);font-size:calc(10px * var(--text-scale,1));font-weight:700;letter-spacing:.06em;cursor:pointer}
+.dossier-office .station-button:hover{border-color:var(--do-ink);background:var(--do-ink);color:#fff}
+.dossier-office .redaction-bar{display:inline-block;width:120px;height:14px;background:#374151;border-radius:2px;margin:2px 0}
+.dossier-office .file-tab{display:inline-block;border:1px solid var(--do-rule);border-bottom:0;border-radius:0 0 0 0;background:#e7e5e0;color:var(--do-ink);padding:5px 14px;font-family:var(--do-mono);font-size:calc(10px * var(--text-scale,1));font-weight:700;cursor:pointer}
+.dossier-office .file-tab.active{background:var(--do-paper);border-color:var(--do-ink);border-bottom:3px solid var(--do-ink);margin-bottom:-1px}
+.dossier-office .receipt-line{display:flex;justify-content:space-between;border-bottom:1px solid var(--do-rule);padding:6px 0;font-family:var(--do-mono);font-size:calc(11px * var(--text-scale,1))}
+.dossier-office .receipt-total{border-top:3px double var(--do-ink);padding-top:8px;font-weight:800}
+.dossier-office table{border-collapse:collapse;width:100%}
+.dossier-office th{text-align:left;border-bottom:3px solid var(--do-ink);font-family:var(--do-mono);font-size:calc(9px * var(--text-scale,1));font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:10px 0;color:var(--do-ink)}
+.dossier-office td{border-bottom:1px solid var(--do-rule);padding:10px 0;font-size:calc(12px * var(--text-scale,1))}
+.dossier-office .muted,.dossier-office small{color:#6b6558}
+.dossier-office .metric-card{border:1px solid var(--do-rule);border-left:4px solid var(--do-accent);border-radius:var(--do-radius);padding:18px 20px;background:var(--do-paper)}
+.dossier-office .metric-head{display:flex;align-items:center;justify-content:space-between;font-family:var(--do-mono);font-size:calc(10px * var(--text-scale,1));font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.dossier-office .metric-value{font-family:var(--do-mono);font-size:calc(40px * var(--text-scale,1));font-weight:800;color:var(--do-accent)}
+@media(max-width:390px){
+  .dossier-office .stamp{font-size:calc(8px * var(--text-scale,1));padding:3px 8px}
+  .dossier-office .form-document{padding:14px 16px}
+  .dossier-office .station-button{font-size:calc(9px * var(--text-scale,1));padding:5px 10px}
+  .dossier-office .metric-value{font-size:calc(30px * var(--text-scale,1))}
+}
+[data-theme="dark"] .dossier-office{color:#e8eef5;background:#101822}
+[data-theme="dark"] .dossier-office .panel,.dossier-office .dossier-paper,.dossier-office .support-surface{background:#182433;border-color:#344457}
+.dossier-paper{background:var(--do-paper)}
+[data-theme="dark"] .dossier-paper{background:#182433}
+[data-theme="dark"] .dossier-office .metric-card{background:#182433;border-color:#344457}
+[data-theme="dark"] .dossier-office .button{color:#e8eef5;border-color:#344457}
+[data-theme="dark"] .dossier-office .button:hover:not(:disabled){background:#76d6bd;border-color:#76d6bd;color:#101822}
+[data-theme="dark"] .dossier-office .stamp.red{color:#ff8a80;border-color:#ff8a80}
+[data-theme="dark"] .dossier-office .stamp.green{color:#93d9ba;border-color:#93d9ba}
+[data-theme="dark"] .dossier-office .stamp.blue{color:#76d6bd;border-color:#76d6bd}
+[data-theme="dark"] .dossier-office .metric-value{color:#76d6bd}
+[data-theme="dark"] .dossier-office .button.secondary{border-color:#344457}
+[data-theme="dark"] .dossier-office .field{color:#dbe6f0;border-color:#344457}
+[data-theme="dark"] .dossier-office .field:focus{border-color:#76d6bd}
+[data-theme="dark"] .dossier-office .field textarea{border-color:#344457}
+[data-theme="dark"] .dossier-office .muted,.dossier-office small{color:#a9b9c9}
+[data-theme="dark"] .dossier-office table td{border-color:#344457}
+.dossier-office .review-workbench-main,
+.dossier-office .review-workbench-side {
+  background: var(--do-paper);
+}
+[data-theme="dark"] .dossier-office .review-workbench-main,
+[data-theme="dark"] .dossier-office .review-workbench-side {
+  background: #182433;
 }

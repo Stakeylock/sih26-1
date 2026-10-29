@@ -1,7 +1,7 @@
 import {neutralCopy} from '../domain/presentation';
 import {useEffect,useState} from 'react';
 import {ArrowRight,Building2,ClipboardClock,Clock3,Download,FileStack,Plus,Printer,RefreshCw,ShieldCheck,ShieldX} from 'lucide-react';
-import { regions, routeStage, routeStageIndex, routeStages, type Application, type Identity, type Repository, type Status, type Workspace, typeLabels } from '../domain/model';
+import { regions, routeStage, routeStageIndex, routeStages, statusLabels, type Application, type Identity, type Repository, type Status, type Workspace, typeLabels } from '../domain/model';
 import {nextStep,type CaseNextStep} from '../domain/nextStep';
 import { workingDaysUntil } from '../domain/clock';
 import { workspaceHolidays } from '../domain/calendar';
@@ -13,7 +13,7 @@ const operationalStatus: { [key in Status]: string } = {
   evc_pending: 'Awaiting visit scheduling', evc_scheduled: 'Awaiting visit report',
   pending_decision: 'Awaiting decision', approved: 'Approved', rejected: 'Rejected',
 };
-import {Badge,Due,Empty} from './common';
+import {Due,Empty} from './common';
 import {PolicyChangesBanner} from './PolicyChangesBanner';
 import './integrity.css';
 type ChainCheck={state:'checking'}|{state:'done';scope:'priority'|'all';intact:number;total:number;events:number;broken:{ref:string;at:number|null}|null}|{state:'error';message:string};
@@ -48,7 +48,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
   const authorityHolding=active.filter(a=>a.status!=='deficiency_raised');
   const instAvgDays=institutionHolding.length?Math.round(institutionHolding.reduce((s,a)=>s+holdDays(a),0)/institutionHolding.length):0;
   const authAvgDays=authorityHolding.length?Math.round(authorityHolding.reduce((s,a)=>s+holdDays(a),0)/authorityHolding.length):0;
-  return <>
+  return <section className="dossier-office" aria-label="Case overview">
     <section className="dispatch-header" aria-labelledby="dispatch-title">
       <div>
         <span className="dispatch-kicker">{scope==='active'?'ACTIVE WORK':scope==='closed'?'CLOSED CASES':'ALL CASES'} · AY 2026–27</span>
@@ -71,64 +71,56 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
       {/* Hero Stats Row — 4-column leader panel */}
       <div className="overview-hero-metrics" role="region" aria-label="Case overview metrics">
         {/* Card 1: Active Dossiers */}
-        <section aria-label="Active Dossiers">
-          <div className="hero-metric-card-inner">
-            <div className="hero-metric-head">
+        <section aria-label="Active Dossiers" className="metric-card">
+          <div className="metric-head">
             <span>{scope==='closed'?'Closed cases':scope==='all'?'All cases':'Active dossiers'}</span>
-              <FileStack size={14}/>
-            </div>
-            <div className="hero-metric-value" style={{fontSize:'34px'}}>{String(scoped.length).padStart(2,'0')}</div>
-            <span className="hero-metric-note">{data.applications.length} visible synthetic dossiers</span>
+            <FileStack size={14}/>
           </div>
+          <div className="metric-value" style={{fontSize:'44px'}}>{String(scoped.length).padStart(2,'0')}</div>
+          <span className="hero-metric-note">{data.applications.length} visible synthetic dossiers</span>
         </section>
 
         {/* Card 2: Time with officer / institution */}
-        <section aria-label="Time with officer / institution">
-          <div className="hero-metric-card-inner hero-metric-card-clock">
-            <div className="hero-metric-head">
-              <span>Time with officer / institution</span>
-              <Clock3 size={14}/>
-            </div>
-            <div className="dual-clock-split">
-              <div className="dual-clock-col">
-                <Building2 size={11}/>
-                <span className="font-medium">Council Review</span>
-                <span className="mono">{authorityHolding.length} cases ({authAvgDays}d avg)</span>
-              </div>
-              <div className="dual-clock-col">
-                <Building2 size={11}/>
-                <span className="font-medium">Institution Return</span>
-                <span className="mono">{institutionHolding.length} {institutionHolding.length===1?'case':'cases'} ({instAvgDays}d avg)</span>
-              </div>
-            </div>
-            <div className="hero-metric-note">Calendar days since last update</div>
+        <section aria-label="Time with officer / institution" className="metric-card">
+          <div className="metric-head">
+            <span>Time with officer / institution</span>
+            <Clock3 size={14}/>
           </div>
+          <div className="dual-clock-split">
+            <div className="dual-clock-col">
+              <Building2 size={11}/>
+              <span className="font-medium">Council Review</span>
+              <span className="mono">{authorityHolding.length} cases ({authAvgDays}d avg)</span>
+            </div>
+            <div className="dual-clock-col">
+              <Building2 size={11}/>
+              <span className="font-medium">Institution Return</span>
+              <span className="mono">{institutionHolding.length} {institutionHolding.length===1?'case':'cases'} ({instAvgDays}d avg)</span>
+            </div>
+          </div>
+          <div className="hero-metric-note">Calendar days since last update</div>
         </section>
 
         {/* Card 3: Need Intervention */}
-        <section aria-label="Need Intervention">
-          <div className="hero-metric-card-inner hero-metric-card-attention">
-            <div className="hero-metric-head">
-              <span>Need Intervention</span>
-              <ClipboardClock size={14}/>
-            </div>
-            <div className="hero-metric-value" style={{color:'var(--critical)',fontSize:'34px'}}>{String(atRisk.length).padStart(2,'0')}</div>
-            <span className="hero-metric-note">Due in &le;3 days or overdue</span>
+        <section aria-label="Need Intervention" className="metric-card">
+          <div className="metric-head">
+            <span>Need Intervention</span>
+            <ClipboardClock size={14}/>
           </div>
+          <div className="metric-value" style={{color:atRisk.length?'var(--do-stamp-red)':'var(--do-stamp-green)',fontSize:'44px'}}>{String(atRisk.length).padStart(2,'0')}</div>
+          <span className="hero-metric-note">Due in &le;3 days or overdue</span>
         </section>
 
-        <section aria-label="Chain verification">
-          <div className={`hero-metric-card-inner ${chainBroken?'hero-metric-card-attention':'hero-metric-card-verified'}`}>
-            <div className="hero-metric-head">
-              <span>Chain verification</span>
-              {chainBroken?<ShieldX size={14}/>:<ShieldCheck size={14}/>}
-            </div>
-            <div className="hero-metric-value" style={{color:chainBroken?'var(--critical)':chain.state==='done'?'var(--verified)':undefined,fontSize:'34px'}} role="status" aria-live="polite">{chainValue}</div>
-            <span className="hero-metric-note">{chainNote}</span>
-            <div className="chain-proof-actions">
-              <button type="button" className="text-button small button-small" disabled={chain.state==='checking'||!scoped.length} onClick={verifyVisible}>{chain.state==='done'&&chain.scope==='all'?<><RefreshCw size={12}/>Re-verify</>:<><ShieldCheck size={12}/>Verify all {scoped.length}</>}</button>
-              <button type="button" className="text-button small button-small" onClick={()=>navigate('trust')}>Trust Center <ArrowRight size={12}/></button>
-            </div>
+        <section aria-label="Chain verification" className="metric-card">
+          <div className="metric-head">
+            <span>Chain verification</span>
+            {chainBroken?<ShieldX size={14}/>:<ShieldCheck size={14}/>}
+          </div>
+          <div className="metric-value" style={{color:chainBroken?'var(--do-stamp-red)':chain.state==='done'?'var(--do-stamp-green)':undefined,fontSize:'44px'}} role="status" aria-live="polite">{chainValue}</div>
+          <span className="hero-metric-note">{chainNote}</span>
+          <div className="chain-proof-actions">
+            <button type="button" className="text-button small button-small" disabled={chain.state==='checking'||!scoped.length} onClick={verifyVisible}>{chain.state==='done'&&chain.scope==='all'?<><RefreshCw size={12}/>Re-verify</>:<><ShieldCheck size={12}/>Verify all {scoped.length}</>}</button>
+            <button type="button" className="text-button small button-small" onClick={()=>navigate('trust')}>Trust Center <ArrowRight size={12}/></button>
           </div>
         </section>
       </div>
@@ -146,7 +138,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
           return <article className={`dispatch-case ${index===0?'dispatch-case-primary':''}`} key={app.id}>
             <div className="dispatch-case-index">{String(index+1).padStart(2,'0')}</div>
             <div className="dispatch-case-main">
-              <div className="inline"><span className="mono">{app.ref_no}</span><Badge status={app.status}/>{step.kind==='obligation'&&<span className="document-tag pending">Obligation open</span>}{step.kind==='renewal'&&<span className="document-tag pending">Renewal needed</span>}</div>
+              <div className="inline"><span className="mono">{app.ref_no}</span><span className={`stamp ${app.status==='approved'?'green':app.status==='rejected'?'red':'blue'}`}>{statusLabels[app.status]}</span>{step.kind==='obligation'&&<span className="document-tag pending">Obligation open</span>}{step.kind==='renewal'&&<span className="document-tag pending">Renewal needed</span>}</div>
               <h3>{data.institutions.find(i=>i.id===app.institution_id)?.name??'Demo institution'}</h3>
               <p>{neutralCopy(app.title)}</p>
               <div className="dispatch-case-meta">
@@ -231,7 +223,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
       <button className="text-button small button-small" onClick={()=>navigate('trust')}>Open Trust Center <ArrowRight size={13}/></button>
     </div>
 
-  </>;
+  </section>;
 }
 
-export function ApplicationRow({app,institution,open,selectedId,data}:{app:Application;institution:string;open:(id:string)=>void;selectedId?:string;data?:Pick<Workspace,'deadlines'|'notices'>}){const stage=routeStage(app.status);const isSelected=selectedId===app.id;return <tr data-selected={isSelected}><td><button className={`case-link${isSelected?' selected':''}`} aria-pressed={isSelected} onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{neutralCopy(app.title)}</small></td><td>{app.region}</td><td><span className="station-label"><span className="station-number">{String(routeStageIndex(app.status)+1).padStart(2,'0')}</span>{neutralCopy(stage.label)}</span></td><td><span className="status-annotation"><Badge status={app.status}/><small>{operationalStatus[app.status]}</small></span></td><td><Due app={app} data={data}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}
+export function ApplicationRow({app,institution,open,selectedId,data}:{app:Application;institution:string;open:(id:string)=>void;selectedId?:string;data?:Pick<Workspace,'deadlines'|'notices'>}){const stage=routeStage(app.status);const isSelected=selectedId===app.id;return <tr data-selected={isSelected}><td><button className={`case-link${isSelected?' selected':''}`} aria-pressed={isSelected} onClick={()=>open(app.id)}>{app.ref_no}</button><strong className="cell-title">{institution}</strong><small>{neutralCopy(app.title)}</small></td><td>{app.region}</td><td><span className="station-label"><span className="station-number">{String(routeStageIndex(app.status)+1).padStart(2,'0')}</span>{neutralCopy(stage.label)}</span></td><td><span className="status-annotation"><span className={`stamp ${app.status==='approved'?'green':app.status==='rejected'?'red':'blue'}`}>{statusLabels[app.status]}</span><small>{operationalStatus[app.status]}</small></span></td><td><Due app={app} data={data}/></td><td><button className="icon-button" aria-label={`Open ${app.ref_no}`} onClick={()=>open(app.id)}><ArrowRight size={17}/></button></td></tr>;}

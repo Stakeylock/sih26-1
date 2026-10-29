@@ -9,7 +9,7 @@ import {computeDualClock} from '../domain/clock';
 import {workspaceHolidays} from '../domain/calendar';
 import {evidenceNorms} from '../domain/norms';
 import {expiryState} from '../domain/expiry';
-import {actionLabels,allowedActions,missingInputs,nextAuthority,roleLabels,routeStage,typeLabels,type Action,type Advisory,type Application,type Identity,type Repository,type Status,type Workspace} from '../domain/model';
+import {actionLabels,allowedActions,missingInputs,nextAuthority,roleLabels,routeStage,statusLabels,typeLabels,type Action,type Advisory,type Application,type Identity,type Repository,type Status,type Workspace} from '../domain/model';
 import {nextStep} from '../domain/nextStep';
 import {Badge,Dialog,Due,Panel,Timeline,WorkflowRail} from './common';
 import {CaseCustody} from './CaseCustody';
@@ -72,10 +72,10 @@ const handleDragLeaveGroup=()=>setDragTarget(null);
   const unverifiedCount=claims.length-verifiedClaims;
   const replacementDoc=documents.find(d=>d.doc_type==='Fire Safety Certificate'&&(!d.expires_on||d.expires_on>=new Date().toISOString().slice(0,10)));
   const hasReplacementEvidence=documents.some(d=>d.expires_on&&d.expires_on<new Date().toISOString().slice(0,10))&&Boolean(replacementDoc);
-  return <>
+  return <section className="dossier-office">
     <div className="spread case-top"><button className="text-button" onClick={back}><ArrowLeft size={16}/>Application register</button><span className="mono">WORKFLOW v{app.template_version} · RECORD VERSION {app.version}</span></div>
     <div className="dossier-top-grid">
-    <section className="dossier-header" aria-labelledby="dossier-title"><div className="dossier-header-top"><span className="dossier-kicker">DOSSIER / {app.ref_no}</span><div className="inline"><span className="document-tag">{app.is_demo?'Synthetic record':'Connected record'}</span><Badge status={app.status}/><Due app={app} data={data}/></div></div><h1 id="dossier-title">{institution}</h1><p className="dossier-title">{neutralCopy(app.title)}</p><div className="dossier-meta-line"><span>{typeLabels[app.app_type]}</span><span>{app.region} region</span><span>Current station: {currentStage}</span><span>Next authority: {nextOwner}</span><span className="mono">WORKFLOW {app.template_version}.0</span></div></section>
+    <section className="dossier-header" aria-labelledby="dossier-title"><div className="dossier-header-top"><span className="dossier-kicker">DOSSIER / {app.ref_no}</span><div className="inline"><span className="document-tag">{app.is_demo?'Synthetic record':'Connected record'}</span><span className={`stamp ${app.status==='approved'?'green':app.status==='rejected'?'red':'blue'}`}>{statusLabels[app.status]}</span><Due app={app} data={data}/></div></div><h1 id="dossier-title">{institution}</h1><p className="dossier-title">{neutralCopy(app.title)}</p><div className="dossier-meta-line"><span>{typeLabels[app.app_type]}</span><span>{app.region} region</span><span>Current station: {currentStage}</span><span>Next authority: {nextOwner}</span><span className="mono">WORKFLOW {app.template_version}.0</span></div></section>
     <div className="dossier-top-side">
     <div className={`dossier-viewing ${actions.length?'can-act':''}`}><ShieldCheck size={15}/><span>Viewing as <strong>{roleName}</strong>. {closed?(renewal?'This decision is recorded. An expired document needs renewal; the dossier remains read-only.':continuingObligation?'This decision is recorded. A continuing obligation remains open.':'This record is closed.'):actions.length?'Your role holds the next permitted action.':<>Read-only at this stage; the next action belongs to <strong>{nextGate}</strong>{app.status==='deficiency_raised'? ' — the institution\'s correction response is due first.' : '.'}</>}</span></div>
     <section className="movement-contract" style={{background:'var(--paper)',border:'1px solid var(--rule,#e2e8f0)',borderLeft:'4px solid '+(postDecision?'#d97706':closed?'#059669':actions.length?'#0284c7':openClaimDeficiencies>0?'#d97706':'#475569'),borderRadius:'8px',padding:'14px 18px',margin:0,height:'100%',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
@@ -118,8 +118,8 @@ const handleDragLeaveGroup=()=>setDragTarget(null);
           <small>{caseNextStep.source}</small>
         </div>
       )}
-      {data.obligations.filter(item=>item.application_id===app.id).length>0&&(
-        <ObligationsRegister app={app} data={{obligations:data.obligations,documents:documents}} identity={identity}/>
+        {data.obligations.filter(item=>item.application_id===app.id).length>0&&(
+        <ObligationsRegister app={app} data={{obligations:data.obligations,documents:documents,compliance_evidence:data.compliance_evidence}} identity={identity} repo={repo} run={run} busy={busy}/>
       )}
       {ownerRenewal&&renewalDoc&&(
         <div className="callout dossier-alert" style={{marginTop:'10px',borderColor:'var(--rule,#e2e8f0)'}}>
@@ -192,7 +192,7 @@ const handleDragLeaveGroup=()=>setDragTarget(null);
       <div className="form-actions"><button className="button outline button-small" type="button" onClick={()=>window.print()}><Printer size={13}/>Print demo summary</button><button className="button" type="button" onClick={()=>setShowNotice(false)}>Close summary</button></div>
     </Dialog>}
     {passport&&<EvidencePassport document={passport} app={app} data={data} identity={identity} repo={repo} run={run} busy={busy} openCase={openCase} close={()=>setPassport(null)}/>}
-    {action&&<ActionDialog key={action} action={action} app={app} data={data} claims={claims.filter(c=>!claimDeficiencies.some(d=>d.claim_id===c.id&&['open','escalated'].includes(d.status)))} documents={documents} run={run} repo={repo} busy={busy} close={()=>setAction(null)}/>}</>;
+    {action&&<ActionDialog key={action} action={action} app={app} data={data} claims={claims.filter(c=>!claimDeficiencies.some(d=>d.claim_id===c.id&&['open','escalated'].includes(d.status)))} documents={documents} run={run} repo={repo} busy={busy} close={()=>setAction(null)}/>}</section>
 }
 function DraftEditor({app,repo,run,busy}:{app:Application;repo:Repository;run:Run;busy:boolean}){const [title,setTitle]=useState(app.title);const [fields,setFields]=useState(app.form_data);return <Panel title="Application details" subtitle="Save changes before uploading or submitting."><form onSubmit={e=>{e.preventDefault();void run(()=>repo.saveDraft(app,title,fields),'Draft saved securely.');}}><label className="field">Application title<input value={title} onChange={e=>setTitle(e.target.value)} minLength={5} maxLength={200} required/></label><div className="form-grid">{app.template_snapshot.required_fields.map(f=><label className="field" key={f.key}>{neutralCopy(f.label)}<input value={fields[f.key]??''} maxLength={4000} onChange={e=>setFields({...fields,[f.key]:e.target.value})}/></label>)}</div><button className="button" disabled={busy}>Save draft</button></form></Panel>;}
 function ActionDialog({action,app,data,claims,documents,repo,run,busy,close}:{action:Action;app:Application;data:Workspace;claims:Workspace['claims'];documents:Workspace['documents'];repo:Repository;run:Run;busy:boolean;close:()=>void}){

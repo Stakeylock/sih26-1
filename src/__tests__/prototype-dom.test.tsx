@@ -159,6 +159,10 @@ function payload(): {
     evc_unavailability: [],
     evc_schedule_history: [],
     inspection_evidence: [],
+    regulatory_changes: [],
+    regulatory_change_versions: [],
+    regulatory_change_impacts: [],
+    compliance_evidence: [],
   };
 
   const identity: Identity = {

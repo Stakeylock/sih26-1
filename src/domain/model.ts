@@ -2,7 +2,7 @@ import type {CaseReview,Delivery,DeliveryAttempt,WorkerHealth,Candidate,Readines
 import type {AnalysisCalendar} from './intelligence';
 import type {InspectionExpert,ExpertAvailability,ExpertConflict,ExpertReservation,PanelSnapshot} from './planning';
 import type {AnalysisSnapshot,SavedScenario,ScenarioParameters} from './intelligence';
-import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, RecordIntegritySignalInput, Requirement, SignalDisposition } from './integrity';
+import type { AccessAssignment, AgentRecord, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, RecordIntegritySignalInput, Requirement, SignalDisposition, VerificationMethod } from './integrity';
 import type { DispatchNotificationParams, DispatchNotificationResult, DeliveryStatus, NotificationChannel } from './notification';
 import type {CaseHistory} from './review';
 import type {ApprovalRecord,ApprovalScopeItem,DeadlineNotice,DeadlineRevision,NoticeImpact,NoticeInput,ReminderIntent,ScopeInput,ScopeRequest,ValidityInput,ValidityMode} from './approvals';
@@ -54,6 +54,7 @@ export interface ExpertMember {
 }
 export interface Visit { ends_at?:string|null;visit_mode?:'physical'|'online'|'hybrid'|null;planning_state?:'legacy'|'tentative'|'confirmed'|'completed'|'cancelled';resource_planned?:boolean;version?:number;panel_snapshot?:PanelSnapshot[];planning_note?:string|null;report_due_at?:string|null;report_basis?:Record<string,unknown>|null; id: string; application_id: string; coordinator_id: string; scheduled_for: string; completed_at: string | null; report: string | null; recommendation: string | null; committee?: ExpertMember[] }
 export interface Obligation { kind?:string;approval_id?:string|null;document_id?:string|null;document_expiry_on?:string|null;deadline_revision?:number; id: string; application_id: string; institution_id: string; title: string; due_date: string; status: string; deadline_source: string; region: string; escalation_level?: 'normal' | 't_minus_30' | 't_minus_0' | 'escalated_ro' | 'escalated_hq'; statutory_norm?: string; lease_years_remaining?: number; required_evidence?: string[]; delay_risk_advisory?: string | null }
+export interface ComplianceEvidence { id: string; obligation_id: string; application_id: string; document_id: string; document_name: string; file_path: string; size_bytes: number; mime_type: string; sha256: string | null; uploaded_at: string; status: 'PENDING' | 'APPROVED' | 'REJECTED'; remarks: string | null; verified_by: string | null; verified_at: string | null; verified_remarks: string | null; }
 export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null; channel?: NotificationChannel; deliveryStatus?: DeliveryStatus; previewUrl?: string }
 /** EVC (Expert Visiting Committee) types — APH 2026-27 Annexure 16.5 committee composition. */
 export type EVCVisitMode = 'ONLINE' | 'PHYSICAL';
@@ -100,13 +101,76 @@ export interface InspectionEvidence {
   submitted_at: string | null;
   submitted_by: string | null;
 }
+export type RegulatoryChangeStatus = 'draft' | 'reviewed' | 'activated' | 'superseded';
+export interface RegulatoryChangeVersion {
+  id: string;
+  change_id: string;
+  version: number;
+  requirement_code: string;
+  requirement_app_type: string;
+  clause: string | null;
+  statement: string | null;
+  evidence_types: string[] | null;
+  verification_method: VerificationMethod | null;
+  is_mandatory: boolean | null;
+  source_url: string;
+  source_version: string;
+  source_hash: string;
+  publication_date: string;
+  effective_date: string;
+  academic_year_start: number;
+  change_summary: string | null;
+  changed_fields: string[] | null;
+  created_by: string;
+  created_at: string;
+}
+export interface RegulatoryChange {
+  id: string;
+  requirement_code: string;
+  requirement_app_type: string;
+  status: RegulatoryChangeStatus;
+  latest_version: number;
+  source_url: string;
+  source_version: string;
+  source_hash: string;
+  publication_date: string;
+  effective_date: string;
+  academic_year_start: number;
+  application_type: AppType | null;
+  institution_id: string | null;
+  region: string | null;
+  created_by: string;
+  created_at: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  activated_by: string | null;
+  activated_at: string | null;
+}
+export interface RegulatoryChangeImpactItem {
+  subject_key: string;
+  application_id: string | null;
+  requirement_id: string | null;
+  reference: string;
+  field: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  impact: 'none' | 'minor' | 'major';
+}
+export interface RegulatoryChangeImpact {
+  id: string;
+  change_id: string;
+  change_version: number;
+  items: RegulatoryChangeImpactItem[];
+  impact_hash: string;
+}
 export interface EVCConflict { visitId:string|null;referenceNo:string|null;institution:string|null;start:string;end:string;responseStatus:string|null;kind:string }
 export interface EVCDayAssignment { visitId:string|null;referenceNo:string|null;institution:string|null;start:string;end:string;responseStatus:string|null }
 export interface EVCOfficialAvailability { id:string;member_code:string;user_id:string|null;full_name:string;designation_level:string;discipline:string;organisation_type:string;experience_years:number|string|null;coa_registration_no:string|null;panel_status:string;verification_status:string;active:boolean;status:'AVAILABLE'|'BUSY'|'UNAVAILABLE'|'INACTIVE'|'NOT_VERIFIED'|'NO_ACCOUNT';reason:string|null;conflicts:EVCConflict[];dayAssignments:EVCDayAssignment[];eligibleSeats:EVCSeat[];seatEligibility:Record<EVCSeat,{outcome:EVCOutcome;reasons:string[]}> }
 export interface EVCAvailabilityCapacity { satisfiable:boolean;bySeat:Record<EVCSeat,number>;message:string|null;bufferMinutes:number }
 export interface EVCAvailabilityResult { officials:EVCOfficialAvailability[];capacity:EVCAvailabilityCapacity }
 export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null; channel?: NotificationChannel; deliveryStatus?: DeliveryStatus; previewUrl?: string }
-export interface Workspace { case_reviews?:CaseReview[];delivery_outbox?:Delivery[];delivery_attempts?:DeliveryAttempt[];worker_health?:WorkerHealth[]; inspection_experts?:InspectionExpert[];expert_availability?:ExpertAvailability[];expert_conflicts?:ExpertConflict[];expert_reservations?:ExpertReservation[]; analysis_snapshots?:AnalysisSnapshot[];analysis_scenarios?:SavedScenario[]; scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[];   access_assignments: AccessAssignment[]; agents: AgentRecord[]; evc_visits:EVCVisit[];evc_members:EVCMember[];evc_unavailability:EVCUnavailability[];evc_schedule_history:EVCScheduleHistory[];inspection_evidence:InspectionEvidence[] }
+export interface Workspace { case_reviews?:CaseReview[];delivery_outbox?:Delivery[];delivery_attempts?:DeliveryAttempt[];worker_health?:WorkerHealth[]; inspection_experts?:InspectionExpert[];expert_availability?:ExpertAvailability[];expert_conflicts?:ExpertConflict[];expert_reservations?:ExpertReservation[]; analysis_snapshots?:AnalysisSnapshot[];analysis_scenarios?:SavedScenario[]; scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[];   access_assignments: AccessAssignment[]; agents: AgentRecord[]; evc_visits:EVCVisit[];evc_members:EVCMember[];evc_unavailability:EVCUnavailability[];evc_schedule_history:EVCScheduleHistory[];inspection_evidence:InspectionEvidence[];regulatory_changes:RegulatoryChange[];regulatory_change_versions:RegulatoryChangeVersion[];regulatory_change_impacts:RegulatoryChangeImpact[];compliance_evidence:ComplianceEvidence[] }
 export const routeStages = [
   { key: 'submission', label: 'Submission', statuses: ['draft'] },
   { key: 'scrutiny', label: 'Scrutiny', statuses: ['submitted', 'resubmitted', 'under_scrutiny', 'deficiency_raised'] },
@@ -135,6 +199,35 @@ export const actionLabels: Record<Action, string> = { submit: 'Submit applicatio
 export interface Transition { application: Application; action: Action; reason: string; payload: Record<string, unknown>; requestId: string }
 export interface RenewalInput { file?: File; documentId?: string; note: string }
 export interface Advisory {engine:string;advisoryOnly:boolean;model:string;summary:string;warnings:string[];trace:string[];disclaimer:string;automation:{id:string;state:string}}
+export interface RegulatoryChangeInput {
+  requirement_code: string;
+  requirement_app_type: AppType;
+  source_url: string;
+  source_version: string;
+  source_hash: string;
+  publication_date: string;
+  effective_date: string;
+  academic_year_start: number;
+  application_type: AppType | null;
+  institution_id: string | null;
+  region: string | null;
+}
+export interface RegulatoryChangeVersionInput {
+  requirement_code: string;
+  requirement_app_type: AppType;
+  clause: string | null;
+  statement: string | null;
+  evidence_types: string[] | null;
+  verification_method: VerificationMethod | null;
+  is_mandatory: boolean | null;
+  source_url: string;
+  source_version: string;
+  source_hash: string;
+  publication_date: string;
+  effective_date: string;
+  academic_year_start: number;
+  change_summary: string | null;
+}
 export interface Repository {
   applicationPage?(query:import('./register').RegisterQuery):Promise<import('./register').ApplicationPage>;
   caseBundle?(id:string):Promise<Partial<Workspace>>;
@@ -162,6 +255,16 @@ export interface Repository {
   captureInspectionEvidence(application:Application,visitId:string,input:{captured_at:string;location:InspectionLocation;observations:string;voice_memo:string|null;documents:string[]},requestId?:string):Promise<{evidence_id:string}>;
   submitInspectionEvidence(evidenceId:string,requestId?:string):Promise<void>;
   getInspectionEvidence(visitId:string):Promise<InspectionEvidence[]>;
+  createRegulatoryChange(input:RegulatoryChangeInput,requestId?:string):Promise<{change_id:string}>;
+  recordRegulatoryChangeVersion(changeId:string,input:RegulatoryChangeVersionInput,requestId?:string):Promise<{version:number}>;
+  reviewRegulatoryChange(changeId:string,note:string,requestId?:string):Promise<void>;
+  previewRegulatoryChangeImpact(changeId:string,version:number):Promise<RegulatoryChangeImpact>;
+  activateRegulatoryChange(changeId:string,note:string,requestId?:string):Promise<void>;
+  getRegulatoryChanges():Promise<RegulatoryChange[]>;
+  getRegulatoryChangeVersions(changeId:string):Promise<RegulatoryChangeVersion[]>;
+  submitComplianceEvidence(application:Application,obligationId:string,input:{document_id:string;remarks?:string},requestId?:string):Promise<{evidence_id:string}>;
+  verifyComplianceEvidence(evidenceId:string,status:'APPROVED'|'REJECTED',reason:string,requestId?:string):Promise<void>;
+  getComplianceEvidence(obligationId:string):Promise<ComplianceEvidence[]>;
   createNotice(input:NoticeInput,requestId?:string):Promise<void>;
   reviewNotice(notice:DeadlineNotice,note:string,requestId?:string):Promise<void>;
   previewNotice(notice:DeadlineNotice):Promise<NoticeImpact>;

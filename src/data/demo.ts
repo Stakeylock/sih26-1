@@ -16,7 +16,7 @@ import type {EVCSeat} from '../domain/evc';
 import {demoEvcExperts,type DemoEVCExpert} from './demoEvc';
 import {overlaps} from '../domain/planning';
 import type {EVCAvailabilityResult,EVCMember,EVCOfficialAvailability,EVCVisit,InspectionEvidence,InspectionLocation} from '../domain/model';
-import type { Advisory,Application, AuditEvent, DocumentRecord, Identity, Notification, Repository, Role, Status, Template, Transition, Workspace } from '../domain/model';
+import type { Advisory,Application, AuditEvent, DocumentRecord, Identity, Notification, Repository, Role, Status, Template, Transition, Workspace, RegulatoryChange, RegulatoryChangeInput, RegulatoryChangeImpact, RegulatoryChangeImpactItem, RegulatoryChangeVersion, RegulatoryChangeVersionInput, ComplianceEvidence } from '../domain/model';
 import type { AccessAssignment, AgentRecord, AuditEventLike, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from '../domain/integrity';
 import { signalTypes } from '../domain/integrity';
 import { canonicalAuditPayload, sha256Bytes, sha256Hex, verifyAuditChain } from '../domain/integrity';
@@ -139,7 +139,7 @@ export function seed(): Workspace {
     { id: 'demo-notification-3', title: 'Synthetic visit panel recorded', body: 'DEMO-2026-1008 contains a legacy synthetic panel. Use resource planning to record availability, declared conflicts and confirmation.', read_at: null, created_at: iso(-2), application_id: 'demo-app-7', target_stage: 'case/demo-app-7' },
     { id: 'demo-notification-4', title: 'Sample workflow revision published', body: 'Existing sample cases retain their captured route until a compatible policy revision is explicitly reviewed and adopted.', read_at: iso(-3), created_at: iso(-3), application_id: null, target_stage: 'workflows' },
   ];
-const workspace:Workspace={applications,institutions,templates,documents,events,checklist:[],visits,obligations,notifications,requirements,claims,claim_evidence:claimEvidence,deficiencies,integrity_signals:signals,access_assignments:accessAssignments,agents,evc_visits:[],evc_members:[],evc_unavailability:[],evc_schedule_history:[],inspection_evidence:[]};
+const workspace:Workspace={applications,institutions,templates,documents,events,checklist:[],visits,obligations,notifications,requirements,claims,claim_evidence:claimEvidence,deficiencies,integrity_signals:signals,access_assignments:accessAssignments,agents,evc_visits:[],evc_members:[],evc_unavailability:[],evc_schedule_history:[],inspection_evidence:[],regulatory_changes:[],regulatory_change_versions:[],regulatory_change_impacts:[],compliance_evidence:[]};
 // Seed an EVC visit for demo-app-9 (completed renewal follow-up visit)
 const app9=applications.find(a=>a.id==='demo-app-9')!;
 workspace.evc_visits.push({
@@ -163,7 +163,55 @@ workspace.inspection_evidence.push({
   documents:[],
   status:'submitted',submitted_at:iso(-15),submitted_by:'demo-evc-member-1',
 });
-// Seed an upcoming EVC visit for demo-app-2 (scrutiny cleared, pending EVC)
+// Seed a reviewed regulatory change for the academic-year requirement (demo-req-1)
+workspace.regulatory_changes.push({
+  id:'demo-reg-change-1',requirement_code:'ACADEMIC_YEAR',requirement_app_type:'extension_self_disclosure',
+  status:'reviewed',latest_version:2,
+  source_url:'demo://policy/academic-year-2027',source_version:'2.1',source_hash:'a1b2c3d4e5f60708091011121314151617181920212223242526272829303132',
+  publication_date:iso(-40),effective_date:iso(-20),academic_year_start:2027,
+  application_type:null,institution_id:null,region:null,
+  created_by:'demo-national',created_at:iso(-45),reviewed_by:'demo-national',reviewed_at:iso(-30),
+  review_note:'Aligns academic-year definition with the 2027-28 session cycle.',activated_by:null,activated_at:null,
+});
+workspace.regulatory_change_versions.push(
+  {id:'demo-reg-version-1-1',change_id:'demo-reg-change-1',version:1,requirement_code:'ACADEMIC_YEAR',requirement_app_type:'extension_self_disclosure',
+   clause:'APH Definitions 27',statement:'Academic year matches the application year.',evidence_types:['Affidavit'],verification_method:'cross_check',is_mandatory:true,
+   source_url:'demo://policy/academic-year-2026',source_version:'1.0',source_hash:'0000000000000000000000000000000000000000000000000000000000000000',
+   publication_date:iso(-120),effective_date:iso(-100),academic_year_start:2026,change_summary:'Initial academic-year requirement.',changed_fields:null,
+   created_by:'demo-national',created_at:iso(-120)},
+  {id:'demo-reg-version-1-2',change_id:'demo-reg-change-1',version:2,requirement_code:'ACADEMIC_YEAR',requirement_app_type:'extension_self_disclosure',
+   clause:'APH Definitions 27 (2027-28)',statement:'Academic year must match the session cycle in force on the scrutiny date.',evidence_types:['Affidavit','Calendar extract'],verification_method:'cross_check',is_mandatory:true,
+   source_url:'demo://policy/academic-year-2027',source_version:'2.1',source_hash:'a1b2c3d4e5f60708091011121314151617181920212223242526272829303132',
+   publication_date:iso(-40),effective_date:iso(-20),academic_year_start:2027,change_summary:'Broadened evidence types and tied the year to the scrutiny-date session cycle.',changed_fields:['evidence_types','statement'],
+   created_by:'demo-national',created_at:iso(-40)},
+);
+// Seed a draft regulatory change for the sanctioned-intake requirement (demo-req-2)
+workspace.regulatory_changes.push({
+  id:'demo-reg-change-2',requirement_code:'SANCTIONED_INTAKE',requirement_app_type:'extension_self_disclosure',
+  status:'draft',latest_version:1,
+  source_url:'demo://policy/intake-variance-2027',source_version:'1.0',source_hash:'f1e2d3c4b5a60708091011121314151617181920212223242526272829303132',
+  publication_date:iso(-10),effective_date:iso(30),academic_year_start:2027,
+  application_type:null,institution_id:null,region:null,
+  created_by:'demo-national',created_at:iso(-10),reviewed_by:null,reviewed_at:null,review_note:null,activated_by:null,activated_at:null,
+});
+workspace.regulatory_change_versions.push(
+  {id:'demo-reg-version-2-1',change_id:'demo-reg-change-2',version:1,requirement_code:'SANCTIONED_INTAKE',requirement_app_type:'extension_self_disclosure',
+   clause:'APH 2.25(b)',statement:'Sanctioned intake matches the previous approval exactly.',evidence_types:['Affidavit'],verification_method:'cross_check',is_mandatory:true,
+   source_url:'demo://policy/intake-variance-2027',source_version:'1.0',source_hash:'f1e2d3c4b5a60708091011121314151617181920212223242526272829303132',
+   publication_date:iso(-10),effective_date:iso(30),academic_year_start:2027,change_summary:'Initial draft intake-variance requirement.',changed_fields:null,
+   created_by:'demo-national',created_at:iso(-10)},
+);
+// Seed an impact analysis for the reviewed academic-year change
+workspace.regulatory_change_impacts.push({
+  id:'demo-reg-impact-1',change_id:'demo-reg-change-1',change_version:2,
+  impact_hash:'demo-impact-hash-1',
+  items:[
+    {subject_key:'requirement:demo-req-1',application_id:null,requirement_id:'demo-req-1',reference:'ACADEMIC_YEAR · Academic year matches the application year',field:'evidence_types',old_value:'["Affidavit"]',new_value:'["Affidavit","Calendar extract"]',impact:'minor'},
+    {subject_key:'requirement:demo-req-1',application_id:null,requirement_id:'demo-req-1',reference:'ACADEMIC_YEAR · Academic year matches the application year',field:'statement',old_value:'Academic year matches the application year.',new_value:'Academic year must match the session cycle in force on the scrutiny date.',impact:'major'},
+    {subject_key:'application:demo-app-0',application_id:'demo-app-0',requirement_id:'demo-req-1',reference:'DEMO-2026-1001 · Self-disclosure extension · 2026-27',field:'requirement_version',old_value:'1',new_value:'2',impact:'major'},
+    {subject_key:'application:demo-app-2',application_id:'demo-app-2',requirement_id:'demo-req-1',reference:'DEMO-2026-1003 · New programme · Computer science',field:'requirement_version',old_value:'1',new_value:'2',impact:'major'},
+  ],
+});
 const app2=applications.find(a=>a.id==='demo-app-2')!;
 const futureStart=new Date(Date.now()+7*86400000);
 const futureEnd=new Date(Date.parse(futureStart.toISOString())+3600000);
@@ -189,7 +237,7 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
   let state=await seed();
   const heads=new Map<string,{sequence:number;hash:string}>();
   for(const event of state.events){const current=heads.get(event.application_id);const seq=event.sequence??0;const hash=typeof event.event_hash==='string'?event.event_hash:'';if(!current||seq>current.sequence)heads.set(event.application_id,{sequence:seq,hash:hash});}
-  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===12 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) {state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],              agents:saved.workspace.agents??[],events:saved.workspace.events??[],documents:saved.workspace.documents??[],checklist:saved.workspace.checklist??[],visits:saved.workspace.visits??[],obligations:saved.workspace.obligations??[],evc_visits:saved.workspace.evc_visits??[],evc_members:saved.workspace.evc_members??[],evc_schedule_history:saved.workspace.evc_schedule_history??[],evc_unavailability:saved.workspace.evc_unavailability??[],inspection_evidence:saved.workspace.inspection_evidence??[]};
+  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===12 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) {state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],              agents:saved.workspace.agents??[],events:saved.workspace.events??[],documents:saved.workspace.documents??[],checklist:saved.workspace.checklist??[],visits:saved.workspace.visits??[],obligations:saved.workspace.obligations??[],evc_visits:saved.workspace.evc_visits??[],evc_members:saved.workspace.evc_members??[],evc_schedule_history:saved.workspace.evc_schedule_history??[],evc_unavailability:saved.workspace.evc_unavailability??[],inspection_evidence:saved.workspace.inspection_evidence??[],regulatory_changes:saved.workspace.regulatory_changes??[],regulatory_change_versions:saved.workspace.regulatory_change_versions??[],regulatory_change_impacts:saved.workspace.regulatory_change_impacts??[],compliance_evidence:saved.workspace.compliance_evidence??[]};
     } } catch { /* Corrupt demo storage is discarded. */ }
   state=neutralDemoLabels(state);
   if(!state.inspection_experts)seedPlanning(state);
@@ -722,6 +770,186 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
     },
     async getInspectionEvidence(visitId:string):Promise<InspectionEvidence[]>{
       return state.inspection_evidence.filter(item=>item.visit_id===visitId).sort((left,right)=>Date.parse(right.captured_at)-Date.parse(left.captured_at));
+    },
+    async submitComplianceEvidence(application:Application,obligationId:string,input:{document_id:string;remarks?:string},requestId=crypto.randomUUID()){
+      const a=find(application.id);
+      const obligation=state.obligations.find(item=>item.id===obligationId&&item.application_id===a.id);
+      if(!obligation)throw new Error('Obligation is unavailable for this application.');
+      const document=state.documents.find(item=>item.id===input.document_id&&item.application_id===a.id);
+      if(!document)throw new Error('Document is not a current case document.');
+      const body=JSON.stringify({application:a.id,obligationId,input});
+      if(receipts.has(requestId)){if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');return {evidence_id:'demo-compliance-evidence-'+crypto.randomUUID()};}
+      const evidenceId='demo-compliance-evidence-'+crypto.randomUUID();
+      const evidence:ComplianceEvidence={
+        id:evidenceId,obligation_id:obligationId,application_id:a.id,document_id:input.document_id,
+        document_name:document.file_name,file_path:document.file_path,size_bytes:document.size_bytes,
+        mime_type:document.mime_type,sha256:document.sha256,uploaded_at:iso(),
+        status:'PENDING',remarks:input.remarks?input.remarks.trim():null,
+        verified_by:null,verified_at:null,verified_remarks:null,
+      };
+      state.compliance_evidence.push(evidence);
+      receipts.set(requestId,body);
+      persist();
+      return {evidence_id:evidenceId};
+    },
+    async verifyComplianceEvidence(evidenceId:string,status:'APPROVED'|'REJECTED',reason:string,requestId=crypto.randomUUID()){
+      const evidence=state.compliance_evidence.find(item=>item.id===evidenceId);
+      if(!evidence)throw new Error('Compliance evidence record is unavailable.');
+      const obligation=state.obligations.find(item=>item.id===evidence.obligation_id);
+      if(!obligation)throw new Error('Obligation is unavailable.');
+      if(evidence.status!=='PENDING')throw new Error('Evidence has already been reviewed.');
+      const allowed=actor.roles.some(grant=>grant.role==='national_admin'||['regional_officer'].includes(grant.role));
+      if(!allowed)throw new Error('Only a national administrator or regional officer can verify evidence.');
+      const trimmed=reason.trim();if(trimmed.length<10)throw new Error('Provide a review reason of at least 10 characters.');
+      const body=JSON.stringify({evidenceId,status,reason:trimmed});
+      if(receipts.has(requestId)){if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');return;}
+      evidence.status=status;evidence.verified_by=actor.id;evidence.verified_at=iso();evidence.verified_remarks=trimmed;
+      if(status==='APPROVED'){obligation.status='fulfilled';}else{obligation.status='submitted';}
+      receipts.set(requestId,body);
+      persist();
+    },
+    async getComplianceEvidence(obligationId:string):Promise<ComplianceEvidence[]>{
+      return state.compliance_evidence.filter(item=>item.obligation_id===obligationId).sort((left,right)=>Date.parse(right.uploaded_at)-Date.parse(left.uploaded_at));
+    },
+    async createRegulatoryChange(input:RegulatoryChangeInput,requestId=crypto.randomUUID()){
+      const body=JSON.stringify({input});
+      if(receipts.has(requestId)){if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');return {change_id:'demo-reg-change-placeholder'};}
+      const changeId='demo-reg-change-'+crypto.randomUUID();
+      const change:RegulatoryChange={
+        id:changeId,requirement_code:input.requirement_code,requirement_app_type:input.requirement_app_type,
+        status:'draft',latest_version:0,
+        source_url:input.source_url,source_version:input.source_version,source_hash:input.source_hash,
+        publication_date:input.publication_date,effective_date:input.effective_date,academic_year_start:input.academic_year_start,
+        application_type:input.application_type,institution_id:input.institution_id,region:input.region,
+        created_by:actor.id,created_at:iso(),reviewed_by:null,reviewed_at:null,review_note:null,activated_by:null,activated_at:null,
+      };
+      state.regulatory_changes.push(change);
+      receipts.set(requestId,body);
+      persist();
+      return {change_id:changeId};
+    },
+    async recordRegulatoryChangeVersion(changeId:string,input:RegulatoryChangeVersionInput,requestId=crypto.randomUUID()){
+      const change=state.regulatory_changes.find(item=>item.id===changeId);
+      if(!change)throw new Error('Regulatory change is unavailable.');
+      const allowed=actor.roles.some(grant=>grant.role==='national_admin');
+      if(!allowed)throw new Error('Only a national administrator may record regulatory change versions.');
+      const trimmed=(input.change_summary??'').trim();
+      if(!trimmed)throw new Error('Record a change summary for the new version.');
+      const body=JSON.stringify({changeId,input});
+      if(receipts.has(requestId)){if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');return {version:change.latest_version};}
+      const prev=state.regulatory_change_versions.filter(item=>item.change_id===changeId);
+      const version=(prev.length?Math.max(...prev.map(item=>item.version)):0)+1;
+      const changedFields:string[]=[];
+      const prevVersion=prev.length?prev.reduce((best,item)=>item.version>best.version?item:best):null;
+      const fields:Array<{name:string;old:any;new:any}>=[
+        {name:'clause',old:prevVersion?.clause??null,new:input.clause},
+        {name:'statement',old:prevVersion?.statement??null,new:input.statement},
+        {name:'evidence_types',old:prevVersion?.evidence_types??null,new:input.evidence_types},
+        {name:'verification_method',old:prevVersion?.verification_method??null,new:input.verification_method},
+        {name:'is_mandatory',old:prevVersion?.is_mandatory??null,new:input.is_mandatory},
+      ];
+      for(const f of fields){if(JSON.stringify(f.old)!==JSON.stringify(f.new))changedFields.push(f.name);}
+      const versionRecord:RegulatoryChangeVersion={
+        id:'demo-reg-version-'+changeId+'-'+version,change_id:changeId,version,
+        requirement_code:input.requirement_code,requirement_app_type:input.requirement_app_type,
+        clause:input.clause,statement:input.statement,evidence_types:input.evidence_types,
+        verification_method:input.verification_method,is_mandatory:input.is_mandatory,
+        source_url:input.source_url,source_version:input.source_version,source_hash:input.source_hash,
+        publication_date:input.publication_date,effective_date:input.effective_date,academic_year_start:input.academic_year_start,
+        change_summary:trimmed,changed_fields:changedFields.length?changedFields:null,
+        created_by:actor.id,created_at:iso(),
+      };
+      state.regulatory_change_versions.push(versionRecord);
+      change.latest_version=version;
+      change.source_url=input.source_url;change.source_version=input.source_version;change.source_hash=input.source_hash;
+      change.publication_date=input.publication_date;change.effective_date=input.effective_date;change.academic_year_start=input.academic_year_start;
+      receipts.set(requestId,body);
+      persist();
+      return {version};
+    },
+    async reviewRegulatoryChange(changeId:string,note:string,requestId=crypto.randomUUID()){
+      const change=state.regulatory_changes.find(item=>item.id===changeId);
+      if(!change)throw new Error('Regulatory change is unavailable.');
+      if(!actor.roles.some(grant=>grant.role==='national_admin'))throw new Error('Only a national administrator may review a regulatory change.');
+      if(change.status!=='draft')throw new Error('Only a draft regulatory change can be reviewed.');
+      const trimmed=note.trim();if(trimmed.length<10)throw new Error('Describe the review in at least 10 characters.');
+      const body=JSON.stringify({changeId,note:trimmed});
+      if(receipts.has(requestId)){if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');return;}
+      change.status='reviewed';change.reviewed_by=actor.id;change.reviewed_at=iso();change.review_note=trimmed;
+      receipts.set(requestId,body);
+      persist();
+    },
+    async previewRegulatoryChangeImpact(changeId:string,version:number):Promise<RegulatoryChangeImpact>{
+      const change=state.regulatory_changes.find(item=>item.id===changeId);
+      if(!change)throw new Error('Regulatory change is unavailable.');
+      const ver=state.regulatory_change_versions.find(item=>item.change_id===changeId&&item.version===version);
+      if(!ver)throw new Error('Regulatory change version is unavailable.');
+      const requirement=state.requirements.find(item=>item.code===ver.requirement_code&&item.app_type===ver.requirement_app_type);
+      const items:RegulatoryChangeImpactItem[]=[];
+      const fields:Array<{name:string;old:any;new:any}>=[
+        {name:'clause',old:requirement?.clause??null,new:ver.clause},
+        {name:'statement',old:requirement?.statement??null,new:ver.statement},
+        {name:'evidence_types',old:requirement?.evidence_types??null,new:ver.evidence_types},
+        {name:'verification_method',old:requirement?.verification_method??null,new:ver.verification_method},
+        {name:'is_mandatory',old:requirement?.is_mandatory??null,new:ver.is_mandatory},
+      ];
+      for(const f of fields){
+        if(JSON.stringify(f.old)!==JSON.stringify(f.new)){
+          let impact:'none'|'minor'|'major'='none';
+          if(f.name==='statement'||f.name==='is_mandatory')impact='major';
+          else if(f.name==='evidence_types'||f.name==='verification_method'||f.name==='clause')impact='minor';
+          items.push({subject_key:'requirement:'+ver.requirement_code,application_id:null,requirement_id:ver.requirement_code,reference:ver.requirement_code+' · '+(ver.clause??''),field:f.name,old_value:JSON.stringify(f.old),new_value:JSON.stringify(f.new),impact});
+        }
+      }
+      // Map to affected applications: claims linked to this requirement, plus applications whose template requires it
+      const affectedApps=new Set<string>();
+      for(const claim of state.claims.filter(item=>item.requirement_id===ver.requirement_code)){
+        const app=state.applications.find(item=>item.id===claim.application_id);
+        if(app&&!affectedApps.has(app.id))affectedApps.add(app.id);
+      }
+      for(const app of state.applications.filter(item=>item.template_snapshot.required_fields.some(f=>f.key===ver.requirement_code)||item.template_snapshot.checklist.some(item=>item===ver.requirement_code))){
+        if(!affectedApps.has(app.id))affectedApps.add(app.id);
+      }
+      for(const appId of Array.from(affectedApps)){
+        const app=state.applications.find(item=>item.id===appId);
+        if(!app)continue;
+        items.push({subject_key:'application:'+appId,application_id:appId,requirement_id:ver.requirement_code,reference:app.ref_no+' · '+app.title,field:'requirement_version',old_value:String(requirement?.version??0),new_value:String(version),impact:'major'});
+      }
+      const impactHash=crypto.subtle?await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(items))).then(buf=>Array.from(new Uint8Array(buf),b=>b.toString(16).padStart(2,'0')).join('')):'demo-impact-hash';
+      const impact:RegulatoryChangeImpact={id:'demo-reg-impact-'+crypto.randomUUID(),change_id:changeId,change_version:version,items,impact_hash:impactHash};
+      state.regulatory_change_impacts.push(impact);
+      return impact;
+    },
+    async activateRegulatoryChange(changeId:string,note:string,requestId=crypto.randomUUID()){
+      const change=state.regulatory_changes.find(item=>item.id===changeId);
+      if(!change)throw new Error('Regulatory change is unavailable.');
+      if(!actor.roles.some(grant=>grant.role==='national_admin'))throw new Error('Only a national administrator may activate a regulatory change.');
+      if(change.status!=='reviewed')throw new Error('Only a reviewed regulatory change can be activated.');
+      const trimmed=note.trim();if(trimmed.length<10)throw new Error('Describe the activation in at least 10 characters.');
+      const body=JSON.stringify({changeId,note:trimmed});
+      if(receipts.has(requestId)){if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');return;}
+      const latest=state.regulatory_change_versions.filter(item=>item.change_id===changeId).reduce((best,item)=>item.version>best.version?item:best);
+      if(!latest)throw new Error('No version recorded for this change.');
+      // Apply the latest version to the matching requirement
+      const reqIndex=state.requirements.findIndex(item=>item.code===latest.requirement_code&&item.app_type===latest.requirement_app_type);
+      if(reqIndex>=0){
+        const req=state.requirements[reqIndex];
+        if(latest.clause!==null)req.clause=latest.clause;
+        if(latest.statement!==null)req.statement=latest.statement;
+        if(latest.evidence_types!==null)req.evidence_types=latest.evidence_types;
+        if(latest.verification_method!==null)req.verification_method=latest.verification_method;
+        if(latest.is_mandatory!==null)req.is_mandatory=latest.is_mandatory;
+        req.version=latest.version;
+      }
+      change.status='activated';change.activated_by=actor.id;change.activated_at=iso();
+      receipts.set(requestId,body);
+      persist();
+    },
+    async getRegulatoryChanges():Promise<RegulatoryChange[]>{
+      return state.regulatory_changes.slice().sort((left,right)=>Date.parse(right.created_at)-Date.parse(left.created_at));
+    },
+    async getRegulatoryChangeVersions(changeId:string):Promise<RegulatoryChangeVersion[]>{
+      return state.regulatory_change_versions.filter(item=>item.change_id===changeId).sort((left,right)=>left.version-right.version);
     },
   };
 }
