@@ -1,6 +1,6 @@
 import {neutralCopy} from '../domain/presentation';
 import {useState,type FormEvent} from 'react';
-import {Check,CircleAlert,Clock3,FileCheck2,FileText,Link2} from 'lucide-react';
+import {Check,CircleAlert,Clock3,FileCheck2,FileText,Link2,ShieldCheck} from 'lucide-react';
 import type {Application,DocumentRecord,Identity,Repository} from '../domain/model';
 import type {Claim,ClaimEvidence,Deficiency} from '../domain/integrity';
 import {compareEvidenceVersions,detectContradictions} from '../domain/integrity';
@@ -44,6 +44,26 @@ export function ClaimLedger({app,claims,claimEvidence,documents,deficiencies,ide
         <div className="claim-actions-cell">{canVerify&&(claim.status==='unverified'||!basisCurrent)&&!deficiency&&<><button className="button small secondary button-small" disabled={busy} onClick={()=>setMode({kind:'verify',claim})}>Verify</button><button className="button small outline button-small" disabled={busy} onClick={()=>setMode({kind:'raise',claim})}>Raise deficiency</button></>}{canVerify&&['verified','not_applicable'].includes(claim.status)&&basisCurrent&&<span className="quiet-label">Finding recorded</span>}{canVerify&&claim.status==='deficient'&&openDeficiency&&<span className="quiet-label">Action with the institution</span>}{canRecheck&&resolvedDeficiency&&<button className="button small secondary button-small" disabled={busy} onClick={()=>setMode({kind:'recheck',claim,deficiency:resolvedDeficiency})}>Re-check</button>}{owner&&openDeficiency&&<button className="button small secondary button-small" disabled={busy} onClick={()=>setMode({kind:'resolve',claim,deficiency:openDeficiency})}>Submit correction</button>}{owner&&!openDeficiency&&<button className="button small outline button-small" disabled={busy} onClick={()=>setMode({kind:'link',claim})}><Link2 size={12}/>Link evidence</button>}{!canVerify&&!canRecheck&&!owner&&<span className="quiet-label">{deficiency?deficiency===openDeficiency?'Action with the institution':'Action with the scrutiny officer':['verified','not_applicable'].includes(claim.status)?'Recorded':'Readable · no action for your role'}</span>}</div>
         {deficiency&&<div className={`claim-deficiency ${deficiency.status==='resolved'?'resolved':''}`}><Clock3 size={14}/><div>{deficiency.status==='resolved'?<><strong>Resolution submitted · awaiting re-check</strong><p>{deficiency.resolution_note}</p><small>Resolved by {deficiency.resolved_by?.replaceAll('-',' ')} · only this claim reopens; unrelated verified claims stay verified · re-check belongs to the assigned scrutiny officer</small></>:<><strong>{neutralCopy(deficiency.observation)}</strong><p>{neutralCopy(deficiency.remedy)}</p><small>Due {new Date(deficiency.due_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} · raised by {deficiency.raised_by.replaceAll('-',' ')}</small></>}</div></div>}
         {claimContradictions.length>0&&<div className="claim-contradiction"><CircleAlert size={14}/><div><strong>Cross-document conflict · {claimContradictions[0].label}</strong>{claimContradictions.map(item=><div className="claim-contradiction-sources" key={item.field+item.document_id}><span><small>Declared in application</small><b>{item.declared}</b></span><span><small>{item.document_name} roster</small><b>{item.observed}</b></span></div>)}<small>Both sources are shown for human review. Clauseway flags the conflict; it does not resolve it automatically.</small></div></div>}
+        {claim.verification_method==='system_check'&&(
+          <div className="aph-compliance-card">
+            <ShieldCheck size={14}/>
+            <div>
+              <strong>APH Assistive Compliance Reference · {neutralCopy(claim.clause_snapshot)}</strong>
+              <p style={{margin:'2px 0 6px',fontSize:'11px'}}>{neutralCopy(claim.statement_snapshot)}</p>
+              <div className="aph-compliance-grid">
+                <span><small>Handbook Clause</small><b>{neutralCopy(claim.clause_snapshot)}</b></span>
+                <span><small>Programme / Category</small><b>{app.app_type==='extension_self_disclosure'?'Technical UG/PG':'Institutional'}</b></span>
+                {claim.system_inputs?.map(input=>(
+                  <span key={input.field}><small>{neutralCopy(input.label)}</small><b>{input.value}</b></span>
+                ))}
+                <span><small>Advisory Benchmark</small><b>Ratio ≤ 20:1 · Cadre 1:2:6</b></span>
+              </div>
+              <small style={{display:'block',marginTop:'4px',lineHeight:'1.5',color:'var(--muted,#55647e)'}}>
+                Advisory finding based on programme parameters; final approval strictly reserved to assigned human reviewer.
+              </small>
+            </div>
+          </div>
+        )}
       </article>;
     })}</div>
     {mode?.kind==='verify'&&<VerifyDialog claim={mode.claim} app={app} repo={repo} run={run} busy={busy} close={()=>setMode(null)}/>}

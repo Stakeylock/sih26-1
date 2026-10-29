@@ -38,13 +38,20 @@ describe('regulatory change impact analysis', () => {
     })).rejects.toThrow();
   });
 
-  it('previews impact for a change version', async () => {
+  it('previews impact for a change version and handles shared subject keys across different fields', async () => {
     const repo = await createDemoRepository('national_admin');
     const impact = await repo.previewRegulatoryChangeImpact('demo-reg-change-1', 2);
     expect(impact.change_id).toBe('demo-reg-change-1');
     expect(impact.change_version).toBe(2);
     expect(impact.items.length).toBeGreaterThan(0);
     expect(impact.items.some(item => item.field === 'statement')).toBe(true);
+
+    // Verify multiple impact items can share a subject_key (for requirement:ACADEMIC_YEAR)
+    const reqItems = impact.items.filter(item => item.subject_key === 'requirement:ACADEMIC_YEAR');
+    expect(reqItems.length).toBeGreaterThanOrEqual(2);
+    // Verify composite key uniqueness
+    const compositeKeys = new Set(impact.items.map((item, idx) => `${item.subject_key}:${item.field ?? ''}:${idx}`));
+    expect(compositeKeys.size).toBe(impact.items.length);
   });
 
   it('activates a reviewed change and applies to requirement registry', async () => {

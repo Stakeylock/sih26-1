@@ -1,6 +1,6 @@
 import {neutralCopy} from '../domain/presentation';
 import {useEffect,useState} from 'react';
-import {ArrowRight,CalendarClock,FastForward,FileStack,Fingerprint,GitBranch,Play,RefreshCw,RotateCcw,Ruler,ShieldCheck,TriangleAlert} from 'lucide-react';
+import {ArrowRight,CalendarClock,FastForward,FileCheck2,FileStack,Fingerprint,GitBranch,Play,RefreshCw,RotateCcw,Ruler,ShieldCheck,TriangleAlert} from 'lucide-react';
 import {ViewHeader} from './common';
 import {formatDateTime} from './DisplayPreferences';
 import {guideSteps} from './demoGuide';
@@ -104,6 +104,8 @@ export function DemoLab({data,repo,run,onStartTour,onOpenPrototype,onOpenFlow,on
     {id:'case',label:'Open the proof case',detail:'Read the correction thread and its human review basis in the dossier.',icon:FileStack,role:'institution' as Role,route:'case/demo-app-0'},
     {id:'trust',label:'Verify the audit chain',detail:'Inspect the visible security boundaries and replay the stored event links.',icon:Fingerprint,role:'national_admin' as Role,route:'trust'},
     {id:'obligation',label:'Inspect continuing obligations',detail:'Follow a recorded post-decision condition after the case closes.',icon:Ruler,role:'national_admin' as Role,route:'compliance'},
+    {id:'receipt',label:'Inspect decision receipt',detail:'Review synthetic decision certificate with audit lookup code and post-decision conditions.',icon:FileCheck2,role:'regional_officer' as Role,route:'receipt/demo-app-5'},
+    {id:'operations',label:'Review case operations',detail:'Allocate work, inspect delivery state, check background jobs and operational readiness.',icon:ShieldCheck,role:'national_admin' as Role,route:'operations'},
   ];
   return <>
     <ViewHeader title="Demo lab" summary="Simulation controls for the synthetic workspace. Nothing here changes a real record."/>
