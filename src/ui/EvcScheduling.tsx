@@ -3,7 +3,7 @@ import {CalendarClock,CheckCircle2,RefreshCw,ShieldCheck,UserRound} from 'lucide
 import {demoNow} from '../domain/virtualClock';
 import {EVC_REQUIRED_SEATS,statusLabels,type EVCResponseStatus,type EVCAvailabilityResult,type EVCSeat,type EVCVisitMode,type Identity,type Repository,type Workspace} from '../domain/model';
 import {formatDateTime} from './DisplayPreferences';
-import {Empty} from './common';
+import {Empty,ViewHeader} from './common';
 import type {Run} from './Applications';
 import './intelligence.css';
 
@@ -70,7 +70,7 @@ export function EvcScheduling({data,identity,repo,run,busy,initialApplicationId}
   const available=availability?.officials??[];
   const assignedIds=new Set(members.map(item=>item.user_id));
   return <>
-    <div className="view-header"><div><h2>EVC scheduling</h2><p>Synthetic panel declarations, invitations and responses. These sample rules require policy validation for real use.</p></div></div>
+    <ViewHeader title="EVC scheduling" summary="Propose a visit, assign the three required seats, record member responses, and confirm only when all accept." count={String(cases.length).padStart(2,'0')} label="cases requiring an EVC visit" level="h2"/>
     <section className="dossier-paper intelligence-panel">
       {!demo&&<div className="callout warning"><strong>Connected workspace</strong><p>EVC scheduling is available in the isolated demo workspace only. This screen shows the recorded schedule and does not offer write actions.</p></div>}
       {cases.length?<div className="form-grid"><label className="field">Case<select value={app?.id??''} onChange={event=>setAppId(event.target.value)}>{cases.map(application=><option key={application.id} value={application.id}>{application.ref_no} - {data.institutions.find(item=>item.id===application.institution_id)?.name??'Institution unavailable'} - {statusLabels[application.status]}</option>)}</select></label>{visits.length>0&&<label className="field">Recorded visit<select value={visit?.id??''} onChange={event=>setVisitId(event.target.value)}>{visits.map(item=><option key={item.id} value={item.id}>{formatDateTime(item.scheduled_start)} - {visitLabels[item.status]??item.status}</option>)}</select></label>}</div>:<Empty title="No EVC-ready case">A case appears here after scrutiny marks an EVC visit as required.</Empty>}

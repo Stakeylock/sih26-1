@@ -1601,3 +1601,17 @@ body{font-variant-numeric:tabular-nums}
 .field{display:block;font-size:calc(11px * var(--text-scale,1));font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
 .form-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+/* Narrow-viewport fixes: keep chips, badges, and drop bands from overflowing at ~390px. */
+@media(max-width:390px){
+  .register-chip,.scope-chip{padding:6px 9px;font-size:calc(9px * var(--text-scale,1))}
+  .register-chip b,.scope-chip b{font-size:calc(9px * var(--text-scale,1))}
+  .traffic-chip{padding:3px 7px;font-size:calc(9px * var(--text-scale,1));gap:4px}
+  .traffic-dot{width:6px;height:6px}
+  .badge,.document-tag,.readiness-status{white-space:normal;padding:2px 6px;font-size:calc(9px * var(--text-scale,1))}
+  .drop-band{padding:1px 5px;font-size:calc(8px * var(--text-scale,1));gap:4px;margin-left:4px}
+  .drop-band svg{size:7px}
+  .button-small{padding:4px 9px;font-size:calc(9px * var(--text-scale,1));min-height:30px}
+  .form-grid{grid-template-columns:1fr}
+  .table-wrap td,.table-wrap th{font-size:calc(10px * var(--text-scale,1));padding:8px}
+  .panel,.dossier-paper,.support-surface{margin-bottom:12px}
+}
