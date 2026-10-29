@@ -81,13 +81,32 @@ export interface EVCScheduleHistory {
   new_start: string; new_end: string | null; changed_by: string; changed_at: string;
   reason: string | null;
 }
+export interface InspectionLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  address: string | null;
+}
+export interface InspectionEvidence {
+  id: string;
+  application_id: string;
+  visit_id: string;
+  captured_at: string;
+  location: InspectionLocation;
+  observations: string;
+  voice_memo: string | null;
+  documents: string[];
+  status: 'draft' | 'submitted';
+  submitted_at: string | null;
+  submitted_by: string | null;
+}
 export interface EVCConflict { visitId:string|null;referenceNo:string|null;institution:string|null;start:string;end:string;responseStatus:string|null;kind:string }
 export interface EVCDayAssignment { visitId:string|null;referenceNo:string|null;institution:string|null;start:string;end:string;responseStatus:string|null }
 export interface EVCOfficialAvailability { id:string;member_code:string;user_id:string|null;full_name:string;designation_level:string;discipline:string;organisation_type:string;experience_years:number|string|null;coa_registration_no:string|null;panel_status:string;verification_status:string;active:boolean;status:'AVAILABLE'|'BUSY'|'UNAVAILABLE'|'INACTIVE'|'NOT_VERIFIED'|'NO_ACCOUNT';reason:string|null;conflicts:EVCConflict[];dayAssignments:EVCDayAssignment[];eligibleSeats:EVCSeat[];seatEligibility:Record<EVCSeat,{outcome:EVCOutcome;reasons:string[]}> }
 export interface EVCAvailabilityCapacity { satisfiable:boolean;bySeat:Record<EVCSeat,number>;message:string|null;bufferMinutes:number }
 export interface EVCAvailabilityResult { officials:EVCOfficialAvailability[];capacity:EVCAvailabilityCapacity }
 export interface Notification { id: string; title: string; body: string; read_at: string | null; created_at: string; application_id?: string | null; target_stage?: string | null; channel?: NotificationChannel; deliveryStatus?: DeliveryStatus; previewUrl?: string }
-export interface Workspace { case_reviews?:CaseReview[];delivery_outbox?:Delivery[];delivery_attempts?:DeliveryAttempt[];worker_health?:WorkerHealth[]; inspection_experts?:InspectionExpert[];expert_availability?:ExpertAvailability[];expert_conflicts?:ExpertConflict[];expert_reservations?:ExpertReservation[]; analysis_snapshots?:AnalysisSnapshot[];analysis_scenarios?:SavedScenario[]; scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[]; access_assignments: AccessAssignment[]; agents: AgentRecord[]; evc_visits:EVCVisit[];evc_members:EVCMember[];evc_unavailability:EVCUnavailability[];evc_schedule_history:EVCScheduleHistory[] }
+export interface Workspace { case_reviews?:CaseReview[];delivery_outbox?:Delivery[];delivery_attempts?:DeliveryAttempt[];worker_health?:WorkerHealth[]; inspection_experts?:InspectionExpert[];expert_availability?:ExpertAvailability[];expert_conflicts?:ExpertConflict[];expert_reservations?:ExpertReservation[]; analysis_snapshots?:AnalysisSnapshot[];analysis_scenarios?:SavedScenario[]; scope_requests?:ScopeRequest[];approvals?:ApprovalRecord[];approval_scope?:ApprovalScopeItem[];notices?:DeadlineNotice[];deadlines?:DeadlineRevision[];reminder_intents?:ReminderIntent[]; applications: Application[]; institutions: Institution[]; templates: Template[]; documents: DocumentRecord[]; events: AuditEvent[]; checklist: ChecklistItem[]; visits: Visit[]; obligations: Obligation[]; notifications: Notification[]; requirements: Requirement[]; claims: Claim[]; claim_evidence: ClaimEvidence[]; deficiencies: Deficiency[]; integrity_signals: IntegritySignal[];   access_assignments: AccessAssignment[]; agents: AgentRecord[]; evc_visits:EVCVisit[];evc_members:EVCMember[];evc_unavailability:EVCUnavailability[];evc_schedule_history:EVCScheduleHistory[];inspection_evidence:InspectionEvidence[] }
 export const routeStages = [
   { key: 'submission', label: 'Submission', statuses: ['draft'] },
   { key: 'scrutiny', label: 'Scrutiny', statuses: ['submitted', 'resubmitted', 'under_scrutiny', 'deficiency_raised'] },
@@ -140,6 +159,9 @@ export interface Repository {
   getEVCVisits(application:Application):Promise<EVCVisit[]>;
   getEVCAvailability(application:Application,start:string,end:string):Promise<EVCAvailabilityResult>;
   recordEVCUnavailability(expertId:string,start:string,end:string,reason:string,requestId?:string):Promise<void>;
+  captureInspectionEvidence(application:Application,visitId:string,input:{captured_at:string;location:InspectionLocation;observations:string;voice_memo:string|null;documents:string[]},requestId?:string):Promise<{evidence_id:string}>;
+  submitInspectionEvidence(evidenceId:string,requestId?:string):Promise<void>;
+  getInspectionEvidence(visitId:string):Promise<InspectionEvidence[]>;
   createNotice(input:NoticeInput,requestId?:string):Promise<void>;
   reviewNotice(notice:DeadlineNotice,note:string,requestId?:string):Promise<void>;
   previewNotice(notice:DeadlineNotice):Promise<NoticeImpact>;

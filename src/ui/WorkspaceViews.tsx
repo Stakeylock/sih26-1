@@ -1,6 +1,7 @@
 import {neutralCopy} from '../domain/presentation';
 import {DisplayControls} from './DisplayPreferences';
 import {InspectionPlanner} from './InspectionPlanner';
+import {InspectionEvidence} from './InspectionEvidence';
 import {EvcScheduling} from './EvcScheduling';
 import {documentEligible} from '../domain/approvals';
 import {useState} from 'react';
@@ -73,6 +74,7 @@ export function Visits({data,open,identity,repo,run,busy,initialApplicationId}:{
   return <>
     <ViewHeader title="Verification agenda" summary="Scheduled visits with coordinator, committee, evidence state, and dossier linkage." count={String(upcoming).padStart(2,'0')} label="upcoming visits"/>
     <EvcScheduling data={data} identity={identity} repo={repo} run={run} busy={busy} initialApplicationId={initialApplicationId}/>
+    <InspectionEvidence data={data} identity={identity} repo={repo} run={run} busy={busy}/>
     <InspectionPlanner initialApplicationId={initialApplicationId} data={data} identity={identity} repo={repo} run={run} busy={busy}/>
     <section className="support-surface agenda-surface">
       <div className="support-surface-heading"><div><div><h2>Visit register</h2><p>Scheduled by day, with recorded panel and evidence context for each visit.</p></div></div><span className="quiet-label"><CalendarClock size={14}/>Regional EVC coordination</span></div>

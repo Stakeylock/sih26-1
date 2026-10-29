@@ -15,7 +15,7 @@ import {EVC_REQUIRED_SEATS,EVC_SEATS,canStaff,seatEligibility,validateCompositio
 import type {EVCSeat} from '../domain/evc';
 import {demoEvcExperts,type DemoEVCExpert} from './demoEvc';
 import {overlaps} from '../domain/planning';
-import type {EVCAvailabilityResult,EVCMember,EVCOfficialAvailability,EVCVisit} from '../domain/model';
+import type {EVCAvailabilityResult,EVCMember,EVCOfficialAvailability,EVCVisit,InspectionEvidence,InspectionLocation} from '../domain/model';
 import type { Advisory,Application, AuditEvent, DocumentRecord, Identity, Notification, Repository, Role, Status, Template, Transition, Workspace } from '../domain/model';
 import type { AccessAssignment, AgentRecord, AuditEventLike, AuditVerification, Claim, ClaimEvidence, Deficiency, IntegritySignal, Requirement } from '../domain/integrity';
 import { signalTypes } from '../domain/integrity';
@@ -139,7 +139,7 @@ export function seed(): Workspace {
     { id: 'demo-notification-3', title: 'Synthetic visit panel recorded', body: 'DEMO-2026-1008 contains a legacy synthetic panel. Use resource planning to record availability, declared conflicts and confirmation.', read_at: null, created_at: iso(-2), application_id: 'demo-app-7', target_stage: 'case/demo-app-7' },
     { id: 'demo-notification-4', title: 'Sample workflow revision published', body: 'Existing sample cases retain their captured route until a compatible policy revision is explicitly reviewed and adopted.', read_at: iso(-3), created_at: iso(-3), application_id: null, target_stage: 'workflows' },
   ];
-const workspace:Workspace={applications,institutions,templates,documents,events,checklist:[],visits,obligations,notifications,requirements,claims,claim_evidence:claimEvidence,deficiencies,integrity_signals:signals,access_assignments:accessAssignments,agents,evc_visits:[],evc_members:[],evc_unavailability:[],evc_schedule_history:[]};
+const workspace:Workspace={applications,institutions,templates,documents,events,checklist:[],visits,obligations,notifications,requirements,claims,claim_evidence:claimEvidence,deficiencies,integrity_signals:signals,access_assignments:accessAssignments,agents,evc_visits:[],evc_members:[],evc_unavailability:[],evc_schedule_history:[],inspection_evidence:[]};
 // Seed an EVC visit for demo-app-9 (completed renewal follow-up visit)
 const app9=applications.find(a=>a.id==='demo-app-9')!;
 workspace.evc_visits.push({
@@ -154,6 +154,15 @@ workspace.evc_members.push(
   {id:'demo-evc-member-assign-9-2',evc_visit_id:'demo-evc-visit-9',user_id:'demo-evc-member-2',seat:'EXPERT',response_status:'ACCEPTED',response_note:'Building infrastructure review complete.',responded_at:iso(-18),active:true,invited_version:1,reserved_period_start:iso(-20),reserved_period_end:new Date(Date.parse(iso(-20))+3600000).toISOString(),created_at:iso(-20),updated_at:iso(-18)},
   {id:'demo-evc-member-assign-9-3',evc_visit_id:'demo-evc-visit-9',user_id:'demo-evc-member-3',seat:'ARCHITECT_PLANNING',response_status:'ACCEPTED',response_note:'Campus layout and emergency exits verified.',responded_at:iso(-18),active:true,invited_version:1,reserved_period_start:iso(-20),reserved_period_end:new Date(Date.parse(iso(-20))+3600000).toISOString(),created_at:iso(-20),updated_at:iso(-18)},
 );
+workspace.inspection_evidence.push({
+  id:'demo-inspection-evidence-9',application_id:app9.id,visit_id:'demo-evc-visit-9',
+  captured_at:iso(-16),
+  location:{latitude:28.6139,longitude:77.2090,accuracy:5,address:'Outer Ring Road, New Delhi, Delhi 110001'},
+  observations:'Site facilities inspected. Fire extinguishers serviced, emergency exits unobstructed, building infrastructure compliant with recorded norms.',
+  voice_memo:'Voice memo: Fire safety equipment inspected and found compliant. No major deficiencies observed during the physical walk-through.',
+  documents:[],
+  status:'submitted',submitted_at:iso(-15),submitted_by:'demo-evc-member-1',
+});
 // Seed an upcoming EVC visit for demo-app-2 (scrutiny cleared, pending EVC)
 const app2=applications.find(a=>a.id==='demo-app-2')!;
 const futureStart=new Date(Date.now()+7*86400000);
@@ -180,7 +189,7 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
   let state=await seed();
   const heads=new Map<string,{sequence:number;hash:string}>();
   for(const event of state.events){const current=heads.get(event.application_id);const seq=event.sequence??0;const hash=typeof event.event_hash==='string'?event.event_hash:'';if(!current||seq>current.sequence)heads.set(event.application_id,{sequence:seq,hash:hash});}
-  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===12 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) {state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],agents:saved.workspace.agents??[],events:saved.workspace.events??[],documents:saved.workspace.documents??[],checklist:saved.workspace.checklist??[],visits:saved.workspace.visits??[],obligations:saved.workspace.obligations??[],evc_visits:saved.workspace.evc_visits??[],evc_members:saved.workspace.evc_members??[],evc_schedule_history:saved.workspace.evc_schedule_history??[],evc_unavailability:saved.workspace.evc_unavailability??[]};
+  try { const saved=JSON.parse(localStorage.getItem(STORAGE)??'null') as {format?: number; workspace?: Workspace} | null; if(saved?.format===12 && saved.workspace?.applications.every(a=>a.is_demo && a.id.startsWith('demo-'))) {state={...saved.workspace,requirements:saved.workspace.requirements??[],claims:saved.workspace.claims??[],claim_evidence:saved.workspace.claim_evidence??[],deficiencies:saved.workspace.deficiencies??[],integrity_signals:saved.workspace.integrity_signals??[],access_assignments:saved.workspace.access_assignments??[],              agents:saved.workspace.agents??[],events:saved.workspace.events??[],documents:saved.workspace.documents??[],checklist:saved.workspace.checklist??[],visits:saved.workspace.visits??[],obligations:saved.workspace.obligations??[],evc_visits:saved.workspace.evc_visits??[],evc_members:saved.workspace.evc_members??[],evc_schedule_history:saved.workspace.evc_schedule_history??[],evc_unavailability:saved.workspace.evc_unavailability??[],inspection_evidence:saved.workspace.inspection_evidence??[]};
     } } catch { /* Corrupt demo storage is discarded. */ }
   state=neutralDemoLabels(state);
   if(!state.inspection_experts)seedPlanning(state);
@@ -659,6 +668,60 @@ export async function createDemoRepository(role:Role='national_admin'): Promise<
       if(!duplicate)state.evc_unavailability.push({id:'demo-evc-unavail-'+crypto.randomUUID(),expert_id:expertId,starts_at:start,ends_at:end,reason:trimmed,withdrawn_at:null,created_at:iso()});
       receipts.set(requestId,body);
       persist();
+    },
+    async captureInspectionEvidence(application:Application,visitId:string,input:{captured_at:string;location:InspectionLocation;observations:string;voice_memo:string|null;documents:string[]},requestId=crypto.randomUUID()){
+      const a=find(application.id);
+      const visit=state.evc_visits.find(item=>item.id===visitId&&item.application_id===a.id);
+      if(!visit)throw new Error('EVC visit is unavailable for this application.');
+      const member=state.evc_members.find(item=>item.evc_visit_id===visitId&&item.active);
+      const isMember=Boolean(member&&member.user_id===actor.id&&member.response_status==='ACCEPTED');
+      const manager=actor.roles.some(grant=>grant.role==='national_admin'||(['evc_coordinator','regional_officer'].includes(grant.role)&&grant.region===a.region));
+      if(!(isMember||manager))throw new Error('Only an accepted EVC member of this visit, or a coordinator/regional grant in this region, can capture inspection evidence.');
+      if(input.observations.trim().length<10)throw new Error('Describe the site observations in at least 10 characters.');
+      for(const docId of input.documents){
+        const doc=state.documents.find(item=>item.id===docId&&item.application_id===a.id);
+        if(!doc)throw new Error('One or more uploaded documents are not current case documents.');
+      }
+      const evidenceId='demo-inspection-evidence-'+crypto.randomUUID();
+      const body=JSON.stringify({application:a.id,visitId,input,evidenceId});
+      if(receipts.has(requestId)){
+        if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');
+        return {evidence_id:evidenceId};
+      }
+      const evidence:InspectionEvidence={
+        id:evidenceId,application_id:a.id,visit_id:visitId,
+        captured_at:input.captured_at,
+        location:input.location,
+        observations:input.observations.trim(),
+        voice_memo:input.voice_memo?input.voice_memo.trim()||null:null,
+        documents:[...input.documents],
+        status:'draft',submitted_at:null,submitted_by:null,
+      };
+      state.inspection_evidence.push(evidence);
+      receipts.set(requestId,body);
+      persist();
+      return {evidence_id:evidenceId};
+    },
+    async submitInspectionEvidence(evidenceId:string,requestId=crypto.randomUUID()){
+      const evidence=state.inspection_evidence.find(item=>item.id===evidenceId);
+      if(!evidence)throw new Error('Inspection evidence record is unavailable.');
+      const a=find(evidence.application_id);
+      const visit=state.evc_visits.find(item=>item.id===evidence.visit_id);
+      if(!visit)throw new Error('The linked EVC visit is unavailable.');
+      const member=state.evc_members.find(item=>item.evc_visit_id===visit.id&&item.active);
+      const isMember=Boolean(member&&member.user_id===actor.id&&member.response_status==='ACCEPTED');
+      const manager=actor.roles.some(grant=>grant.role==='national_admin'||(['evc_coordinator','regional_officer'].includes(grant.role)&&grant.region===a.region));
+      if(!(isMember||manager))throw new Error('Only an accepted EVC member of this visit, or a coordinator/regional grant in this region, can submit inspection evidence.');
+      if(evidence.status==='submitted')throw new Error('Inspection evidence is already submitted.');
+      const body=JSON.stringify({evidenceId});
+      if(receipts.has(requestId)){if(receipts.get(requestId)!==body)throw new Error('Request ID already used.');return;}
+      evidence.status='submitted';evidence.submitted_at=iso();evidence.submitted_by=actor.id;
+      await log(a,'inspection_evidence_submitted',a.status,'Site inspection evidence captured and linked to the case.',{evidence_id:evidenceId,visit_id:visit.id,application_id:a.id});
+      receipts.set(requestId,body);
+      persist();
+    },
+    async getInspectionEvidence(visitId:string):Promise<InspectionEvidence[]>{
+      return state.inspection_evidence.filter(item=>item.visit_id===visitId).sort((left,right)=>Date.parse(right.captured_at)-Date.parse(left.captured_at));
     },
   };
 }

@@ -158,6 +158,7 @@ function payload(): {
     evc_members: [],
     evc_unavailability: [],
     evc_schedule_history: [],
+    inspection_evidence: [],
   };
 
   const identity: Identity = {

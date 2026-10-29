@@ -1623,4 +1623,21 @@ body{font-variant-numeric:tabular-nums}
   .form-grid{grid-template-columns:1fr}
   .table-wrap td,.table-wrap th{font-size:calc(10px * var(--text-scale,1));padding:8px}
   .panel,.dossier-paper,.support-surface{margin-bottom:12px}
+  .landing-actions{flex-direction:column;align-items:stretch}
+  .landing-primary,.landing-tour,.landing-judge-cta{width:100%;font-size:calc(12px * var(--text-scale,1))}
+  .landing-station{padding:7px 10px;font-size:calc(9px * var(--text-scale,1));min-height:auto}
+  .landing-module{padding:8px 10px;font-size:calc(9px * var(--text-scale,1))}
+  .landing-module svg{size:12px}
+}
+/* Site inspection evidence capture */
+.photo-previews{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.photo-preview{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;width:106px}
+.photo-preview-img{width:106px;height:106px;object-fit:cover;border-radius:7px;border:1px solid var(--border,#e2e8f0);background:#f0f3f8}
+.photo-preview-meta{display:flex;flex-direction:column;gap:2px;font-size:calc(10px * var(--text-scale,1))}
+.evidence-row{border:1px solid var(--border,#e2e8f0);border-radius:7px;padding:12px 14px;margin-top:10px;background:#fff}
+.evidence-row-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px}
+@media(max-width:390px){
+  .photo-preview{width:84px}
+  .photo-preview-img{width:84px;height:84px}
+  .evidence-row{padding:10px 12px}
 }
