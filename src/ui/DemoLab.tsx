@@ -9,6 +9,7 @@ import {NotificationTester} from './NotificationTester';
 import {VoiceCallRehearsal} from './VoiceCallRehearsal';
 import type {ClockReport} from '../domain/consequences';
 import {EVC_REQUIRED_SEATS,type Repository,type Role,type Workspace} from '../domain/model';
+import type {Run} from './Applications';
 
 const scenarioSteps=[
   {id:'schedule',label:'Schedule EVC visit'},
@@ -26,7 +27,7 @@ const rehearsalStages=[
 
 const kindLabels={reminder:'Reminder',overdue:'Overdue',escalation:'Escalation',expiry:'Validity lapse'} as const;
 
-export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwitch,onRefresh}:{data:Workspace;repo:Repository;onStartTour:()=>void;onOpenPrototype:()=>void;onOpenFlow:()=>void;onSwitch:(role:Role,route:string)=>void;onRefresh:()=>void}){
+export function DemoLab({data,repo,run,onStartTour,onOpenPrototype,onOpenFlow,onSwitch,onRefresh}:{data:Workspace;repo:Repository;run:Run;onStartTour:()=>void;onOpenPrototype:()=>void;onOpenFlow:()=>void;onSwitch:(role:Role,route:string)=>void;onRefresh:()=>void}){
   const [rehearsalStep,setRehearsalStep]=useState<number|null>(null);
   const [offset,setOffset]=useState(()=>demoClockOffset());
   const [clockBusy,setClockBusy]=useState(false);
@@ -188,7 +189,7 @@ export function DemoLab({data,repo,onStartTour,onOpenPrototype,onOpenFlow,onSwit
         <NotificationTester data={data} repo={repo}/>
       </section>
     </div>
-    <VoiceCallRehearsal repo={repo} data={data}/>
+    <VoiceCallRehearsal repo={repo} data={data} run={run}/>
     <section className="support-surface demo-lab-guide">
       <div className="support-surface-heading"><div><h2>Judge proof route</h2><p>Four proof questions show what this prototype can demonstrate. Each item is derived from the live synthetic records; the guided steps below open the exact role and work surface.</p></div><span className="quiet-label">{steps.filter(step=>step.armed).length} of {steps.length} guided steps armed</span></div>
       <div className="demo-proof-route" aria-label="Judge proof route">

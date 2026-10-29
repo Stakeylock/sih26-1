@@ -7,7 +7,7 @@ export type VerificationMethod = typeof verificationMethods[number];
 export const deficiencyStatuses = ['open', 'resolved', 'waived', 'escalated'] as const;
 export type DeficiencyStatus = typeof deficiencyStatuses[number];
 
-export const signalTypes = ['duplicate_document', 'expired_document', 'name_mismatch', 'faculty_overlap', 'submission_velocity', 'access_anomaly', 'risk_score'] as const;
+export const signalTypes = ['duplicate_document', 'expired_document', 'name_mismatch', 'faculty_overlap', 'submission_velocity', 'access_anomaly', 'risk_score', 'document_review'] as const;
 export type SignalType = typeof signalTypes[number];
 
 export const signalDispositions = ['open', 'explained', 'confirmed', 'dismissed'] as const;
