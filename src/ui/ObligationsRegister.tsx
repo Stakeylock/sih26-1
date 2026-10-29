@@ -1,9 +1,8 @@
-// @ts-nocheck
 import {useState} from 'react';
 import {neutralCopy} from '../domain/presentation';
 import {Panel,Badge,Empty} from './common';
 import {ShieldCheck} from 'lucide-react';
-import {type Application,type DocumentRecord,type Identity,type Obligation,type ComplianceEvidence} from '../domain/model';
+import {type Application,type DocumentRecord,type Identity,type Obligation,type ComplianceEvidence,type Workspace} from '../domain/model';
 import {delayRiskAdvisory} from '../domain/expiry';
 import {aphClauseForDocument,APH_EDITION,APH_TITLE} from '../domain/aph';
 import {expiryState} from '../domain/expiry';
@@ -34,39 +33,41 @@ export function ObligationsRegister({app,data,identity,repo,run,busy}:{app:Appli
   const isInstitution=identity.roles.some(role=>role.role==='institution'&&app.owner_id===identity.id);
   const canManage=identity.roles.some(role=>role.role==='national_admin'||role.role==='regional_officer');
 
-  const [docSelValue,setDocSelValue]=useState<string|null>(null);
-  const [docNoteValue,setDocNoteValue]=useState('');
-  const [revNoteValue,setRevNoteValue]=useState('');
-  const [submittingFlag,setSubmittingFlag]=useState(false);
-  const [errorMsgValue,setErrorMsgValue]=useState<string|null>(null);
+  const [docSel,setDocSel]=useState<Record<string,string>>({});
+  const [docNotes,setDocNotes]=useState<Record<string,string>>({});
+  const [revNotes,setRevNotes]=useState<Record<string,string>>({});
+  const [error,setError]=useState<string|null>(null);
 
   const submitEvidence=async(obligationId:string,documentId:string,remarks:string)=>{
-    setErrorMsgValue(null);
+    setError(null);
     try{
       const ok=await run(async()=>{
         await repo.submitComplianceEvidence(app,obligationId,{document_id:documentId,remarks:remarks||undefined});
       },'Compliance evidence submitted.');
       if(!ok)throw new Error('Evidence submission failed.');
-      setDocSelValue(null);setDocNoteValue('');
+      setDocSel(prev=>({...prev,[obligationId]:''}));
+      setDocNotes(prev=>({...prev,[obligationId]:''}));
     }catch(err){
-      setErrorMsgValue(err instanceof Error?err.message:'Evidence could not be submitted.');
+      setError(err instanceof Error?err.message:'Evidence could not be submitted.');
     }
   };
 
   const verifyEvidence=async(evidenceId:string,status:'APPROVED'|'REJECTED',reason:string)=>{
-    setErrorMsgValue(null);
+    setError(null);
     try{
       await run(async()=>{
         await repo.verifyComplianceEvidence(evidenceId,status,reason);
       },'Evidence reviewed.');
+      setRevNotes(prev=>({...prev,[evidenceId]:''}));
     }catch(err){
-      setErrorMsgValue(err instanceof Error?err.message:'Review could not be recorded.');
+      setError(err instanceof Error?err.message:'Review could not be recorded.');
     }
   };
 
   return (
     <section className="obligations-register">
       <Panel title="Obligations &amp; renewal register" subtitle="Recorded post-decision conditions, document-expiry follow-ups and renewal submissions. Delay risk is advisory only and never changes workflow status.">
+        {error && <div className="callout warning" role="alert" style={{marginBottom:'10px'}}>{error}</div>}
         <div className="register-summary inline" style={{display:'flex',gap:'14px',flexWrap:'wrap',marginBottom:'10px'}}>
           <div><strong>{obligations.length}</strong><span className="quiet-label">obligations</span></div>
           <div><strong>{renewals.length}</strong><span className="quiet-label">renewals</span></div>
@@ -76,7 +77,7 @@ export function ObligationsRegister({app,data,identity,repo,run,busy}:{app:Appli
         {obligations.length===0 ? (
           <Empty title="No obligations recorded">This case has no recorded post-decision conditions or renewal follow-ups.</Empty>
         ) : (
-          <div className="form-grid" style={{gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:'10px'}}>
+          <div className="form-grid obligations-grid" style={{gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))',gap:'14px'}}>
             <h3 className="register-section">Open &amp; submitted obligations</h3>
             {obligations.map(item=>{
               const doc=item.document_id?documentById.get(item.document_id):undefined;
@@ -85,6 +86,8 @@ export function ObligationsRegister({app,data,identity,repo,run,busy}:{app:Appli
               const aph=doc?aphClauseForDocument(doc.doc_type):null;
               const kindClass='obligation-row kind-'+(item.kind??'unknown')+(item.status==='submitted'?' submitted':'');
               const evidence=evidenceByObligation.get(item.id)??[];
+              const currentDocSel=docSel[item.id]||'';
+              const currentDocNote=docNotes[item.id]||'';
               return (
                 <article key={item.id} className={kindClass}>
                   <div className="obligation-head">
@@ -110,26 +113,27 @@ export function ObligationsRegister({app,data,identity,repo,run,busy}:{app:Appli
                     {item.status==='submitted' && !evidence.some(item=>item.status==='PENDING') && <p className="quiet-label">Awaiting authorised reviewer verification.</p>}
                     {isInstitution && item.status==='open' && item.required_evidence?.length && !evidence.some(item=>item.status==='PENDING') && (
                       <div className="submit-evidence">
-                        <label className="field">Submit evidence<textarea value={docNoteValue} onChange={event=>setDocNoteValue(event.target.value)} rows={2} required placeholder="Describe how the attached document satisfies this obligation."/></label>
-                        <label className="field">Document<select value={docSelValue??''} onChange={event=>setDocSelValue(event.target.value)} required><option value="">Choose a document</option>{data.documents.filter(d=>d.application_id===app.id&&d.scan_status==='clean'&&item.required_evidence?.includes(d.doc_type)).map(d=><option key={d.id} value={d.id}>{neutralCopy(d.file_name)}</option>)}</select></label>
-                        <button className="button" type="button" disabled={busy||!docSelValue||!docNoteValue.trim()} onClick={()=>void submitEvidence(item.id,docSelValue!,docNoteValue.trim())}>Submit evidence</button>
-                        {(docSelValue||docNoteValue.trim())&&<button className="button text" type="button" onClick={()=>{setDocSelValue(null);setDocNoteValue('');}}>Clear</button>}
+                        <label className="field">Submit evidence<textarea value={currentDocNote} onChange={event=>setDocNotes({...docNotes,[item.id]:event.target.value})} rows={2} required placeholder="Describe how the attached document satisfies this obligation."/></label>
+                        <label className="field">Document<select value={currentDocSel} onChange={event=>setDocSel({...docSel,[item.id]:event.target.value})} required><option value="">Choose a document</option>{data.documents.filter(d=>d.application_id===app.id&&d.scan_status==='clean'&&item.required_evidence?.includes(d.doc_type)).map(d=><option key={d.id} value={d.id}>{neutralCopy(d.file_name)}</option>)}</select></label>
+                        <button className="button" type="button" disabled={busy||!currentDocSel||!currentDocNote.trim()} onClick={()=>void submitEvidence(item.id,currentDocSel,currentDocNote.trim())}>Submit evidence</button>
+                        {(currentDocSel||currentDocNote.trim())&&<button className="button text" type="button" onClick={()=>{setDocSel({...docSel,[item.id]:''});setDocNotes({...docNotes,[item.id]:''});}}>Clear</button>}
                       </div>
                     )}
                     {evidence.length>0 && (
                       <div className="evidence-section">
                         <h4 className="evidence-heading">Submitted evidence</h4>
-                        {evidence.map(item=>(
-                          <div key={item.id} className="evidence-row">
-                            <span className="document-name">{neutralCopy(documentById.get(item.document_id)?.file_name??item.document_id)}</span>
-                            <span className={`evidence-status ${item.status}`}>{item.status}</span>
-                            {item.status==='APPROVED' && <span className="quiet-label">Verified by {item.verified_by} on ${new Date(item.verified_at).toLocaleDateString('en-IN')}</span>}
-                            {item.status==='REJECTED' && <span className="quiet-label">Rejected: {item.verified_remarks}</span>}
-                            {item.status==='PENDING' && canManage && (
+                        {evidence.map(evItem=>(
+                          <div key={evItem.id} className="evidence-row">
+                            <span className="document-name">{neutralCopy(documentById.get(evItem.document_id)?.file_name??evItem.document_id)}</span>
+                            <span className={`evidence-status ${evItem.status}`}>{evItem.status}</span>
+                            {evItem.remarks&&<small className="muted">{evItem.remarks}</small>}
+                            {evItem.status==='APPROVED' && <span className="quiet-label">Verified by {evItem.verified_by}{evItem.verified_at ? ` on ${new Date(evItem.verified_at).toLocaleDateString('en-IN')}` : ''}</span>}
+                            {evItem.status==='REJECTED' && <span className="quiet-label">Rejected: {evItem.verified_remarks}</span>}
+                            {evItem.status==='PENDING' && canManage && (
                               <div className="evidence-actions">
-                                <label className="field"><textarea value={revNoteValue} onChange={event=>setRevNoteValue(event.target.value)} rows={1} required minLength={10} maxLength={1000}/></label>
-                                <button className="button text" type="button" disabled={busy||!revNoteValue.trim()} onClick={()=>void verifyEvidence(item.id,'APPROVED',revNoteValue.trim())}>Approve</button>
-                                <button className="button text" type="button" disabled={busy||!revNoteValue.trim()} onClick={()=>void verifyEvidence(item.id,'REJECTED',revNoteValue.trim())}>Reject</button>
+                                <label className="field"><textarea value={revNotes[evItem.id]??''} onChange={event=>setRevNotes({...revNotes,[evItem.id]:event.target.value})} rows={1} required minLength={10} maxLength={1000} placeholder="Review remarks (at least 10 chars)"/></label>
+                                <button className="button text" type="button" disabled={busy||(revNotes[evItem.id]??'').trim().length<10} onClick={()=>void verifyEvidence(evItem.id,'APPROVED',(revNotes[evItem.id]??'').trim())}>Approve</button>
+                                <button className="button text" type="button" disabled={busy||(revNotes[evItem.id]??'').trim().length<10} onClick={()=>void verifyEvidence(evItem.id,'REJECTED',(revNotes[evItem.id]??'').trim())}>Reject</button>
                               </div>
                             )}
                           </div>
@@ -150,5 +154,45 @@ export function ObligationsRegister({app,data,identity,repo,run,busy}:{app:Appli
       </Panel>
       <p className="quiet-label" style={{fontSize:'11px',marginTop:'6px'}}>APH clause text verified against the {APH_TITLE} held in docs/reference. The document-to-clause mapping is ours, and these are not official AICTE determinations.</p>
     </section>
+  );
+}
+
+export function ObligationsPage({data,identity,repo,run,busy,initialApplicationId}:{data:Workspace;identity:Identity;repo:Repository;run:Run;busy:boolean;initialApplicationId?:string}){
+  const casesWithObligations=data.applications.filter(a=>data.obligations.some(o=>o.application_id===a.id));
+  const [selectedAppId,setSelectedAppId]=useState(initialApplicationId??casesWithObligations[0]?.id??data.applications[0]?.id??'');
+  const app=data.applications.find(a=>a.id===selectedAppId);
+
+  return (
+    <div className="page-stack">
+      <div className="page-heading">
+        <div>
+          <h1>Obligations &amp; renewal register</h1>
+          <p>Monitor post-decision conditions, recurring renewal follow-ups, and submitted compliance evidence across authorised institutions.</p>
+        </div>
+      </div>
+      {casesWithObligations.length>0 ? (
+        <>
+          <div className="form-grid" style={{marginBottom:'16px'}}>
+            <label className="field">
+              Select case
+              <select value={selectedAppId} onChange={event=>setSelectedAppId(event.target.value)}>
+                {casesWithObligations.map(application=>(
+                  <option key={application.id} value={application.id}>
+                    {application.ref_no} — {data.institutions.find(i=>i.id===application.institution_id)?.name??'Demo institution'} ({data.obligations.filter(o=>o.application_id===application.id).length} obligations)
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {app ? (
+            <ObligationsRegister app={app} data={{obligations:data.obligations,documents:data.documents,compliance_evidence:data.compliance_evidence}} identity={identity} repo={repo} run={run} busy={busy}/>
+          ) : (
+            <Empty title="Case not found">Selected application is unavailable in this workspace.</Empty>
+          )}
+        </>
+      ) : (
+        <Empty title="No recorded obligations">No cases in this workspace currently carry post-decision conditions or renewal obligations.</Empty>
+      )}
+    </div>
   );
 }

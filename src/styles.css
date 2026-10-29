@@ -1567,6 +1567,17 @@ body{font-variant-numeric:tabular-nums}
 .obligations-register .obligation-fact dd{font-size:calc(11px*var(--text-scale,1));color:var(--ink);margin:0}
 .obligations-register .obligation-fact dd .badge{font-size:calc(10px*var(--text-scale,1))}
 .obligations-register .register-note{font-size:calc(11px*var(--text-scale,1));line-height:1.45}
+.obligations-register .submit-evidence{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:10px;background:var(--surface-muted,#f8fafc);border-radius:6px;border:1px solid var(--rule)}
+.obligations-register .evidence-section{margin-top:10px;border-top:1px solid var(--rule);padding-top:8px}
+.obligations-register .evidence-heading{font-size:calc(11px * var(--text-scale,1));text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 6px}
+.obligations-register .evidence-row{display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid var(--rule);border-radius:6px;margin-bottom:6px;background:var(--surface)}
+.obligations-register .evidence-row .document-name{font-weight:600;font-size:calc(12px * var(--text-scale,1));color:var(--ink)}
+.obligations-register .evidence-status{display:inline-block;padding:2px 6px;border-radius:4px;font-size:calc(10px * var(--text-scale,1));font-weight:700;letter-spacing:.04em;text-transform:uppercase;align-self:flex-start}
+.obligations-register .evidence-status.APPROVED{background:var(--teal-light,#e8f6ef);color:var(--verified,#27745b);border:1px solid var(--info-border,#b7dfcf)}
+.obligations-register .evidence-status.REJECTED{background:var(--danger-soft,#fdf0ed);color:var(--critical,#b93829);border:1px solid var(--danger-border,#f3c5bd)}
+.obligations-register .evidence-status.PENDING{background:var(--warning-soft,#fef9ec);color:var(--warning-text,#8a6118);border:1px solid var(--warning-border,#f8dfa2)}
+.obligations-register .evidence-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:6px}
+.obligations-register .evidence-actions .field{flex:1;min-width:180px;margin:0}
 @media(max-width:640px){.obligations-register .form-grid{grid-template-columns:1fr}}
 .document-reading { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem; }
 .document-reading th,.document-reading td { white-space: normal; vertical-align: top; }
@@ -1611,7 +1622,8 @@ body{font-variant-numeric:tabular-nums}
 .metric{transition:border-color .18s ease-out,box-shadow .18s ease-out}
 .metric:hover{border-color:#b7cfc9;box-shadow:0 4px 12px #14382f06}
 /* Form fields: consistent labels, grids, and action rows. */
-.field{display:block;font-size:calc(11px * var(--text-scale,1));font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:calc(11px * var(--text-scale,1));font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px}
+.field input,.field select,.field textarea{width:100%;min-width:0;box-sizing:border-box}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
 .form-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 /* Narrow-viewport fixes: keep chips, badges, and drop bands from overflowing at ~390px. */
@@ -1655,9 +1667,9 @@ body{font-variant-numeric:tabular-nums}
 .dossier-office .button:hover:not(:disabled){border-color:var(--do-ink);background:var(--do-ink);color:#fff}
 .dossier-office .button.outline{border-color:var(--do-rule);background:transparent}
 .dossier-office .button.secondary{background:var(--do-paper);border-color:var(--do-rule)}
-.dossier-office .field{color:var(--do-ink);border-bottom:1px solid var(--do-rule);border-left:0;border-right:0;border-top:0;border-radius:0;padding-bottom:6px;background:transparent}
-.dossier-office .field:focus{border-color:var(--do-ink);outline:none;box-shadow:none}
-.dossier-office .field textarea{border:1px solid var(--do-rule);border-radius:var(--do-radius)}
+.dossier-office .field{color:var(--do-ink);background:transparent}
+.dossier-office .field input,.dossier-office .field select,.dossier-office .field textarea{border:1px solid var(--do-rule);border-radius:var(--do-radius);background:var(--do-paper);color:var(--do-ink)}
+.dossier-office .field input:focus,.dossier-office .field select:focus,.dossier-office .field textarea:focus{border-color:var(--do-ink);outline:none;box-shadow:none}
 .dossier-office .stamp{display:inline-flex;align-items:center;gap:6px;border:2px solid;border-radius:var(--do-radius);padding:3px 10px;font-family:var(--do-mono);font-size:calc(9px * var(--text-scale,1));font-weight:800;letter-spacing:.15em;text-transform:uppercase;white-space:nowrap}
 .dossier-office .stamp.red{border-color:var(--do-stamp-red);color:var(--do-stamp-red)}
 .dossier-office .stamp.green{border-color:var(--do-stamp-green);color:var(--do-stamp-green)}
@@ -1685,10 +1697,12 @@ body{font-variant-numeric:tabular-nums}
   .dossier-office .station-button{font-size:calc(9px * var(--text-scale,1));padding:5px 10px}
   .dossier-office .metric-value{font-size:calc(30px * var(--text-scale,1))}
 }
-[data-theme="dark"] .dossier-office{color:#e8eef5;background:#101822}
-[data-theme="dark"] .dossier-office .panel,.dossier-office .dossier-paper,.dossier-office .support-surface{background:#182433;border-color:#344457}
+:root[data-theme="dark"] .dossier-office,[data-theme="dark"] .dossier-office{color:#e8eef5;background:#101822}
+:root[data-theme="dark"] .dossier-office .panel,[data-theme="dark"] .dossier-office .panel,
+:root[data-theme="dark"] .dossier-office .dossier-paper,[data-theme="dark"] .dossier-office .dossier-paper,
+:root[data-theme="dark"] .dossier-office .support-surface,[data-theme="dark"] .dossier-office .support-surface{background:#182433;border-color:#344457}
 .dossier-paper{background:var(--do-paper)}
-[data-theme="dark"] .dossier-paper{background:#182433}
+:root[data-theme="dark"] .dossier-paper,[data-theme="dark"] .dossier-paper{background:#182433}
 [data-theme="dark"] .dossier-office .metric-card{background:#182433;border-color:#344457}
 [data-theme="dark"] .dossier-office .button{color:#e8eef5;border-color:#344457}
 [data-theme="dark"] .dossier-office .button:hover:not(:disabled){background:#76d6bd;border-color:#76d6bd;color:#101822}

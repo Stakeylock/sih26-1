@@ -17,6 +17,7 @@ const CaseWorkspace=lazy(()=>import('./ui/CaseWorkspace').then(module=>({default
 const Alerts=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Alerts})));
 const Audit=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Audit})));
 const Compliance=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Compliance})));
+const ObligationsPage=lazy(()=>import('./ui/ObligationsRegister').then(module=>({default:module.ObligationsPage})));
 const RegulatoryChangeImpact=lazy(()=>import('./ui/RegulatoryChangeImpact').then(module=>({default:module.RegulatoryChangeImpact})));
 const Settings=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Settings})));
 const Visits=lazy(()=>import('./ui/WorkspaceViews').then(module=>({default:module.Visits})));
@@ -37,13 +38,13 @@ import {AccessibilityMenu} from './ui/AccessibilityMenu';
 import {makeT,roleLabelsHi,useUiLang,type UiLang} from './ui/i18n';
 import './ui/prototype.css';
 applyDisplayPreferences();
-const navigation=[{id:'operations',label:'Case operations',hi:'केस संचालन',icon:ClipboardList},{id:'overview',label:'Overview',hi:'अवलोकन',icon:LayoutDashboard},{id:'analysis',label:'Case analysis',hi:'केस विश्लेषण',icon:GitBranch},{id:'applications',label:'Applications',hi:'प्रार्थनाएँ',icon:ClipboardList},{id:'workflows',label:'Approval routes',hi:'अनुमोदन प्रक्रिया',icon:GitBranch},{id:'visits',label:'Verification visits',hi:'सत्यापन निरीक्षण',icon:CalendarClock},{id:'compliance',label:'Compliance',hi:'अनुपालन',icon:ShieldCheck},{id:'alerts',label:'Alerts & escalations',hi:'अलर्ट और एस्कलेशन',icon:Bell},{id:'reports',label:'Reports',hi:'रिपोर्ट',icon:BarChart3},{id:'trust',label:'Trust Center',hi:'ट्रस्ट सेंटर',icon:Fingerprint},{id:'notices',label:'Policy notices',hi:'नीति सूचनाएँ',icon:FileClock},{id:'regulatory-changes',label:'Regulatory changes',hi:'नियामक परिवर्तन',icon:FileText},{id:'audit',label:'Audit logs',hi:'ऑडिट लॉग',icon:FileClock},{id:'notifications',label:'Notifications',hi:'सूचनाएँ',icon:Mail},{id:'document-review',label:'Document review',hi:'दस्तावेज़ समीक्षा',icon:FileText},{id:'due-work',label:'Due work',hi:'देय कार्य',icon:Clock3},{id:'settings',label:'Settings',hi:'सेटिंग्स',icon:Settings2}];
+const navigation=[{id:'operations',label:'Case operations',hi:'केस संचालन',icon:ClipboardList},{id:'overview',label:'Overview',hi:'अवलोकन',icon:LayoutDashboard},{id:'analysis',label:'Case analysis',hi:'केस विश्लेषण',icon:GitBranch},{id:'applications',label:'Applications',hi:'प्रार्थनाएँ',icon:ClipboardList},{id:'workflows',label:'Approval routes',hi:'अनुमोदन प्रक्रिया',icon:GitBranch},{id:'visits',label:'Verification visits',hi:'सत्यापन निरीक्षण',icon:CalendarClock},{id:'compliance',label:'Compliance',hi:'अनुपालन',icon:ShieldCheck},{id:'obligations',label:'Obligations & renewals',hi:'दायित्व एवं नवीनीकरण',icon:ShieldCheck},{id:'alerts',label:'Alerts & escalations',hi:'अलर्ट और एस्कलेशन',icon:Bell},{id:'reports',label:'Reports',hi:'रिपोर्ट',icon:BarChart3},{id:'trust',label:'Trust Center',hi:'ट्रस्ट सेंटर',icon:Fingerprint},{id:'notices',label:'Policy notices',hi:'नीति सूचनाएँ',icon:FileClock},{id:'regulatory-changes',label:'Regulatory changes',hi:'नियामक परिवर्तन',icon:FileText},{id:'audit',label:'Audit logs',hi:'ऑडिट लॉग',icon:FileClock},{id:'notifications',label:'Notifications',hi:'सूचनाएँ',icon:Mail},{id:'document-review',label:'Document review',hi:'दस्तावेज़ समीक्षा',icon:FileText},{id:'due-work',label:'Due work',hi:'देय कार्य',icon:Clock3},{id:'settings',label:'Settings',hi:'सेटिंग्स',icon:Settings2}];
 type Section={id:string;label:string;hi:string;home:string;items:string[]};
 // Four primary sections instead of ten equal-weight destinations; destinations show contextually below the section row.
 const sections:Section[]=[
   {id:'workbench',label:'Workbench',hi:'कार्यक्षेत्र',home:'overview',items:['overview','analysis']},
   {id:'approvals',label:'Approvals',hi:'अनुमोदन',home:'applications',items:['applications','workflows','visits']},
-  {id:'compliance',label:'Compliance',hi:'अनुपालन',home:'compliance',items:['compliance']},
+  {id:'compliance',label:'Compliance',hi:'अनुपालन',home:'compliance',items:['compliance','obligations']},
   {id:'oversight',label:'Oversight',hi:'नियंत्रण',home:'operations',items:['operations','reports','alerts','notices','regulatory-changes','trust','audit','notifications','document-review','due-work']},
 ];
 const destinations=navigation;
@@ -55,8 +56,8 @@ function sectionOf(page:string):Section|null{
   if(page==='demo-lab'||page.startsWith('prototype'))return sections[0];
   return null;
 }
-const titles:Record<string,string>={operations:'Case operations',analysis:'Case analysis',notices:'Policy notices',overview:'Overview',applications:'Applications',new:'New approval application',case:'Application workspace',receipt:'Decision receipt',workflows:'Approval routes',visits:'Verification visits',compliance:'Compliance monitoring',alerts:'Alerts & escalations',reports:'Reports & insights',trust:'Trust Center',audit:'Audit logs',settings:'Workspace settings',notifications:'Notifications','document-review':'Document review',prototype:'Applications requiring attention',['prototype/case']:'Application workspace','demo-lab':'Demo lab'};
-const titlesHi:Record<string,string>={operations:'केस संचालन',analysis:'केस विश्लेषण',notices:'नीति सूचनाएँ',overview:'अवलोकन',applications:'प्रार्थनाएँ',new:'नया अनुमोदन प्रार्थना',case:'आवेदन कार्यक्षेत्र',receipt:'निर्णय प्राप्ति',workflows:'अनुमोदन प्रक्रिया',visits:'सत्यापन निरीक्षण',compliance:'अनुपालन निगरानी',alerts:'अलर्ट और एस्कलेशन',reports:'रिपोर्ट और विश्लेषण',trust:'ट्रस्ट सेंटर',audit:'ऑडिट लॉग',settings:'कार्यक्षेत्र सेटिंग्स',notifications:'सूचनाएँ','document-review':'दस्तावेज़ समीक्षा',prototype:'समीक्षा अधीन प्रार्थनाएँ',['prototype/case']:'आवेदन कार्यक्षेत्र','demo-lab':'डेमो लैब'};
+const titles:Record<string,string>={operations:'Case operations',analysis:'Case analysis',notices:'Policy notices',overview:'Overview',applications:'Applications',new:'New approval application',case:'Application workspace',receipt:'Decision receipt',workflows:'Approval routes',visits:'Verification visits',compliance:'Compliance monitoring',obligations:'Obligations & renewal register','regulatory-changes':'Regulatory changes',alerts:'Alerts & escalations',reports:'Reports & insights',trust:'Trust Center',audit:'Audit logs',settings:'Workspace settings',notifications:'Notifications','document-review':'Document review',prototype:'Applications requiring attention',['prototype/case']:'Application workspace','demo-lab':'Demo lab'};
+const titlesHi:Record<string,string>={operations:'केस संचालन',analysis:'केस विश्लेषण',notices:'नीति सूचनाएँ',overview:'अवलोकन',applications:'प्रार्थनाएँ',new:'नया अनुमोदन प्रार्थना',case:'आवेदन कार्यक्षेत्र',receipt:'निर्णय प्राप्ति',workflows:'अनुमोदन प्रक्रिया',visits:'सत्यापन निरीक्षण',compliance:'अनुपालन निगरानी',obligations:'दायित्व एवं नवीनीकरण रजिस्टर','regulatory-changes':'नियामक परिवर्तन',alerts:'अलर्ट और एस्कलेशन',reports:'रिपोर्ट और विश्लेषण',trust:'ट्रस्ट सेंटर',audit:'ऑडिट लॉग',settings:'कार्यक्षेत्र सेटिंग्स',notifications:'सूचनाएँ','document-review':'दस्तावेज़ समीक्षा',prototype:'समीक्षा अधीन प्रार्थनाएँ',['prototype/case']:'आवेदन कार्यक्षेत्र','demo-lab':'डेमो लैब'};
 export default function App(){
   const [detailReady,setDetailReady]=useState('');
   const [role,setRole]=useState<Role>('national_admin');const [repo,setRepo]=useState<Repository|null>(null);const [identity,setIdentity]=useState<Identity|null>(null);const [data,setData]=useState<Workspace|null>(null);
@@ -150,7 +151,8 @@ export default function App(){
         {page==='operations'&&<Operations data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
         {page==='notices'&&<PolicyNotices data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
         {page==='regulatory-changes'&&<RegulatoryChangeImpact data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
-      {page==='compliance'&&<Compliance data={data} identity={identity} repo={repo} run={run} busy={busy} navigate={navigate}/>}
+        {page==='compliance'&&<Compliance data={data} identity={identity} repo={repo} run={run} busy={busy} navigate={navigate}/>}
+        {page==='obligations'&&<ObligationsPage data={data} identity={identity} repo={repo} run={run} busy={busy} initialApplicationId={caseId||undefined}/>}
         {page==='alerts'&&<Alerts data={data} repo={repo} run={run} busy={busy} navigate={navigate}/>}
         {page==='reports'&&<Overview data={data} identity={identity} repo={repo} open={open} navigate={navigate}/>}
         {page==='trust'&&<TrustCenter data={data} identity={identity} repo={repo} run={run} busy={busy}/>}
