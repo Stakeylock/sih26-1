@@ -76,7 +76,7 @@ export function Overview({data,identity,repo,open,navigate}:{data:Workspace;iden
             <span>{scope==='closed'?'Closed cases':scope==='all'?'All cases':'Active dossiers'}</span>
             <FileStack size={14}/>
           </div>
-          <div className="metric-value" style={{fontSize:'44px'}}>{String(scoped.length).padStart(2,'0')}</div>
+          <div className="hero-metric-value metric-value" style={{fontSize:'44px'}}>{String(scoped.length).padStart(2,'0')}</div>
           <span className="hero-metric-note">{data.applications.length} visible synthetic dossiers</span>
         </section>
 
