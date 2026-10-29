@@ -25,6 +25,6 @@ export function GuidedStory({step,onNext,onExit}:{step:number;onNext:()=>void;on
     <h2 aria-live="polite">{neutralCopy(current.title)}</h2>
     <p>{current.body}</p>
     <div className="guided-dots" aria-hidden="true">{tourSteps.map((item,index)=><span className={index===step?'active':index<step?'done':''} key={neutralCopy(item.title)}/>)}</div>
-    <div className="guided-story-actions"><button className="button" onClick={onNext}>{step===tourSteps.length-1?'Finish story':'Next handoff'}<ArrowRight size={15}/></button><button className="text-button" onClick={onExit}>Exit tour</button></div>
+    <div className="guided-story-actions"><button className="button button-small" onClick={onNext}>{step===tourSteps.length-1?'Finish story':'Next handoff'}<ArrowRight size={15}/></button><button className="text-button" onClick={onExit}>Exit tour</button></div>
   </aside>;
 }

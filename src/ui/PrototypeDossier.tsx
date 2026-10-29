@@ -307,7 +307,7 @@ export function PrototypeDossier({
                     </div>
                   </dl>
                   <button
-                    className="button outline"
+                    className="button outline button-small"
                     disabled={selectedDoc.scan_status !== 'clean' || busy}
                     onClick={() => void downloadDoc(selectedDoc.id)}
                   >
@@ -518,7 +518,7 @@ export function PrototypeDossier({
               <h2>Evidence pre-check</h2>
               <p className="quiet">Metadata review for human decision support · no external model</p>
             </div>
-            <button className="button outline" type="button" disabled={busy} onClick={() => void runPrecheck()}>
+            <button className="button outline button-small" type="button" disabled={busy} onClick={() => void runPrecheck()}>
               Run pre-check
             </button>
           </div>

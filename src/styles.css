@@ -1578,3 +1578,26 @@ body{font-variant-numeric:tabular-nums}
 .empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:26px 20px;color:var(--muted);text-align:center}
 .empty svg{color:var(--rule)}
 .empty h3{font-size:calc(13px * var(--text-scale,1));color:var(--ink);margin:0}
+/* Status badges: consistent pill across status chips, document tags, and readiness pills. */
+.badge,.document-tag,.readiness-status{display:inline-flex;align-items:center;gap:6px;border-radius:7px;font-size:calc(10px * var(--text-scale,1));font-weight:600;letter-spacing:.02em;text-transform:uppercase;padding:3px 8px;white-space:nowrap}
+.badge{background:var(--surface-muted,#f8fafb);border:1px solid var(--rule);color:var(--muted)}
+.document-tag{background:var(--surface-muted,#f8fafb);border:1px solid var(--rule);color:var(--muted)}
+.document-tag.clean{background:var(--teal-light);border-color:var(--info-border);color:var(--info-text)}
+.document-tag.pending{background:var(--warning-soft);border-color:var(--warning-border);color:var(--warning-text)}
+.document-tag.expired,.document-tag.document-expired{background:var(--danger-soft);border-color:var(--danger-border);color:var(--danger-text)}
+.badge.draft{background:var(--surface-muted,#f2f5f9);color:var(--muted)}
+.badge.submitted,.badge.resubmitted,.badge.under_scrutiny{background:var(--info-soft);border-color:var(--info-border);color:var(--info-text)}
+.badge.deficiency_raised,.badge.pending_decision{background:var(--warning-soft);border-color:var(--warning-border);color:var(--warning-text)}
+.badge.evc_pending,.badge.evc_scheduled{background:var(--attention-soft,#fff8ed);border-color:#d7a45b;color:#8f4a22}
+.badge.approved{background:var(--teal-light);border-color:var(--info-border);color:var(--verified)}
+.badge.rejected{background:var(--danger-soft);border-color:var(--danger-border);color:var(--critical)}
+/* Panel hover: subtle lift for dossier/record panels. */
+.panel,.dossier-paper,.support-surface{transition:box-shadow .16s,border-color .16s}
+.panel:hover,.dossier-paper:hover,.support-surface:hover{border-color:#b9c4ce;box-shadow:0 4px 12px rgba(24,33,38,.06)}
+/* Metric card emphasis. */
+.metric{transition:border-color .18s ease-out,box-shadow .18s ease-out}
+.metric:hover{border-color:#b7cfc9;box-shadow:0 4px 12px #14382f06}
+/* Form fields: consistent labels, grids, and action rows. */
+.field{display:block;font-size:calc(11px * var(--text-scale,1));font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.form-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
