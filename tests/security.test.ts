@@ -1,6 +1,7 @@
 import { beforeAll,afterAll,beforeEach,afterEach,describe,it,expect } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
 import {database,as,ids,scalar,failure,draft,ready,readyClaims,transition,grantRole} from './database';
+import {roles} from '../src/domain/model';
 let db:PGlite;
 beforeAll(async()=>{db=await database();},60000);
 afterAll(async()=>{await db?.close();});
@@ -26,8 +27,22 @@ describe('PostgreSQL authorization and workflow security',()=>{
     expect(await failure(db,`update public.profiles set email='admin@example.test' where id=auth.uid()`)).toContain('permission denied');
     expect(await failure(db,`select public.fp_assign_role($1,'national_admin',null,null,null)`,[ids.institution])).toContain('Administrator required');
   });
+  it('enforces role parity between TypeScript roles and PostgreSQL app_role enum',async()=>{
+    const enumRoles = (await db.query<{role:string}>(`select unnest(enum_range(null::public.app_role))::text as role`)).rows.map(r=>r.role);
+    expect(enumRoles).toEqual([...roles]);
+  });
   it('forbids null or invalid regional jurisdictions',async()=>{
     expect(await failure(db,`insert into public.user_roles(user_id,role,region) values($1,'evc_coordinator',null)`,[ids.west])).toContain('role_jurisdiction');
+    expect(await failure(db,`insert into public.user_roles(user_id,role,region) values($1,'evc_member',null)`,[ids.west])).toContain('role_jurisdiction');
+  });
+  it('enforces evc_member regional jurisdiction and blocks unauthorized workflow transitions',async()=>{
+    await db.query(`insert into public.user_roles(user_id,role,region) values($1,'evc_member','South')`,[ids.other]);
+    const id=await ready(db); await transition(db,id,'submit');
+    await as(db,ids.other);
+    expect(await scalar<number>(db,'select count(*)::int from public.applications where id=$1',[id])).toBe(1);
+    expect(await failure(db,`select public.fp_transition($1,'start_scrutiny','', '{}',3,$2)`,[id,crypto.randomUUID()])).toContain('Scrutiny jurisdiction');
+    expect(await failure(db,`select public.fp_transition($1,'schedule_evc','', '{"scheduled_for":"2026-11-10T10:00:00Z"}',3,$2)`,[id,crypto.randomUUID()])).toContain('EVC jurisdiction');
+    expect(await failure(db,`select public.fp_transition($1,'approve','Synthetic approval','{"evidence":"test"}',3,$2)`,[id,crypto.randomUUID()])).toContain('Decision jurisdiction');
   });
   it('isolates institutions and officers across regions, including direct RPC guesses',async()=>{
     const id=await ready(db); await transition(db,id,'submit');

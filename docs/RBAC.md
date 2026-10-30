@@ -23,7 +23,7 @@ database.
 | `institution` | Institution | must be `NULL` | demo + connected |
 | `scrutiny_officer` | Scrutiny officer | one named region | demo + connected |
 | `evc_coordinator` | EVC coordinator | one named region | demo + connected |
-| `evc_member` | EVC member | one named region | **demo only — see OQ-15** |
+| `evc_member` | EVC member | one named region | demo + connected |
 | `regional_officer` | Regional officer | one named region | demo + connected |
 | `national_admin` | National administrator | must be `NULL` (national scope) | demo + connected |
 
@@ -32,11 +32,13 @@ Named regions: `North`, `South`, `East`, `West`, `Central`, `North-East`.
 Labels come from `roleLabels` (`src/domain/model.ts`) and `roleLabelsHi` (`src/ui/i18n.ts`). Do not
 hard-code them.
 
-> **Gap:** `public.app_role` in `supabase/reference/baseline.sql` declares only five values —
-> `evc_member` is absent — and the `role_jurisdiction` check constraint covers exactly those five.
-> The TypeScript `roles` array carries six. `evc_member` therefore cannot be written to
-> `public.user_roles` at all, and `src/data/supabase.ts` returns `evc_members:[]` without querying.
-> Tracked as **OQ-15** in [`open questions`](open questions).
+> **Resolved (OQ-15):** Migration `20261030110000_evc_member_role.sql` added `evc_member` to
+> `public.app_role` and updated the `role_jurisdiction` constraint to permit `evc_member` with a
+> named region, maintaining complete parity with TypeScript `roles` (`tests/security.test.ts`).
+> In connected mode, `src/data/supabase.ts` tracks committee member reservations via
+> `inspection_experts` and `expert_reservations` while user accounts carry `evc_member` with regional
+> jurisdiction. `allowedActions` returns empty for `evc_member` because visit coordination and
+> consolidated reporting belong to `evc_coordinator`.
 
 ## Jurisdiction helper
 
@@ -58,22 +60,22 @@ Legend: **R** read · **W** write · **–** no access · **own** own cases only
 | Own draft case — read | R(own) | – | – | – | – | R |
 | Own draft case — edit | W(own) | – | – | – | – | – |
 | Own draft case — upload evidence | W(own) | – | – | – | – | – |
-| Submitted case — read | R(own) | R(asgn+rgn) | R(rgn) | – | R(rgn) | R |
+| Submitted case — read | R(own) | R(asgn+rgn) | R(rgn) | R(rgn) | R(rgn) | R |
 | Submit / resubmit | W(own) | – | – | – | – | – |
 | Start scrutiny | – | W(asgn+rgn) | – | – | – | – |
 | Raise / resolve deficiency | – | W(asgn+rgn) | – | – | – | – |
 | Pass scrutiny | – | W(asgn+rgn) | – | – | – | – |
 | Schedule EVC visit | – | – | W(rgn) | – | – | – |
-| Submit EVC report | – | – | W(rgn) | R(rgn) | – | – |
+| Submit EVC report | – | – | W(rgn) | – | – | – |
 | Approve / reject | – | – | – | – | W(rgn) | W |
-| Institutions — read | R(own) | R(rgn) | R(rgn) | – | R(rgn) | R |
-| Workflow templates — read | R(published) | R(published) | R(published) | – | R(published) | R |
+| Institutions — read | R(own) | R(rgn) | R(rgn) | R(rgn) | R(rgn) | R |
+| Workflow templates — read | R(published) | R(published) | R(published) | R(published) | R(published) | R |
 | Workflow templates — adopt | – | – | – | – | – | W |
 | Policy notices — register / adopt | – | – | – | – | – | W |
 | Access grants — issue / revoke | – | – | – | – | – | W |
 | Config audit log — read | – | – | – | – | – | R |
-| Audit events — read | R(own) | R(rgn) | R(rgn) | – | R(rgn) | R |
-| Notifications — read / mark read | R(own) | R(rgn) | R(rgn) | – | R(rgn) | R |
+| Audit events — read | R(own) | R(rgn) | R(rgn) | R(rgn) | R(rgn) | R |
+| Notifications — read / mark read | R(own) | R(rgn) | R(rgn) | R(rgn) | R(rgn) | R |
 
 Reads of a `draft` case are **owner-only** for everyone, including `national_admin`. The gate is
 `fp_private.can_view`, which requires `status <> 'draft'` for any non-owner path.

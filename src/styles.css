@@ -1157,9 +1157,16 @@ doc-preview-paper{position:relative;overflow:hidden;padding:14px 16px;border:1px
 
 /* ── Dossier cockpit: header beside the movement contract ─────────────── */
 .dossier-top-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px;align-items:stretch;margin-bottom:16px}
-.dossier-top-grid .dossier-header{margin-bottom:0}
+.dossier-top-grid .dossier-header{margin-bottom:0;display:flex;flex-direction:column}
 .dossier-top-side{display:flex;flex-direction:column;gap:12px;min-width:0}
 .dossier-top-grid .dossier-viewing{margin:0}
+
+/* Dossier briefing panel to contextualize current stage */
+.dossier-briefing-panel{margin-top:14px;padding:12px 14px;background:var(--canvas,#f8fafc);border:1px solid var(--rule,#e2e8f0);border-radius:6px;display:flex;flex-direction:column;gap:6px;flex:1}
+.dossier-briefing-header{display:flex;align-items:center;gap:7px;font-size:calc(12px * var(--text-scale,1));color:var(--ink,#0f172a);font-weight:600}
+.dossier-briefing-header svg{color:var(--route,#0c8272);flex-shrink:0}
+.dossier-briefing-body{margin:0;font-size:calc(11px * var(--text-scale,1));line-height:1.55;color:var(--muted,#475569)}
+.dossier-briefing-note{margin-top:auto;padding-top:6px;font-size:calc(10px * var(--text-scale,1));color:var(--muted,#64748b);font-family:var(--font-record,inherit);border-top:1px dashed var(--rule,#e2e8f0);display:block}
 
 /* ── Review workbench: claims/evidence work first, readiness at the side ─ */
 .dossier-review-main.workbench-mode{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:17px;align-items:start}
@@ -1386,6 +1393,8 @@ doc-preview-paper{position:relative;overflow:hidden;padding:14px 16px;border:1px
 :root[data-theme="dark"] .welcome-case-card .badge,:root[data-theme="dark"] .welcome-receipt-card .badge{background:#1a2747;color:#9fb4ff}
 :root[data-theme="dark"] .support-header,:root[data-theme="dark"] .dispatch-header{border-bottom-color:#33465a}
 :root[data-theme="dark"] .dossier-header{border-color:#33465a;border-top-color:var(--route)}
+:root[data-theme="dark"] .dossier-briefing-panel{background:rgba(255,255,255,0.03);border-color:#33465a}
+:root[data-theme="dark"] .dossier-briefing-note{border-top-color:#33465a}
 :root[data-theme="dark"] .dossier-index-meta{border-top-color:#33465a}
 :root[data-theme="dark"] .dispatch-board,:root[data-theme="dark"] .alert-board,:root[data-theme="dark"] .report-board,:root[data-theme="dark"] .report-scope{border-color:var(--rule)}
 :root[data-theme="dark"] .report-scope button{border-right-color:var(--rule)}

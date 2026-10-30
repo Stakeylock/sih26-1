@@ -3,7 +3,7 @@ import {ApprovalScope,ApprovalDecisionFields,initialDecision} from './ApprovalSc
 import {DocumentValidity} from './DocumentValidity';
 import {documentEligible} from '../domain/approvals';
 import {useEffect,useState,type DragEvent as ReactDragEvent,type FormEvent,type KeyboardEvent as ReactKeyboardEvent} from 'react';
-import {ArrowLeft,ArrowRight,Check,CheckCircle2,CircleAlert,Clock3,Download,FileCheck2,FileText,LockKeyhole,Printer,ShieldCheck,Upload} from 'lucide-react';
+import {ArrowLeft,ArrowRight,Check,CheckCircle2,CircleAlert,Clock3,Download,FileCheck2,FileText,Info,LockKeyhole,Printer,ShieldCheck,Upload} from 'lucide-react';
 import type {AuditVerification} from '../domain/integrity';
 import {computeDualClock} from '../domain/clock';
 import {workspaceHolidays} from '../domain/calendar';
@@ -72,10 +72,76 @@ const handleDragLeaveGroup=()=>setDragTarget(null);
   const unverifiedCount=claims.length-verifiedClaims;
   const replacementDoc=documents.find(d=>d.doc_type==='Fire Safety Certificate'&&(!d.expires_on||d.expires_on>=new Date().toISOString().slice(0,10)));
   const hasReplacementEvidence=documents.some(d=>d.expires_on&&d.expires_on<new Date().toISOString().slice(0,10))&&Boolean(replacementDoc);
+  const isOwner=app.owner_id===identity.id;
+  const stageBriefing=(()=>{
+    switch(app.status){
+      case 'draft':
+        return {
+          title:'Draft application',
+          body:isOwner?'Complete the declared form fields and upload clean scanned documents for each requirement category before submitting this application for scrutiny review.':'This application is in draft preparation by the institution and has not yet been submitted.',
+          note:isOwner?'Form inputs and evidence remain editable until submission.':'Read-only preview of unsubmitted draft.'
+        };
+      case 'submitted':
+      case 'resubmitted':
+        return {
+          title:app.status==='resubmitted'?'Application resubmitted':'Application submitted',
+          body:isOwner?`Your application has been received and is queued for scrutiny officer allocation in the ${app.region} region. All declared fields and uploaded evidence are locked to preserve review integrity.`:`Queued for scrutiny allocation in the ${app.region} region. Declared fields and evidence are locked.`,
+          note:`Current station: ${currentStage} · Awaiting scrutiny officer acquisition.`
+        };
+      case 'under_scrutiny':
+        return {
+          title:'Application under scrutiny review',
+          body:isOwner?'Your application is currently under active review by the regional scrutiny committee. Declared claims and uploaded evidence are locked for review integrity. If the scrutiny officer identifies deficiencies or requests clarification, a deficiency notice will be issued with instructions on how to submit corrections.':`Case is under active scrutiny review in the ${app.region} region. Verify declared claims against linked evidence in the workbench below, and record verification findings or deficiencies.`,
+          note:isOwner?'Read-only during scrutiny review. The committee will verify declared claims against attached evidence.':`Assigned scrutiny officer: ${app.assigned_officer===identity.id?'You':'Allocated officer'} · Scrutiny station active.`
+        };
+      case 'deficiency_raised':
+        return {
+          title:'Correction requested by scrutiny committee',
+          body:isOwner?`The scrutiny officer has returned this application requesting clarification or replacement evidence for ${openClaimDeficiencies>0?`${openClaimDeficiencies} open ${openClaimDeficiencies===1?'deficiency':'deficiencies'}`:'identified items'}. Review the requested remedies below and submit replacement evidence before the deadline.`:'A deficiency notice was issued to the institution. The statutory scrutiny clock is paused until the applicant submits replacement evidence.',
+          note:isOwner?'Action required: upload replacement documents and resolve each open deficiency.':'Awaiting institution response.'
+        };
+      case 'evc_pending':
+        return {
+          title:'Expert visit pending',
+          body:isOwner?'Scrutiny checks verified. This application is queued for site inspection coordination by the Expert Visit Committee (EVC). The visit coordinator will schedule the inspection window.':'Scrutiny verified. Coordinate Expert Visit Committee panel members and schedule the inspection window.',
+          note:'Committee visit scheduling is held by the EVC coordinator.'
+        };
+      case 'evc_scheduled':
+        return {
+          title:'Expert visit scheduled',
+          body:isOwner?'An Expert Visit Committee site inspection has been scheduled. The visiting committee will evaluate physical infrastructure and facilities against regulatory norms.':'Inspection scheduled. The committee conducts the visit and files the consolidated EVC report upon completion.',
+          note:'On-site or virtual visit in progress.'
+        };
+      case 'pending_decision':
+        return {
+          title:'Final decision pending',
+          body:isOwner?'Scrutiny and committee evaluations are complete. The dossier is with the Regional Office for final decision recording and issuance of the decision letter.':'All required scrutiny and committee steps are satisfied. Review the dossier findings and record the official approval or rejection determination.',
+          note:'Final decision station · Regional Officer / National Admin holds authority.'
+        };
+      case 'approved':
+        return {
+          title:'Approval recorded',
+          body:isOwner?'Extension of Approval has been granted for this academic year. The formal approval record and decision receipt are preserved in the hash-linked event ledger below.':'Decision recorded as approved. Immutable decision receipt generated and continuing obligations registered.',
+          note:'Completed record · Continuing obligations tracked in the obligations register.'
+        };
+      case 'rejected':
+        return {
+          title:'Application not approved',
+          body:isOwner?'This application was not approved. Review the recorded decision reason, evidence citations, and Standing Hearing Committee (SHC) appeal provisions below.':'Decision recorded as rejected. Rationale and cited evidence are permanently bound to the audit chain.',
+          note:isOwner?'An appeal may be filed within the statutory 7-day appeal window.':'Terminal decision state.'
+        };
+      default:
+        return {
+          title:'Dossier record',
+          body:`Current station: ${currentStage}. Next authority: ${nextOwner}.`,
+          note:'All dossier actions and transitions are recorded in the event chain.'
+        };
+    }
+  })();
   return <section className="dossier-office">
     <div className="spread case-top"><button className="text-button" onClick={back}><ArrowLeft size={16}/>Application register</button><span className="mono">WORKFLOW v{app.template_version} · RECORD VERSION {app.version}</span></div>
     <div className="dossier-top-grid">
-    <section className="dossier-header" aria-labelledby="dossier-title"><div className="dossier-header-top"><span className="dossier-kicker">DOSSIER / {app.ref_no}</span><div className="inline"><span className="document-tag">{app.is_demo?'Synthetic record':'Connected record'}</span><span className={`stamp ${app.status==='approved'?'green':app.status==='rejected'?'red':'blue'}`}>{statusLabels[app.status]}</span><Due app={app} data={data}/></div></div><h1 id="dossier-title">{institution}</h1><p className="dossier-title">{neutralCopy(app.title)}</p><div className="dossier-meta-line"><span>{typeLabels[app.app_type]}</span><span>{app.region} region</span><span>Current station: {currentStage}</span><span>Next authority: {nextOwner}</span><span className="mono">WORKFLOW {app.template_version}.0</span></div></section>
+    <section className="dossier-header" aria-labelledby="dossier-title"><div className="dossier-header-top"><span className="dossier-kicker">DOSSIER / {app.ref_no}</span><div className="inline"><span className="document-tag">{app.is_demo?'Synthetic record':'Connected record'}</span><span className={`stamp ${app.status==='approved'?'green':app.status==='rejected'?'red':'blue'}`}>{statusLabels[app.status]}</span><Due app={app} data={data}/></div></div><h1 id="dossier-title">{institution}</h1><p className="dossier-title">{neutralCopy(app.title)}</p><div className="dossier-meta-line"><span>{typeLabels[app.app_type]}</span><span>{app.region} region</span><span>Current station: {currentStage}</span><span>Next authority: {nextOwner}</span><span className="mono">WORKFLOW {app.template_version}.0</span></div><div className="dossier-briefing-panel"><div className="dossier-briefing-header"><Info size={15}/><strong>{stageBriefing.title}</strong></div><p className="dossier-briefing-body">{stageBriefing.body}</p><span className="dossier-briefing-note">{stageBriefing.note}</span></div></section>
     <div className="dossier-top-side">
     <div className={`dossier-viewing ${actions.length?'can-act':''}`}><ShieldCheck size={15}/><span>Viewing as <strong>{roleName}</strong>. {closed?(renewal?'This decision is recorded. An expired document needs renewal; the dossier remains read-only.':continuingObligation?'This decision is recorded. A continuing obligation remains open.':'This record is closed.'):actions.length?'Your role holds the next permitted action.':<>Read-only at this stage; the next action belongs to <strong>{nextGate}</strong>{app.status==='deficiency_raised'? ' — the institution\'s correction response is due first.' : '.'}</>}</span></div>
     <section className="movement-contract" style={{background:'var(--paper)',border:'1px solid var(--rule,#e2e8f0)',borderLeft:'4px solid '+(postDecision?'#d97706':closed?'#059669':actions.length?'#0284c7':openClaimDeficiencies>0?'#d97706':'#475569'),borderRadius:'8px',padding:'14px 18px',margin:0,height:'100%',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>

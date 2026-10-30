@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {seed} from '../src/data/demo';
 import {caseAuthority,type AuthorityContext} from '../src/domain/authority';
 import type {AccessAssignment} from '../src/domain/integrity';
-import type {Application,AuditEvent} from '../src/domain/model';
+import {type Application,type AuditEvent,type Identity,allowedActions} from '../src/domain/model';
 
 const workspace=seed();
 const base=workspace.applications[0];
@@ -69,5 +69,12 @@ describe('case authority',()=>{
     expect(decision.handoff).toBeNull();
     const closed=caseAuthority(app({status:'approved'}),context({events:[event({action:'approve'})]}),now);
     expect(closed).toEqual({holder:{kind:'closed',user_id:null,role:null,region:null,institution_id:null},grant:null,handoff:null,warnings:[]});
+  });
+
+  it('returns empty allowedActions for evc_member across all case statuses',()=>{
+    const evcMemberIdentity:Identity={id:'demo-evc-member-1',name:'Ravi Sharma',email:'ravi@demo.invalid',roles:[{role:'evc_member',region:'South'}]};
+    for(const status of ['draft','submitted','under_scrutiny','evc_pending','evc_scheduled','pending_decision','approved'] as const){
+      expect(allowedActions(app({status}),evcMemberIdentity)).toEqual([]);
+    }
   });
 });
