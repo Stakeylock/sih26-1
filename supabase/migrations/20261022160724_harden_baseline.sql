@@ -9,7 +9,7 @@ alter default privileges in schema fp_private revoke execute on functions from p
 alter table public.user_roles add column active boolean not null default true;
 alter table public.user_roles add constraint role_jurisdiction check (
   (role in ('institution','national_admin') and region is null) or
-  (role in ('scrutiny_officer','evc_coordinator','regional_officer') and region in ('North','South','East','West','Central','North-East') and region is not null)
+  (role in ('scrutiny_officer','evc_coordinator','evc_member','regional_officer') and region in ('North','South','East','West','Central','North-East') and region is not null)
 );
 alter table public.applications add column version integer not null default 1;
 alter table public.applications add column is_demo boolean not null default true check (is_demo);

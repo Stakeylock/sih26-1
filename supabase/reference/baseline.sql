@@ -1,6 +1,6 @@
 
 -- ============ ENUMS ============
-create type public.app_role as enum ('institution','scrutiny_officer','evc_coordinator','regional_officer','national_admin');
+create type public.app_role as enum ('institution','scrutiny_officer','evc_coordinator','evc_member','regional_officer','national_admin');
 create type public.app_type as enum ('extension_self_disclosure','name_change','new_programme');
 create type public.app_status as enum ('draft','submitted','under_scrutiny','deficiency_raised','resubmitted','evc_pending','evc_scheduled','pending_decision','approved','rejected');
 
