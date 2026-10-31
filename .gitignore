@@ -17,3 +17,6 @@ automation/*.local.env
 .runtime/
 local/supabase/.temp/
 local/supabase/.branches/
+
+# Machine-local tool runtime state
+.bsk/
