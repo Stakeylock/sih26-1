@@ -44,8 +44,5 @@ jobs:
       - name: Install the Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: Prepare demo screenshot directory
-        run: mkdir -p ../../work
-
       - name: Run demo browser tests
         run: npm run test:e2e

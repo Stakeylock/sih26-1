@@ -112,7 +112,6 @@ body{font-size:calc(14px * var(--text-scale,1))}.sidebar{width:220px;background:
 .notice .text-button{color:#0a6b5f}
 .settings-list dd small{color:var(--muted)}
 .control-grid>div{color:#526c61}
-.reference-links a{color:#0a6b5f}
 .dispatch-header h1{font-size:calc(31px * var(--text-scale,1));letter-spacing:-.035em}
 .support-header h1{font-size:calc(30px * var(--text-scale,1));line-height:1.1;margin:9px 0 8px;letter-spacing:-.04em}
 .dossier-header h1{font-size:calc(26px * var(--text-scale,1));line-height:1.15;margin:18px 0 5px;letter-spacing:-.04em}
@@ -1314,7 +1313,7 @@ doc-preview-paper{position:relative;overflow:hidden;padding:14px 16px;border:1px
 :root[data-theme="dark"] footer{color:#a9b9c9}
 :root[data-theme="dark"] .field{color:#dbe6f0}
 :root[data-theme="dark"] .demo-controls-label,:root[data-theme="dark"] .chain-scope-note{color:var(--muted)}
-:root[data-theme="dark"] .reference-links a,:root[data-theme="dark"] .notice .text-button{color:var(--route)}
+:root[data-theme="dark"] .notice .text-button{color:var(--route)}
 :root[data-theme="dark"] .tabs button{color:#a9b9c9}
 :root[data-theme="dark"] .tabs button.active{background:#1d2c44;color:#dce8ff}
 :root[data-theme="dark"] .plain-list li{color:#b7c5d3}
@@ -1561,7 +1560,7 @@ body{font-variant-numeric:tabular-nums}
 :root[data-theme="dark"]:not([data-contrast="high"]) .document-tag.demo{background:var(--teal-light);color:var(--route)}
 @media(max-width:760px){.alert-grammar{grid-template-columns:1fr 1fr;gap:10px}.alert-grammar>div:first-child{grid-column:1/-1}}
 
-/* Obligations & renewal register (adopted from example obligations register concept) */
+/* Obligations & renewal register */
 .obligations-register .register-summary{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
 .obligations-register .register-summary strong{font-size:calc(13px*var(--text-scale,1));color:var(--ink)}
 .obligations-register .quiet-label{color:var(--muted);font-size:calc(11px*var(--text-scale,1))}

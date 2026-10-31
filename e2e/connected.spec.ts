@@ -23,7 +23,7 @@ test('real Supabase login, persisted draft editing, scoped LangGraph advisory an
   await page.getByRole('button',{name:'Run document check',exact:true}).click();
   expect((await (await advisoryResponse).json()).engine).toBe('langgraph-rules-v1');
   await expect(page.getByText('Pre-check result',{exact:true})).toBeVisible({timeout:30000});
-  await page.screenshot({path:'../test-results/clauseway-connected.png',fullPage:true});
+  await page.screenshot({path:'../test-results/Clauseway-connected.png',fullPage:true});
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible({timeout:30000});
 });

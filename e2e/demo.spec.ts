@@ -39,7 +39,7 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await expect(page.getByText('Synthetic cases only.',{exact:false}).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Approval operations',exact:true})).toBeVisible();
-  await page.screenshot({path:'../test-results/clauseway-overview.png',fullPage:true});
+  await page.screenshot({path:'../test-results/Clauseway-overview.png',fullPage:true});
   const dispatchBoard=page.locator('section.dispatch-board');
   await expect(dispatchBoard).toBeVisible();
   await expect(dispatchBoard.getByRole('button',{name:'Open DEMO-2026-1005',exact:true})).toBeVisible();
@@ -51,7 +51,7 @@ test('overview uses calculated metrics, search opens a case, all views render',a
   await openCase(page,'DEMO-2026-1001');
   await page.getByRole('tab',{name:'Evidence',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Evidence index'})).toBeVisible();
-  await page.screenshot({path:'../test-results/clauseway-case.png',fullPage:true});
+  await page.screenshot({path:'../test-results/Clauseway-case.png',fullPage:true});
   for(const [name,heading] of [['Approval routes','Approval routes'],['Verification visits','Verification agenda'],['Compliance','Compliance monitoring'],['Alerts & escalations','Escalation desk'],['Reports','Approval operations'],['Trust Center','Trust Center'],['Audit logs','Decision receipts'],['Settings','Workspace settings']] as const) {await openDesk(page,name);await expect(page.locator('main h1')).toHaveCount(1);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();}
   expect(errors).toEqual([]);
 });
@@ -366,7 +366,7 @@ test('mobile navigation and Applications screen have no serious automated access
   await page.setViewportSize({width:390,height:844});
   await openDrawer(page,'Applications');
   await expect(page.getByRole('heading',{level:1,name:'Applications',exact:true})).toBeVisible();
-  await page.screenshot({path:'../test-results/clauseway-mobile.png',fullPage:true,animations:'disabled'});
+  await page.screenshot({path:'../test-results/Clauseway-mobile.png',fullPage:true,animations:'disabled'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
   expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical')).toEqual([]);
@@ -575,13 +575,13 @@ test('claim ledger shows nine claims and stays within a 390px viewport',async({p
   await expect(page.locator('.preflight-panel')).toContainText('Unverified');
   const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
   expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical')).toEqual([]);
-  await page.screenshot({path:'../test-results/clauseway-case.png',fullPage:true});
+  await page.screenshot({path:'../test-results/Clauseway-case.png',fullPage:true});
   await page.setViewportSize({width:390,height:900});
   await page.reload();
   await expect(page.getByRole('heading',{name:'Claim ledger',exact:true})).toBeVisible();
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(1);
-  await page.screenshot({path:'../test-results/clauseway-mobile.png',fullPage:true});
+  await page.screenshot({path:'../test-results/Clauseway-mobile.png',fullPage:true});
 });
 
 test('trust center derives boundaries from the workspace and tamper replay fails closed',async({page})=>{

@@ -1,6 +1,6 @@
 [
   {
-    "id": "clausewayAdvisoryWebhook",
+    "id": "ClausewayAdvisoryWebhook",
     "name": "Clauseway · sanitized advisory follow-ups",
     "active": false,
     "settings": {
@@ -174,7 +174,7 @@
     }
   },
   {
-    "id": "clausewayDemoReminders",
+    "id": "ClausewayDemoReminders",
     "name": "Clauseway · due demo reminder queue",
     "active": false,
     "settings": {

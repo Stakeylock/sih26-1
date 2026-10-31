@@ -1,7 +1,6 @@
 # UI copy guide
 
-Adapted from the copy guide adopted in `github.com/example/sih_2026`, rewritten to match how
-Clauseway already writes. This records existing convention; it does not introduce a new voice.
+This records how Clauseway already writes. It does not introduce a new voice.
 
 Clauseway is a synthetic prototype. Copy has one job: tell an officer or an institution what is
 true right now and what they can do next.
@@ -13,9 +12,8 @@ Capitalise the first word and proper nouns only. No title case, no all-caps labe
 - Do: `Escalation desk`, `Case ageing`, `No escalations`
 - Don't: `Escalation Desk`, `ESCALATION QUEUE`
 
-`engineering conventions` also forbids decorative template language — eyebrows, numbered section headings,
-generic explanatory subtitles, repeated slogans. If a line carries no information, delete it
-rather than shorten it.
+Avoid decorative template language - eyebrows, numbered section headings, generic explanatory
+subtitles and repeated slogans. If a line carries no information, delete it rather than shorten it.
 
 ## 2. Name the action
 
@@ -56,8 +54,6 @@ Check the file size and try again.`
 
 ## 5. Never claim officialdom
 
-This is the hard rule, and it comes from `docs/engineering conventions` and the repository README.
-
 - Do not write `official`, `authoritative`, `regulatory determination` or `approved by` anywhere
   the user could read it as a statement about a real authority.
 - Do not fabricate official seals, signatures, reviewer identities or decision outcomes.
@@ -67,31 +63,28 @@ This is the hard rule, and it comes from `docs/engineering conventions` and the 
   handbook title in `src/domain/aph.ts`.
 
 **Route display copy through `neutralCopy`** (`src/domain/presentation.ts`), which maps
-`Clauseway` → `Clauseway`, `AICTE` → `Institutional Review`, `Government` → `Public`. Raw HTML,
-email bodies, SMS payloads and PDF text are built outside React — they must be neutralised at the
-source, because `neutralCopy` never sees them.
+`AICTE` -> `Institutional Review` and `Government` -> `Public`. Raw HTML, email bodies, SMS
+payloads and PDF text are built outside React - they must be neutralised at the source, because
+`neutralCopy` never sees them.
 
 ## 6. Disclosures stay visible, not apologetic
 
-Demo and synthetic disclosures must remain **accessible and explicit at decision points**
-(`engineering conventions`, integrity rules). Write them as facts, not as fine print.
+Demo and synthetic disclosures must remain **accessible and explicit at decision points**. Write
+them as facts, not as fine print.
 
 Existing forms worth reusing rather than reinventing:
 
 - `SIH26262 prototype. Synthetic cases only. / No real institutional data or approval decisions.`
-- `APH clause text verified against the {title} held in docs/reference. The document-to-clause
-  mapping is ours, and these are not official AICTE determinations.`
-  (This replaced *"APH references are synthetic demonstration citations from {edition}"* on
-  29 Oct 2026, after the six `APH_CLAUSES` entries were checked line-by-line against
-  `docs/reference/APH_2024-27.txt` and corrected — see `docs/open questions` OQ-02. Keep the
-  **not official AICTE determinations** half: accuracy of a citation is not authority to cite it.)
-- `Synthetic demonstration draft. … A permitted human reviewer must verify the captured facts …`
+- `APH clause text verified against the handbook held in docs/reference. The document-to-clause
+  mapping is ours, and these are not official AICTE determinations.` Keep the **not official AICTE
+  determinations** half: accuracy of a citation is not authority to cite it.
+- `Synthetic demonstration draft. A permitted human reviewer must verify the captured facts.`
 
 Prefer one clear sentence at the point of the action over a banner repeated on every card.
 
 ## 7. Do not dress up unavailable actions
 
-`engineering conventions` prohibits making unavailable actions appear functional. If a control cannot run:
+If a control cannot run:
 
 - Disable or omit it, and
 - Say the unmet condition next to it, in one line.
@@ -110,8 +103,8 @@ Every advisory surface carries its disclaimer; do not summarise one away in a to
 
 ## 9. Localise pairs, not fragments
 
-Copy is written as `t('English.', 'हिंदी.')` through `makeT` in `src/ui/i18n.ts`. Both strings ship
-together — never add an English-only call with an empty Hindi string on a user-visible surface.
+Copy is written as `t('English.', '?????.')` through `makeT` in `src/ui/i18n.ts`. Both strings ship
+together - never add an English-only call with an empty Hindi string on a user-visible surface.
 Role names come from `roleLabels` / `roleLabelsHi` in `src/domain/model.ts` and
 `src/ui/i18n.ts`; do not hard-code role names inline.
 

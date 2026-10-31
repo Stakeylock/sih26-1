@@ -1,7 +1,7 @@
 import {createClient} from '@supabase/supabase-js';
 import {execFileSync} from 'node:child_process';
 import {createHash,randomUUID} from 'node:crypto';
-import {writeFileSync} from 'node:fs';
+import {mkdirSync,writeFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 process.loadEnvFile('.env.connected.local');process.loadEnvFile('.env.integration.local');
 if(!['127.0.0.1','localhost'].includes(new URL(process.env.VITE_SUPABASE_URL).hostname))throw new Error('This test is restricted to the local stack.');
@@ -38,6 +38,6 @@ try{
   const evaluated=check(await clients.scrutiny.from('application_claims').select('system_result').eq('id',system.id).single());ok(evaluated.system_result.passed&&evaluated.system_result.ratio===3,'Server persisted the actual evaluated demo ratio');
   await act(clients.scrutiny,app,'pass_scrutiny');await act(clients.regional,app,'approve',{evidence:docs.Affidavit.id});
   const audit=check(await clients.institution.rpc('fp_verify_audit_chain',{_application:app}));ok(audit.intact,'The real PostgreSQL audit chain verifies after remediation and a demo decision');
-  const report={passed:checks,scope:'local Supabase only',claims:9,freshPrivateUploads:7,remediation:'upload → quarantine → trusted fixture completion → resolve → recheck → decision',auditIntact:true,scanner:'Known fixture completion only; antivirus integration is still required for real files.'};
-  writeFileSync('docs/local-claims-results.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
+  const report={passed:checks,scope:'local Supabase only',claims:9,freshPrivateUploads:7,remediation:'upload -> quarantine -> trusted fixture completion -> resolve -> recheck -> decision',auditIntact:true,scanner:'Known fixture completion only; antivirus integration is still required for real files.'};
+  mkdirSync('.runtime',{recursive:true});writeFileSync('.runtime/local-claims-results.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
 }finally{await Promise.all(Object.values(clients).map(client=>client.auth.signOut({scope:'local'})));}

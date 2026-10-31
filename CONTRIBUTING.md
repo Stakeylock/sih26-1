@@ -31,4 +31,4 @@ Clauseway is a synthetic Smart India Hackathon prototype. Changes must preserve 
 - [ ] No secrets, personal records or production access introduced
 - [ ] No deployment or database migration performed as part of a review-only task
 
-See [validation](docs/VALIDATION.md), [deployment readiness](docs/DEPLOYMENT_READINESS.md), [security](SECURITY.md) and the existing engineering conventions in `engineering conventions`.
+See [validation](docs/VALIDATION.md), [deployment readiness](docs/DEPLOYMENT_READINESS.md) and [security](SECURITY.md).

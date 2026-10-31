@@ -21,7 +21,7 @@
     "test:claims:local": "node scripts/local-claims-smoke.mjs",
     "outbox:process": "node scripts/process-outbox.mjs",
     "mail:sink": "node scripts/local-mail-sink.mjs",
-    "test:recon:local": "node scripts/review-integration.mjs",
+    "test:evc:local": "node scripts/evc-integration.mjs",
     "worker:setup:local": "node scripts/setup-local-worker.mjs",
     "workers:start": "docker compose -f deploy/compose.worker.yml up -d --build --wait",
     "workers:stop": "docker compose -f deploy/compose.worker.yml stop worker",

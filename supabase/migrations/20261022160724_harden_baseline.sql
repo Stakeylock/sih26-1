@@ -1,5 +1,5 @@
 begin;
--- Reviewed continuation of the two Baseline migrations in supabase/reference/.
+-- Reviewed continuation of the baseline schema in supabase/reference/.
 -- This deployment is DEMO ONLY. Every transition is atomic with its audit event.
 create schema fp_private;
 revoke all on schema fp_private from public, anon;

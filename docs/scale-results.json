@@ -1,10 +1,10 @@
 {
   "provenance": {
-    "script_sha256": "03007ed31732d7fc0254133d04bf5db0fbd5b7a45e016d403a9dab96fa0c219d",
+    "script_sha256": "98be4b02d0ac25d598af92f82d95a17c7cf925e7b43f1065102d162041759809",
     "migrations": [
       {
         "file": "20261022160724_harden_baseline.sql",
-        "sha256": "d08c1052e256fe92c2251aa9939157ffa95feed8554cfa0166d4319f402218e3"
+        "sha256": "7597c2507d98819b8d178dbc3a940d79a16a4f10a5d19182e652dea952c08e38"
       },
       {
         "file": "20261022164412_revoke_implicit_writes.sql",
@@ -32,7 +32,7 @@
       },
       {
         "file": "20261023163901_fix_integrity_boundaries.sql",
-        "sha256": "89ea597dd194bf2c9971ed9e86e94dc10995e71780fd15ddf54c0c71ad48546d"
+        "sha256": "eec7a109360a07d5ee8877ec04dbf520a413527c232b7102204793eb1961a4a7"
       },
       {
         "file": "20261024024009_correction_review_basis.sql",

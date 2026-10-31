@@ -26,7 +26,7 @@ npm run local:setup  # run once per isolated local provisioning
 npm run local:start
 ```
 
-On Windows, `npm run local:start` is an alternate launcher. The local setup handles verified migrations and provisions synthetic identities.
+On Windows, run the same npm scripts from PowerShell. The local setup handles verified migrations and provisions synthetic identities.
 
 | Endpoint | Loopback address |
 | --- | --- |

@@ -6,8 +6,8 @@ This file is a preparation checklist, not authorization to deploy, promote, assi
 
 ## Verified project context (read-only)
 
-- Source repository: `Stakeylock/sih26-1` (private), default branch `main`.
-- Existing Vercel team: `local-team`; existing project: `clauseway-sih26262`.
+- Source repository: `Stakeylock/sih26-1` (public), default branch `main`.
+- Existing Vercel team: `local-team`; existing project associated with this prototype (confirm the exact slug before changing settings).
 - Vercel showed two earlier deployments with `READY` build state. **No new deployment was created** during this preparation.
 - The Vercel connector did **not** report an active Git repository linkage to `Stakeylock/sih26-1`; confirm team/project/branch mapping before wiring Git automation.
 - The current `vercel.json` runs `npm run build` and outputs `dist`, which is the **isolated synthetic demo**. It does not host the connected backend or local workers.

@@ -21,7 +21,7 @@ The following are **stored test records**, not services being live at the time y
 
 | Check | Recorded outcome | Evidence |
 | --- | --- | --- |
-| Local Supabase, authenticated claims and workflow | Synthetic Auth/Storage/RPC checks completed | [Implementation report](implementation notes), [recon results](validation results) |
+| Local Supabase, authenticated claims and workflow | Synthetic Auth/Storage/RPC checks completed | Local test record; raw output intentionally not committed |
 | Private upload and real local ClamAV | Three clean fixtures accepted; antivirus-test and MIME mismatch rejected; quarantine read blocked | [Service results](reliability-integration-results.json) |
 | Worker restart recovery | One pending in-app effect recovered after worker restart | [Service results](reliability-integration-results.json) |
 | Local PostgreSQL workload | 10,000 synthetic applications, 100 virtual clients, ~523 operations/s, 273.07 ms p95 register read | [Scalability audit](scalability-audit.md), [raw results](scale-results.json) |
@@ -38,7 +38,7 @@ The local worker scanned actual synthetic bytes with ClamAV, but **no remote pro
 - Remote scanning, secret handling, host configuration, migrations, backups/restores, monitoring and access controls require staging validation.
 - Formal accessibility testing, institutional policy/authority review and official integration permissions remain outstanding.
 - The current Vercel `npm run build` creates a **demo frontend**, not a deployed authenticated backend.
-- The private GitHub repository and protected Vercel links may not be accessible to SIH evaluators without planned authorization.
+- The GitHub repository is public; protected Vercel links may still require authorization before SIH evaluators can open them.
 
 ## Reproduce (only in a safe local environment)
 
@@ -55,10 +55,10 @@ With an intentionally provisioned local Supabase/worker stack, use `npm run test
 
 ## Historical records
 
-Earlier 22–24 October partial integration runs, Docker-unavailable incidents and initial schema validation remain available in the repository's Git history and dated implementation notes. They must not override the newer 25 October local evidence or the 27 October CI outcome.
+Earlier 22–24 October partial integration runs, Docker-unavailable incidents and initial schema validation remain available in the repository's Git history. They must not override the newer 25 October local evidence or the 27 October CI outcome.
 
 ## 29 October 2026 — local reading and Due Work
-Demo and connected builds passed. 389 unit/SQL tests and 112 browser tests passed. The built artifact passed actual PDF extraction and pretrained English image OCR under production CSP; mobile Due Work passed. Production dependency audit: zero findings. Connected service integration was not rerun; no remote migrations applied. See document-reading.md and change notes.
+Demo and connected builds passed. 389 unit/SQL tests and 112 browser tests passed. The built artifact passed actual PDF extraction and pretrained English image OCR under production CSP; mobile Due Work passed. Production dependency audit: zero findings. Connected service integration was not rerun; no remote migrations applied. See [document-reading.md](document-reading.md).
 
 
 ## 29 October 2026 — combined main and document-reading merge

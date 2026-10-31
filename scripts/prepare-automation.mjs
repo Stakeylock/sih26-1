@@ -8,6 +8,6 @@ const auditPath='docs/automation dependency audit';
 const audit=existsSync(auditPath)?JSON.parse(readFileSync(auditPath,'utf8')):null;
 const approved=Boolean(audit?.metadata?.vulnerabilities)&&audit.metadata.vulnerabilities.high===0&&audit.metadata.vulnerabilities.critical===0;
 writeFileSync(path,`N8N_AUTOMATION_TOKEN=${token}\nN8N_WEBHOOK_URL=${approved?'http://127.0.0.1:5678/webhook/clauseway-advisory':''}\nAUTOMATION_ALLOW_DEMO=true\n`,{mode:0o600});
-const dir=resolve('../test-results/n8n-state');mkdirSync(dir,{recursive:true});
+const dir=resolve('../.runtime/n8n-state');mkdirSync(dir,{recursive:true});
 writeFileSync(resolve(dir,'credentials.local.json'),JSON.stringify([{id:'clausewayAutomationHeader',name:'Clauseway automation header',type:'httpHeaderAuth',data:{name:'X-Clauseway-Automation',value:token}}]),{mode:0o600});
 console.log('Prepared isolated credentials. n8n webhook '+(approved?'enabled after a clean dependency audit.':'disabled by the dependency release gate.'));

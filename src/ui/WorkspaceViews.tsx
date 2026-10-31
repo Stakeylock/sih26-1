@@ -5,7 +5,7 @@ import {InspectionEvidence} from './InspectionEvidence';
 import {EvcScheduling} from './EvcScheduling';
 import {documentEligible} from '../domain/approvals';
 import {useState} from 'react';
-import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,ExternalLink,FileCheck2,GitBranch,Info,LockKeyhole,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
+import {AlertTriangle,ArrowLeft,ArrowRight,CalendarClock,Check,CheckCircle2,Clock3,FileCheck2,GitBranch,Info,LockKeyhole,ShieldCheck,TimerReset,UserRound} from 'lucide-react';
 import type {AuditVerification} from '../domain/integrity';
 import {missingInputs,roleLabels,statusLabels,typeLabels,type AppType,type Application,type Identity,type Repository,type TemplateDefinition,type Workspace} from '../domain/model';
 import {Badge,Empty,Panel,ViewHeader} from './common';
@@ -143,6 +143,5 @@ export function Settings({identity,repo}:{identity:Identity;repo:Repository}){
     <DisplayControls/><ViewHeader title="Workspace settings" summary="Identity, role grants, and record controls."/>
     <Panel title="Workspace & identity" subtitle="Authorization is read from protected backend role records"><dl className="settings-list"><div><dt>Workspace</dt><dd>{repo.mode==='demo'?'Isolated browser demonstration':'Connected Supabase demo'}</dd></div><div><dt>Account</dt><dd>{neutralCopy(identity.name)}<small>{identity.email}</small></dd></div><div><dt>Granted roles</dt><dd>{identity.roles.map(r=><span key={r.role}>{roleLabels[r.role]} · {r.region??'National / institution scope'}<br/></span>)}</dd></div><div><dt>Data policy</dt><dd>Synthetic cases only. No real Institutional Review records.</dd></div></dl></Panel>
     <Panel title="Security controls" action={<ShieldCheck className="teal" size={20}/>}><div className="control-grid">{['Session validation & protected roles','Tenant and region row-level security','Atomic workflow transitions','Private, quarantined evidence','Append-only decision history','Version checks & retry protection'].map(text=><div key={text}><ShieldCheck size={18}/><span>{text}</span></div>)}</div><div className="callout warning"><strong>Validation environment</strong><p>This is a hardened prototype. Malware scanner integration, operational recovery drills, formal accessibility review, and regulatory sign-off remain release gates.</p></div></Panel>
-    <div className="reference-links"><a href="https://www.example.invalid/design/0YuF68RLR5zwXZm9RzvR5q" target="_blank" rel="noreferrer">design-tool reference <ExternalLink size={13}/></a><a href="https://example.invalid/drive/folders/1OZZOYEuL9kt8mZhJpl8d3XlavEnwlR4I" target="_blank" rel="noreferrer">Engineering workspace <ExternalLink size={13}/></a></div>
   </>;
 }

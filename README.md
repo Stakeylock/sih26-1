@@ -5,11 +5,9 @@
 **Team Verity · SIH26262 · Smart Automation · Software**
 
 [![CI](https://github.com/Stakeylock/sih26-1/actions/workflows/ci.yml/badge.svg)](https://github.com/Stakeylock/sih26-1/actions/workflows/ci.yml)
-[Implementation](docs/implementation notes) · [Validation](docs/VALIDATION.md) · [Demo walkthrough](docs/demo walkthrough) · [Deployment readiness](docs/DEPLOYMENT_READINESS.md)
+[Validation](docs/VALIDATION.md) · [Local run](docs/LOCAL_RUN.md) · [Deployment readiness](docs/DEPLOYMENT_READINESS.md)
 
 > **Demonstration only.** Clauseway uses synthetic identities, documents, applications, approvals and timelines. It is **not an official AICTE service**, has no live AICTE integration, and must not be used to issue or verify real regulatory approvals.
-
-![Clauseway workspace overview](docs/overview.png)
 
 ## Why Clauseway?
 
@@ -90,6 +88,6 @@ The recorded 25 October synthetic PostgreSQL run used **10,000 cases**, **100 vi
 
 ## Documentation
 
-Start at the [documentation index](docs/README.md). For an evaluation, follow the [six-minute case walkthrough](docs/demo walkthrough). For staging and Vercel, read [deployment readiness](docs/DEPLOYMENT_READINESS.md) first: **the Vercel build produces the synthetic frontend; it does not deploy the connected database, advisory or scanning worker.**
+Start at the [documentation index](docs/README.md). For an evaluation, use the in-product guided story in **Demo lab**, then read [validation](docs/VALIDATION.md) for recorded checks and limitations. For staging and Vercel, read [deployment readiness](docs/DEPLOYMENT_READINESS.md) first: **the Vercel build produces the synthetic frontend; it does not deploy the connected database, advisory or scanning worker.**
 
 For contributions, see [CONTRIBUTING.md](CONTRIBUTING.md). To report a security concern, see [SECURITY.md](SECURITY.md). The code is released under the [MIT License](LICENSE).

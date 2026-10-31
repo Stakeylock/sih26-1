@@ -1,6 +1,6 @@
 # Third-party attribution
 
-Three.js 0.186.1 is used by the optional evidence renderer. Its license is reproduced below. Reference repository code and 3D models were not copied into this app.
+Three.js 0.186.1 is used by the optional evidence renderer. Its license is reproduced below.
 
 The MIT License
 

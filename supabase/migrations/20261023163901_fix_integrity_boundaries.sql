@@ -212,7 +212,7 @@ end $$;
 alter function fp_private.assign_role(uuid,public.app_role,text,timestamptz,text) rename to assign_role_unchecked;
 create function fp_private.assign_role(_user uuid,_role public.app_role,_region text,_expires timestamptz,_reason text) returns void language plpgsql security definer set search_path='' as $$
 begin
-  perform pg_advisory_xact_lock(hashtextextended('clauseway:admin-grants',0));
+  perform pg_advisory_xact_lock(hashtextextended('Clauseway:admin-grants',0));
   if not fp_private.has_role('national_admin') then raise exception 'Administrator required' using errcode='42501'; end if;
   if _role='national_admin' and _expires is not null and exists(select 1 from public.user_roles where user_id=_user and role=_role and active and revoked_at is null and (expires_at is null or expires_at>now())) and not exists(
     select 1 from public.user_roles where user_id<>_user and role='national_admin' and active and revoked_at is null and (expires_at is null or expires_at>now())
@@ -222,7 +222,7 @@ end $$;
 create or replace function fp_private.revoke_role(_user uuid,_role public.app_role,_reason text) returns void language plpgsql security definer set search_path='' as $$
 declare uid uuid:=fp_private.actor();
 begin
-  perform pg_advisory_xact_lock(hashtextextended('clauseway:admin-grants',0));
+  perform pg_advisory_xact_lock(hashtextextended('Clauseway:admin-grants',0));
   if not fp_private.has_role('national_admin') then raise exception 'Administrator required' using errcode='42501'; end if;
   if coalesce(length(trim(_reason)),0) not between 10 and 1000 then raise exception 'A revocation reason of 10-1000 characters is required'; end if;
   if _role='national_admin' and not exists(select 1 from public.user_roles where user_id<>_user and role='national_admin' and active and revoked_at is null and (expires_at is null or expires_at>now())) then raise exception 'Cannot revoke the last effective administrator'; end if;

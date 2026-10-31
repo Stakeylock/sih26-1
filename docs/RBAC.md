@@ -1,8 +1,7 @@
 # Role-based access control
 
-Format adopted from `github.com/example/sih_2026` (`docs/RBAC.md`), rewritten from **our** roles
-and the policies Postgres actually enforces. Clauseway is a synthetic prototype; none of this
-describes a real authority's permissions.
+This records the roles and policies PostgreSQL actually enforces. Clauseway is a synthetic
+prototype; none of this describes a real authority's permissions.
 
 Enforcement lives in three layers. All three must agree:
 
@@ -136,10 +135,8 @@ A warning is information, not a block. The block is always the database.
 
 ## Existence is not disclosed to an out-of-scope reader
 
-Adopted from `backend/docs/access_policy.md` in `github.com/example/aicte-approval-compliance-platform`:
-*"Unknown and out-of-scope detail IDs both return 404."*
-
-Clauseway already behaves this way; this section records it so it is not accidentally broken:
+Unknown and out-of-scope detail IDs both return 404. Clauseway behaves this way; this section
+records it so it is not accidentally broken:
 
 - **Reads** go through RLS (`fp_private.can_view`), which silently filters the row. A caller who asks
   for a case they cannot see gets an empty result — no error, no status difference from a case that

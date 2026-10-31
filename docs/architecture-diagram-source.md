@@ -104,7 +104,7 @@ flowchart LR
 
 ## What is intentionally NOT in this diagram
 
-- No dispatch, control-tower, or cockpit composition (prohibited by engineering conventions).
+- No dispatch, control-tower, or cockpit composition.
 - No simulated reviewer identities, official seals, or fabricated decision outcomes.
 - No production SLA, live AICTE connection, or external email/SMS provider.
 - No visual fraud detection, stamp matching, or approval-probability model.

@@ -37,7 +37,6 @@ These timings include database connection-pool wait on the shared local machine.
 - Root application dependency audit: zero reported vulnerabilities.
 - ClamAV and the worker container were built and verified healthy during the recorded local integration run.
 - `docs/scale-results.json`: latest sustained database workload with provenance.
-- `docs/scale results` and `docs/scale results`: equivalent short probes before/after the policy optimization.
 - `docs/reliability-integration-results.json`: actual upload, quarantine, scan and worker-restart results.
 - `docs/reliability-operations.md`: startup, deployment configuration and repeatable commands.
 

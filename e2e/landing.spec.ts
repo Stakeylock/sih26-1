@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {writeFileSync} from 'node:fs';
+import {mkdirSync,writeFileSync} from 'node:fs';
 
 test.beforeEach(async({page})=>{await page.emulateMedia({colorScheme:'light',reducedMotion:'no-preference'});await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();await expect(page.getByRole('heading',{level:1,name:/Evidence changes/})).toBeVisible();});
 test('the landing has one primary destination and a functional keyboard skip link',async({page})=>{
@@ -38,7 +38,7 @@ for(const width of [390,768,1450])test(`landing layout and contrast are accessib
     expect(await page.locator('.landing-copy h1').evaluate(element=>element.scrollWidth<=element.clientWidth+1)).toBe(true);
     await expect(page.getByRole('button',{name:'Open proof case',exact:true})).toBeVisible();
     const result=await new AxeBuilder({page}).analyze();expect(result.violations).toEqual([]);
-    await page.screenshot({path:`../test-results/clauseway-landing-${width}-${theme}.png`,fullPage:true});
+    await page.screenshot({path:`../test-results/Clauseway-landing-${width}-${theme}.png`,fullPage:true});
   }
 });
 test('landing tokens are measured and assets remain local',async({page})=>{
@@ -47,8 +47,8 @@ test('landing tokens are measured and assets remain local',async({page})=>{
     const read=(selector:string)=>{const element=document.querySelector(selector)!;const style=getComputedStyle(element);const rect=element.getBoundingClientRect();return {font:style.fontFamily,fontSize:style.fontSize,lineHeight:style.lineHeight,height:Math.round(rect.height),radius:style.borderRadius,color:style.color,background:style.backgroundColor};};
     return {heading:read('.landing-copy h1'),primary:read('.landing-primary'),illustration:read('.landing-journey'),indicator:read('.journey-tab-indicator'),externalAssets:performance.getEntriesByType('resource').map(entry=>entry.name).filter(url=>url.startsWith('http')&&new URL(url).origin!==location.origin)};
   });
-  expect(measurements.heading.fontSize).toBe('60px');expect(measurements.primary.height).toBe(48);expect(measurements.primary.radius).toBe('8px');expect(measurements.illustration.radius).toBe('15px');expect(measurements.externalAssets).toEqual([]);writeFileSync('docs/landing measurements',JSON.stringify(measurements,null,2)+'\n');
-  await page.getByRole('tab',{name:'Recorded',exact:true}).click();await page.screenshot({path:'../test-results/clauseway-landing-preview.png',fullPage:true,animations:'disabled'});
+  expect(measurements.heading.fontSize).toBe('60px');expect(measurements.primary.height).toBe(48);expect(measurements.primary.radius).toBe('8px');expect(measurements.illustration.radius).toBe('15px');expect(measurements.externalAssets).toEqual([]);mkdirSync('.runtime',{recursive:true});writeFileSync('.runtime/landing measurements',JSON.stringify(measurements,null,2)+'\n');
+  await page.getByRole('tab',{name:'Recorded',exact:true}).click();await page.screenshot({path:'../test-results/Clauseway-landing-preview.png',fullPage:true,animations:'disabled'});
 });
 test('station entry boots the workspace under the chosen role',async({page})=>{
   await page.getByRole('button',{name:/Submit the record, answer corrections/}).click();
