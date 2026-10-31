@@ -8,7 +8,7 @@ function initialTheme():Theme{
   const applied=document.documentElement.dataset.theme;
   if(applied==='light'||applied==='dark')return applied;
   try{const stored=localStorage.getItem(storageKey);if(stored==='light'||stored==='dark')return stored;}catch{}
-  return window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  return 'light';
 }
 
 export function useTheme(){
